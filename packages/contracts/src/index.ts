@@ -13,18 +13,37 @@ export const leadStatuses = [
 ] as const;
 export const activityTypes = ["CALL", "WHATSAPP", "EMAIL", "NOTE", "TASK", "MEETING"] as const;
 export const customerTypes = ["LEAD", "CUSTOMER", "PARTNER", "VENDOR"] as const;
+export const memorySources = ["CALL", "WHATSAPP", "EMAIL", "NOTE"] as const;
+export const timelineEventTypes = [
+  "CALL_COMPLETED",
+  "LEAD_CREATED",
+  "FOLLOW_UP_CREATED",
+  "PAYMENT_SENT",
+  "PAYMENT_RECEIVED",
+  "APPOINTMENT_BOOKED",
+  "APPOINTMENT_COMPLETED",
+  "WHATSAPP_SENT",
+  "NOTE_CREATED",
+] as const;
+export const memorySentiments = ["POSITIVE", "NEUTRAL", "NEGATIVE", "MIXED"] as const;
 
 export const PlatformRoleSchema = z.enum(platformRoles);
 export const OrganizationRoleSchema = z.enum(organizationRoles);
 export const LeadStatusSchema = z.enum(leadStatuses);
 export const ActivityTypeSchema = z.enum(activityTypes);
 export const CustomerTypeSchema = z.enum(customerTypes);
+export const MemorySourceSchema = z.enum(memorySources);
+export const TimelineEventTypeSchema = z.enum(timelineEventTypes);
+export const MemorySentimentSchema = z.enum(memorySentiments);
 
 export type PlatformRole = z.infer<typeof PlatformRoleSchema>;
 export type OrganizationRole = z.infer<typeof OrganizationRoleSchema>;
 export type LeadStatus = z.infer<typeof LeadStatusSchema>;
 export type ActivityType = z.infer<typeof ActivityTypeSchema>;
 export type CustomerType = z.infer<typeof CustomerTypeSchema>;
+export type MemorySource = z.infer<typeof MemorySourceSchema>;
+export type TimelineEventType = z.infer<typeof TimelineEventTypeSchema>;
+export type MemorySentiment = z.infer<typeof MemorySentimentSchema>;
 
 const emailSchema = z
   .string()
@@ -150,6 +169,41 @@ export const OrganizationScopedQuerySchema = z.object({
   leadId: idSchema.optional(),
 });
 
+export const CreateCustomerMemoryInputSchema = z.object({
+  organizationId: idSchema,
+  leadId: idSchema,
+  summary: z.string().trim().min(1).max(5000),
+  relationshipScore: z.coerce.number().int().min(0).max(100).default(50),
+  memoryTags: z.array(idSchema).max(20).default([]),
+});
+
+export const CreateConversationMemoryInputSchema = z.object({
+  organizationId: idSchema,
+  leadId: idSchema,
+  source: MemorySourceSchema,
+  content: z.string().trim().min(1).max(10_000),
+  sentiment: MemorySentimentSchema.default("NEUTRAL"),
+  importance: z.coerce.number().int().min(1).max(5).default(3),
+});
+
+export const CreateTimelineEventInputSchema = z.object({
+  organizationId: idSchema,
+  leadId: idSchema,
+  eventType: TimelineEventTypeSchema,
+  title: z.string().trim().min(1).max(160),
+  description: z.string().trim().max(3000).default(""),
+  metadata: z.record(z.unknown()).default({}),
+});
+
+export const CreateCustomerPreferenceInputSchema = z.object({
+  organizationId: idSchema,
+  leadId: idSchema,
+  language: z.string().trim().min(2).max(24).default("en"),
+  timezone: z.string().trim().min(1).max(100).default("UTC"),
+  preferredContactTime: z.string().trim().min(1).max(120).default("Business hours"),
+  communicationStyle: z.string().trim().min(1).max(500).default("Friendly and concise"),
+});
+
 export type RegisterInput = z.input<typeof RegisterInputSchema>;
 export type LoginInput = z.input<typeof LoginInputSchema>;
 export type RefreshInput = z.input<typeof RefreshInputSchema>;
@@ -162,6 +216,10 @@ export type CreateActivityInput = z.input<typeof CreateActivityInputSchema>;
 export type CreateNoteInput = z.input<typeof CreateNoteInputSchema>;
 export type CreateTagInput = z.input<typeof CreateTagInputSchema>;
 export type OrganizationScopedQuery = z.input<typeof OrganizationScopedQuerySchema>;
+export type CreateCustomerMemoryInput = z.input<typeof CreateCustomerMemoryInputSchema>;
+export type CreateConversationMemoryInput = z.input<typeof CreateConversationMemoryInputSchema>;
+export type CreateTimelineEventInput = z.input<typeof CreateTimelineEventInputSchema>;
+export type CreateCustomerPreferenceInput = z.input<typeof CreateCustomerPreferenceInputSchema>;
 export type RegisterPayload = z.infer<typeof RegisterInputSchema>;
 export type LoginPayload = z.infer<typeof LoginInputSchema>;
 export type RefreshPayload = z.infer<typeof RefreshInputSchema>;
@@ -174,6 +232,10 @@ export type CreateActivityPayload = z.infer<typeof CreateActivityInputSchema>;
 export type CreateNotePayload = z.infer<typeof CreateNoteInputSchema>;
 export type CreateTagPayload = z.infer<typeof CreateTagInputSchema>;
 export type OrganizationScopedQueryPayload = z.infer<typeof OrganizationScopedQuerySchema>;
+export type CreateCustomerMemoryPayload = z.infer<typeof CreateCustomerMemoryInputSchema>;
+export type CreateConversationMemoryPayload = z.infer<typeof CreateConversationMemoryInputSchema>;
+export type CreateTimelineEventPayload = z.infer<typeof CreateTimelineEventInputSchema>;
+export type CreateCustomerPreferencePayload = z.infer<typeof CreateCustomerPreferenceInputSchema>;
 
 export interface UserDto {
   id: string;
@@ -270,6 +332,69 @@ export interface LeadMetricsDto {
   newLeads: number;
   qualifiedLeads: number;
   wonLeads: number;
+}
+
+export interface MemoryTagDto {
+  id: string;
+  organizationId: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerMemoryDto {
+  id: string;
+  organizationId: string;
+  leadId: string;
+  summary: string;
+  relationshipScore: number;
+  lastInteractionAt: string | null;
+  memoryTags: MemoryTagDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversationMemoryDto {
+  id: string;
+  organizationId: string;
+  leadId: string;
+  source: MemorySource;
+  content: string;
+  sentiment: MemorySentiment;
+  importance: number;
+  createdAt: string;
+}
+
+export interface TimelineEventDto {
+  id: string;
+  organizationId: string;
+  leadId: string;
+  eventType: TimelineEventType;
+  title: string;
+  description: string;
+  metadata: Record<string, unknown>;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface CustomerPreferenceDto {
+  id: string;
+  organizationId: string;
+  leadId: string;
+  language: string;
+  timezone: string;
+  preferredContactTime: string;
+  communicationStyle: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemoryBundleDto {
+  memory: CustomerMemoryDto;
+  conversationMemories: ConversationMemoryDto[];
+  timelineEvents: TimelineEventDto[];
+  preferences: CustomerPreferenceDto | null;
 }
 
 export interface ApiResponse<T> {

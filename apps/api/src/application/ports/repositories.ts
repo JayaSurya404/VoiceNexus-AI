@@ -12,9 +12,23 @@ import type {
 } from "../../domain/entities/refresh-session.js";
 import type { Activity, NewActivity } from "../../domain/entities/activity.js";
 import type { Contact, NewContact } from "../../domain/entities/contact.js";
+import type {
+  CustomerMemory,
+  NewCustomerMemory,
+} from "../../domain/entities/customer-memory.js";
+import type {
+  CustomerPreference,
+  NewCustomerPreference,
+} from "../../domain/entities/customer-preference.js";
+import type {
+  ConversationMemory,
+  NewConversationMemory,
+} from "../../domain/entities/conversation-memory.js";
 import type { Lead, LeadListQuery, LeadUpdate, NewLead } from "../../domain/entities/lead.js";
+import type { MemoryTag, NewMemoryTag } from "../../domain/entities/memory-tag.js";
 import type { NewNote, Note } from "../../domain/entities/note.js";
 import type { NewTag, Tag } from "../../domain/entities/tag.js";
+import type { NewTimelineEvent, TimelineEvent } from "../../domain/entities/timeline-event.js";
 import type { NewUser, User } from "../../domain/entities/user.js";
 
 export type TransactionContext = object;
@@ -98,4 +112,32 @@ export interface TagRepository {
   create(input: NewTag, context?: TransactionContext): Promise<Tag>;
   listByOrganization(organizationId: string): Promise<Tag[]>;
   findByIdsForOrganization(ids: string[], organizationId: string): Promise<Tag[]>;
+}
+
+export interface CustomerMemoryRepository {
+  upsert(input: NewCustomerMemory): Promise<CustomerMemory>;
+  listByOrganization(organizationId: string): Promise<CustomerMemory[]>;
+  findByLead(organizationId: string, leadId: string): Promise<CustomerMemory | null>;
+}
+
+export interface ConversationMemoryRepository {
+  create(input: NewConversationMemory): Promise<ConversationMemory>;
+  listByLead(organizationId: string, leadId: string): Promise<ConversationMemory[]>;
+  listImportantByOrganization(organizationId: string): Promise<ConversationMemory[]>;
+}
+
+export interface TimelineEventRepository {
+  create(input: NewTimelineEvent): Promise<TimelineEvent>;
+  listByLead(organizationId: string, leadId: string): Promise<TimelineEvent[]>;
+}
+
+export interface CustomerPreferenceRepository {
+  upsert(input: NewCustomerPreference): Promise<CustomerPreference>;
+  findByLead(organizationId: string, leadId: string): Promise<CustomerPreference | null>;
+}
+
+export interface MemoryTagRepository {
+  create(input: NewMemoryTag): Promise<MemoryTag>;
+  listByOrganization(organizationId: string): Promise<MemoryTag[]>;
+  findByIdsForOrganization(ids: string[], organizationId: string): Promise<MemoryTag[]>;
 }

@@ -10,11 +10,13 @@ import { env } from "./config/env.js";
 import { createContainer } from "./container.js";
 import { AuthController } from "./http/controllers/auth-controller.js";
 import { CrmController } from "./http/controllers/crm-controller.js";
+import { MemoryController } from "./http/controllers/memory-controller.js";
 import { OrganizationController } from "./http/controllers/organization-controller.js";
 import { errorHandler } from "./http/middleware/error-handler.js";
 import { requestIdMiddleware } from "./http/middleware/request-id.js";
 import { createAuthRoutes } from "./http/routes/auth-routes.js";
 import { createCrmRoutes } from "./http/routes/crm-routes.js";
+import { createMemoryRoutes } from "./http/routes/memory-routes.js";
 import { createOrganizationRoutes } from "./http/routes/organization-routes.js";
 import { AppError } from "./shared/app-error.js";
 
@@ -70,6 +72,7 @@ export function createApp() {
   const authController = new AuthController(container.services.authService);
   const organizationController = new OrganizationController(container.services.organizationService);
   const crmController = new CrmController(container.services.crmService);
+  const memoryController = new MemoryController(container.services.memoryService);
 
   app.use("/auth", createAuthRoutes(authController));
   app.use(
@@ -83,6 +86,10 @@ export function createApp() {
   app.use(
     "/",
     createCrmRoutes(crmController, container.security.tokenService, container.repositories.users),
+  );
+  app.use(
+    "/",
+    createMemoryRoutes(memoryController, container.security.tokenService, container.repositories.users),
   );
 
   app.use((_request, _response, next) => {

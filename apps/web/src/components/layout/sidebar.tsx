@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Building2, Headphones, LayoutDashboard, MessageCircle, PhoneCall, UsersRound } from "lucide-react";
+import {
+  BarChart3,
+  BrainCircuit,
+  Building2,
+  Headphones,
+  LayoutDashboard,
+  MessageCircle,
+  PhoneCall,
+  UsersRound,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, active: true },
   { label: "CRM", href: "/crm", icon: UsersRound, active: true },
+  { label: "Memory", href: "/memory", icon: BrainCircuit, active: true },
   { label: "Organizations", href: "/organizations", icon: Building2, active: true },
   { label: "Calls", href: "/dashboard", icon: PhoneCall, active: false },
   { label: "WhatsApp", href: "/dashboard", icon: MessageCircle, active: false },
@@ -72,9 +82,9 @@ export function SidebarContent({
 
       <div className="mt-auto p-4">
         <div className="rounded-3xl bg-slate-50 p-4">
-          <p className="text-sm font-medium">Phase 1 foundation</p>
+          <p className="text-sm font-medium">VoiceNexus workspace</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Auth, tenancy, roles, and dashboard shell are wired for the AI communication modules.
+            CRM and customer memory are wired into the SaaS foundation.
           </p>
         </div>
       </div>
