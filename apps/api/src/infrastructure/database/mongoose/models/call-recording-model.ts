@@ -16,7 +16,7 @@ const callRecordingSchema = new mongoose.Schema<CallRecordingDocument>(
   {
     organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     callSessionId: { type: mongoose.Schema.Types.ObjectId, ref: "CallSession", required: true, index: true },
-    providerRecordingSid: { type: String, required: true, trim: true, maxlength: 80, index: true },
+    providerRecordingSid: { type: String, required: true, trim: true, maxlength: 80, unique: true },
     recordingUrl: { type: String, required: true, trim: true, maxlength: 1000 },
     status: { type: String, enum: ["PROCESSING", "COMPLETED", "FAILED"], required: true, default: "PROCESSING" },
     durationSeconds: { type: Number, default: null, min: 0 },
@@ -25,7 +25,6 @@ const callRecordingSchema = new mongoose.Schema<CallRecordingDocument>(
 );
 
 callRecordingSchema.index({ organizationId: 1, callSessionId: 1, createdAt: -1 });
-callRecordingSchema.index({ providerRecordingSid: 1 }, { unique: true });
 
 export type CallRecordingMongoDocument = HydratedDocument<CallRecordingDocument>;
 

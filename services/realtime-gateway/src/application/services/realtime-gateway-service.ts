@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { EventBus } from "../ports/event-bus.js";
 import type { AiConversationSessionRepository } from "../ports/repositories.js";
 import type { ActiveCallStateService } from "./active-call-state-service.js";
+import type { RealtimeTranscriptionService } from "./realtime-transcription-service.js";
 import type { MediaStreamClaims } from "../../security/media-stream-token-service.js";
 import { RealtimeError } from "../../shared/errors.js";
 
@@ -70,6 +71,7 @@ const twilioStopSchema = twilioBaseEventSchema.extend({
 });
 
 export interface RealtimeConnectionContext {
+  aiConversationSessionId: string | null;
   connectionId: string;
   organizationId: string;
   callSessionId: string;
@@ -81,18 +83,21 @@ export class RealtimeGatewayService {
     private readonly activeCalls: ActiveCallStateService,
     private readonly conversations: AiConversationSessionRepository,
     private readonly eventBus: EventBus,
+    private readonly transcription: RealtimeTranscriptionService,
   ) {}
 
   async openConnection(claims: MediaStreamClaims): Promise<RealtimeConnectionContext> {
     const now = new Date().toISOString();
     const context: RealtimeConnectionContext = {
+      aiConversationSessionId: null,
       connectionId: randomUUID(),
       organizationId: claims.organizationId,
       callSessionId: claims.callSessionId,
       providerCallSid: claims.providerCallSid ?? null,
     };
 
-    await this.ensureConversation(context, "CONNECTING", null);
+    const conversation = await this.ensureConversation(context, "CONNECTING", null);
+    context.aiConversationSessionId = conversation?.id ?? null;
     await this.activeCalls.upsertActiveCall({
       organizationId: context.organizationId,
       callSessionId: context.callSessionId,
@@ -185,11 +190,12 @@ export class RealtimeGatewayService {
 
     const now = new Date().toISOString();
     context.providerCallSid = callSid ?? context.providerCallSid;
-    await this.ensureConversation(context, "ACTIVE", event.streamSid, {
+    const conversation = await this.ensureConversation(context, "ACTIVE", event.streamSid, {
       accountSid: event.start.accountSid,
       mediaFormat: event.start.mediaFormat,
       tracks: event.start.tracks,
     });
+    context.aiConversationSessionId = conversation?.id ?? context.aiConversationSessionId;
     await this.activeCalls.upsertActiveCall({
       organizationId: context.organizationId,
       callSessionId: context.callSessionId,
@@ -213,10 +219,20 @@ export class RealtimeGatewayService {
         mediaFormat: event.start.mediaFormat ?? null,
       },
     });
+    await this.transcription.start({
+      aiConversationSessionId: context.aiConversationSessionId,
+      callSessionId: context.callSessionId,
+      organizationId: context.organizationId,
+      streamSid: event.streamSid,
+    });
   }
 
   private async handleMedia(context: RealtimeConnectionContext, event: z.infer<typeof twilioMediaSchema>) {
     await this.updateConnection(context, event.streamSid, "media", sequenceNumber(event.sequenceNumber));
+    await this.transcription.acceptTwilioAudio({
+      base64Payload: event.media.payload,
+      callSessionId: context.callSessionId,
+    });
     await this.eventBus.publish("call.audio", {
       organizationId: context.organizationId,
       callSessionId: context.callSessionId,
@@ -288,6 +304,7 @@ export class RealtimeGatewayService {
     streamSid: string | null,
     reason: string,
   ): Promise<void> {
+    await this.transcription.stop(context.callSessionId, reason);
     await this.conversations.updateByCallSession(context.organizationId, context.callSessionId, {
       status: "ENDED",
       streamSid,

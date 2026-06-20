@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { ActiveCallsTable } from "@/components/live-calls/active-calls-table";
 import { ConnectionStatusCard } from "@/components/live-calls/connection-status-card";
+import { LiveTranscriptPanel } from "@/components/live-calls/live-transcript-panel";
 import { RealtimeEventFeed } from "@/components/live-calls/realtime-event-feed";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -61,6 +62,7 @@ export default function LiveCallsPage() {
       </div>
 
       {activeCallsQuery.isLoading ? <Skeleton className="h-72 w-full" /> : <ActiveCallsTable calls={calls} />}
+      <LiveTranscriptPanel partialTranscripts={liveSocket.partialTranscripts} transcripts={liveSocket.transcripts} />
       <RealtimeEventFeed events={liveSocket.events} />
     </div>
   );

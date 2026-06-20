@@ -18,6 +18,7 @@ const envSchema = z.object({
   MONGODB_DB_NAME: z.string().min(1).default("voicenexus"),
   REDIS_URL: z.string().url(),
   MEDIA_STREAM_SECRET: z.string().min(32),
+  DEEPGRAM_API_KEY: z.string().min(1),
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_ISSUER: z.string().min(1).default("voicenexus-api"),
   JWT_AUDIENCE: z.string().min(1).default("voicenexus-web"),
