@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, type HydratedDocument, type Model } from "mongoose";
+import mongoose, { type HydratedDocument, type Model } from "mongoose";
 
 import type { PlatformRole } from "@voicenexus/contracts";
 import type { UserStatus } from "../../../../domain/entities/user.js";
@@ -15,7 +15,7 @@ export interface UserDocument {
   updatedAt: Date;
 }
 
-const userSchema = new Schema<UserDocument>(
+const userSchema = new mongoose.Schema<UserDocument>(
   {
     email: {
       type: String,
@@ -36,9 +36,8 @@ const userSchema = new Schema<UserDocument>(
   { timestamps: true },
 );
 
-userSchema.index({ email: 1 }, { unique: true });
-
 export type UserMongoDocument = HydratedDocument<UserDocument>;
 
 export const UserModel =
-  (mongoose.models.User as Model<UserDocument> | undefined) ?? model<UserDocument>("User", userSchema);
+  (mongoose.models.User as Model<UserDocument> | undefined) ??
+  mongoose.model<UserDocument>("User", userSchema);
