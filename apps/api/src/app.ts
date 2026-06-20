@@ -9,15 +9,19 @@ import hpp from "hpp";
 import { env } from "./config/env.js";
 import { createContainer } from "./container.js";
 import { AuthController } from "./http/controllers/auth-controller.js";
+import { CallController } from "./http/controllers/call-controller.js";
 import { CrmController } from "./http/controllers/crm-controller.js";
 import { MemoryController } from "./http/controllers/memory-controller.js";
 import { OrganizationController } from "./http/controllers/organization-controller.js";
+import { TwilioWebhookController } from "./http/controllers/twilio-webhook-controller.js";
 import { errorHandler } from "./http/middleware/error-handler.js";
 import { requestIdMiddleware } from "./http/middleware/request-id.js";
 import { createAuthRoutes } from "./http/routes/auth-routes.js";
+import { createCallRoutes } from "./http/routes/call-routes.js";
 import { createCrmRoutes } from "./http/routes/crm-routes.js";
 import { createMemoryRoutes } from "./http/routes/memory-routes.js";
 import { createOrganizationRoutes } from "./http/routes/organization-routes.js";
+import { createTwilioWebhookRoutes } from "./http/routes/twilio-webhook-routes.js";
 import { AppError } from "./shared/app-error.js";
 
 export function createApp() {
@@ -48,6 +52,7 @@ export function createApp() {
     }),
   );
   app.use(express.json({ limit: "1mb" }));
+  app.use(express.urlencoded({ extended: false, limit: "1mb" }));
   app.use(cookieParser());
   app.use(
     rateLimit({
@@ -73,6 +78,14 @@ export function createApp() {
   const organizationController = new OrganizationController(container.services.organizationService);
   const crmController = new CrmController(container.services.crmService);
   const memoryController = new MemoryController(container.services.memoryService);
+  const callController = new CallController(
+    container.services.telephonyService,
+    container.services.callSessionService,
+  );
+  const twilioWebhookController = new TwilioWebhookController(
+    container.services.telephonyService,
+    container.services.recordingService,
+  );
 
   app.use("/auth", createAuthRoutes(authController));
   app.use(
@@ -91,6 +104,11 @@ export function createApp() {
     "/",
     createMemoryRoutes(memoryController, container.security.tokenService, container.repositories.users),
   );
+  app.use(
+    "/",
+    createCallRoutes(callController, container.security.tokenService, container.repositories.users),
+  );
+  app.use("/", createTwilioWebhookRoutes(twilioWebhookController));
 
   app.use((_request, _response, next) => {
     next(AppError.notFound("Route"));

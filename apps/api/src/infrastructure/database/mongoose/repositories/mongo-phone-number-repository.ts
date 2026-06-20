@@ -14,6 +14,11 @@ export class MongoPhoneNumberRepository implements PhoneNumberRepository {
     return document ? mapPhoneNumber(document) : null;
   }
 
+  async findByOrganizationAndPhoneNumber(organizationId: string, phoneNumber: string): Promise<PhoneNumber | null> {
+    const document = await PhoneNumberModel.findOne({ organizationId, phoneNumber, status: "ACTIVE" }).exec();
+    return document ? mapPhoneNumber(document) : null;
+  }
+
   async findDefaultForOrganization(organizationId: string): Promise<PhoneNumber | null> {
     const document = await PhoneNumberModel.findOne({ organizationId, status: "ACTIVE", "capabilities.voice": true })
       .sort({ createdAt: 1 })

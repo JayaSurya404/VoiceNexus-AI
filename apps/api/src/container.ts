@@ -1,9 +1,16 @@
 import { AuthService } from "./application/services/auth-service.js";
+import { CallSessionService } from "./application/services/call-session-service.js";
 import { CrmService } from "./application/services/crm-service.js";
 import { MemoryService } from "./application/services/memory-service.js";
 import { OrganizationService } from "./application/services/organization-service.js";
+import { RecordingService } from "./application/services/recording-service.js";
+import { TelephonyService } from "./application/services/telephony-service.js";
 import { env } from "./config/env.js";
 import { MongoActivityRepository } from "./infrastructure/database/mongoose/repositories/mongo-activity-repository.js";
+import { MongoCallEventRepository } from "./infrastructure/database/mongoose/repositories/mongo-call-event-repository.js";
+import { MongoCallRecordingRepository } from "./infrastructure/database/mongoose/repositories/mongo-call-recording-repository.js";
+import { MongoCallSessionRepository } from "./infrastructure/database/mongoose/repositories/mongo-call-session-repository.js";
+import { MongoCallTransferRepository } from "./infrastructure/database/mongoose/repositories/mongo-call-transfer-repository.js";
 import { MongoContactRepository } from "./infrastructure/database/mongoose/repositories/mongo-contact-repository.js";
 import { MongoConversationMemoryRepository } from "./infrastructure/database/mongoose/repositories/mongo-conversation-memory-repository.js";
 import { MongoCustomerMemoryRepository } from "./infrastructure/database/mongoose/repositories/mongo-customer-memory-repository.js";
@@ -13,6 +20,7 @@ import { MongoMemoryTagRepository } from "./infrastructure/database/mongoose/rep
 import { MongoNoteRepository } from "./infrastructure/database/mongoose/repositories/mongo-note-repository.js";
 import { MongoOrganizationMemberRepository } from "./infrastructure/database/mongoose/repositories/mongo-organization-member-repository.js";
 import { MongoOrganizationRepository } from "./infrastructure/database/mongoose/repositories/mongo-organization-repository.js";
+import { MongoPhoneNumberRepository } from "./infrastructure/database/mongoose/repositories/mongo-phone-number-repository.js";
 import { MongoRefreshSessionRepository } from "./infrastructure/database/mongoose/repositories/mongo-refresh-session-repository.js";
 import { MongoTagRepository } from "./infrastructure/database/mongoose/repositories/mongo-tag-repository.js";
 import { MongoTimelineEventRepository } from "./infrastructure/database/mongoose/repositories/mongo-timeline-event-repository.js";
@@ -20,6 +28,7 @@ import { MongoUserRepository } from "./infrastructure/database/mongoose/reposito
 import { MongoTransactionManager } from "./infrastructure/database/mongoose/transaction-manager.js";
 import { BcryptPasswordHasher } from "./infrastructure/security/bcrypt-password-hasher.js";
 import { JwtTokenService } from "./infrastructure/security/jwt-token-service.js";
+import { ProviderFactory } from "./infrastructure/telephony/provider-factory.js";
 
 export function createContainer() {
   const users = new MongoUserRepository();
@@ -36,6 +45,11 @@ export function createContainer() {
   const timelineEvents = new MongoTimelineEventRepository();
   const customerPreferences = new MongoCustomerPreferenceRepository();
   const memoryTags = new MongoMemoryTagRepository();
+  const phoneNumbers = new MongoPhoneNumberRepository();
+  const callSessions = new MongoCallSessionRepository();
+  const callEvents = new MongoCallEventRepository();
+  const callRecordings = new MongoCallRecordingRepository();
+  const callTransfers = new MongoCallTransferRepository();
   const transactionManager = new MongoTransactionManager();
   const passwordHasher = new BcryptPasswordHasher(env.BCRYPT_ROUNDS);
   const tokenService = new JwtTokenService({
@@ -45,6 +59,10 @@ export function createContainer() {
     audience: env.JWT_AUDIENCE,
     accessTtlSeconds: env.ACCESS_TOKEN_TTL_SECONDS,
     refreshTtlSeconds: env.REFRESH_TOKEN_TTL_SECONDS,
+  });
+  const providerFactory = new ProviderFactory({
+    twilioAccountSid: env.TWILIO_ACCOUNT_SID,
+    twilioAuthToken: env.TWILIO_AUTH_TOKEN,
   });
 
   const authService = new AuthService(
@@ -75,6 +93,34 @@ export function createContainer() {
     leads,
     members,
   );
+  const callSessionService = new CallSessionService(
+    callSessions,
+    callEvents,
+    callRecordings,
+    callTransfers,
+    leads,
+    tags,
+    customerMemories,
+    memoryTags,
+    members,
+  );
+  const recordingService = new RecordingService(callSessions, callRecordings, callEvents);
+  const telephonyService = new TelephonyService(
+    callSessions,
+    callEvents,
+    callTransfers,
+    phoneNumbers,
+    leads,
+    activities,
+    timelineEvents,
+    conversationMemories,
+    members,
+    providerFactory,
+    {
+      apiPublicUrl: env.API_PUBLIC_URL,
+      twilioPhoneNumber: env.TWILIO_PHONE_NUMBER,
+    },
+  );
 
   return {
     repositories: {
@@ -92,12 +138,20 @@ export function createContainer() {
       timelineEvents,
       customerPreferences,
       memoryTags,
+      phoneNumbers,
+      callSessions,
+      callEvents,
+      callRecordings,
+      callTransfers,
     },
     services: {
       authService,
       organizationService,
       crmService,
       memoryService,
+      callSessionService,
+      recordingService,
+      telephonyService,
     },
     security: {
       tokenService,

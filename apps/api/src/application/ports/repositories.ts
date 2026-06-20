@@ -155,6 +155,7 @@ export interface MemoryTagRepository {
 export interface PhoneNumberRepository {
   create(input: NewPhoneNumber): Promise<PhoneNumber>;
   findByPhoneNumber(phoneNumber: string): Promise<PhoneNumber | null>;
+  findByOrganizationAndPhoneNumber(organizationId: string, phoneNumber: string): Promise<PhoneNumber | null>;
   findDefaultForOrganization(organizationId: string): Promise<PhoneNumber | null>;
 }
 
