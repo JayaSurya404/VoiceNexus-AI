@@ -1,4 +1,8 @@
 import type { Activity } from "../../../../domain/entities/activity.js";
+import type { CallEvent } from "../../../../domain/entities/call-event.js";
+import type { CallRecording } from "../../../../domain/entities/call-recording.js";
+import type { CallSession } from "../../../../domain/entities/call-session.js";
+import type { CallTransfer } from "../../../../domain/entities/call-transfer.js";
 import type { Contact } from "../../../../domain/entities/contact.js";
 import type { ConversationMemory } from "../../../../domain/entities/conversation-memory.js";
 import type { CustomerMemory } from "../../../../domain/entities/customer-memory.js";
@@ -6,6 +10,7 @@ import type { CustomerPreference } from "../../../../domain/entities/customer-pr
 import type { Lead } from "../../../../domain/entities/lead.js";
 import type { MemoryTag } from "../../../../domain/entities/memory-tag.js";
 import type { Note } from "../../../../domain/entities/note.js";
+import type { PhoneNumber } from "../../../../domain/entities/phone-number.js";
 import type { OrganizationMember } from "../../../../domain/entities/organization-member.js";
 import type { Organization } from "../../../../domain/entities/organization.js";
 import type { RefreshSession } from "../../../../domain/entities/refresh-session.js";
@@ -13,6 +18,10 @@ import type { Tag } from "../../../../domain/entities/tag.js";
 import type { TimelineEvent } from "../../../../domain/entities/timeline-event.js";
 import type { User } from "../../../../domain/entities/user.js";
 import type { ActivityMongoDocument } from "../models/activity-model.js";
+import type { CallEventMongoDocument } from "../models/call-event-model.js";
+import type { CallRecordingMongoDocument } from "../models/call-recording-model.js";
+import type { CallSessionMongoDocument } from "../models/call-session-model.js";
+import type { CallTransferMongoDocument } from "../models/call-transfer-model.js";
 import type { ContactMongoDocument } from "../models/contact-model.js";
 import type { ConversationMemoryMongoDocument } from "../models/conversation-memory-model.js";
 import type { CustomerMemoryMongoDocument } from "../models/customer-memory-model.js";
@@ -20,6 +29,7 @@ import type { CustomerPreferenceMongoDocument } from "../models/customer-prefere
 import type { LeadMongoDocument } from "../models/lead-model.js";
 import type { MemoryTagMongoDocument } from "../models/memory-tag-model.js";
 import type { NoteMongoDocument } from "../models/note-model.js";
+import type { PhoneNumberMongoDocument } from "../models/phone-number-model.js";
 import type { OrganizationMemberMongoDocument } from "../models/organization-member-model.js";
 import type { OrganizationMongoDocument } from "../models/organization-model.js";
 import type { RefreshSessionMongoDocument } from "../models/refresh-session-model.js";
@@ -222,5 +232,86 @@ export function mapMemoryTag(document: MemoryTagMongoDocument): MemoryTag {
     description: document.description,
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
+  };
+}
+
+export function mapPhoneNumber(document: PhoneNumberMongoDocument): PhoneNumber {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    provider: document.provider,
+    phoneNumber: document.phoneNumber,
+    label: document.label,
+    providerSid: document.providerSid,
+    status: document.status,
+    capabilities: {
+      voice: document.capabilities.voice,
+      sms: document.capabilities.sms,
+      whatsapp: document.capabilities.whatsapp,
+    },
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  };
+}
+
+export function mapCallSession(document: CallSessionMongoDocument): CallSession {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    leadId: document.leadId?.toHexString() ?? null,
+    phoneNumberId: document.phoneNumberId?.toHexString() ?? null,
+    provider: document.provider,
+    providerCallSid: document.providerCallSid,
+    direction: document.direction,
+    status: document.status,
+    from: document.from,
+    to: document.to,
+    initiatedBy: document.initiatedBy?.toHexString() ?? null,
+    startedAt: document.startedAt,
+    endedAt: document.endedAt,
+    durationSeconds: document.durationSeconds,
+    recordingEnabled: document.recordingEnabled,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  };
+}
+
+export function mapCallEvent(document: CallEventMongoDocument): CallEvent {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    callSessionId: document.callSessionId.toHexString(),
+    type: document.type,
+    title: document.title,
+    description: document.description,
+    providerStatus: document.providerStatus,
+    metadata: document.metadata,
+    createdAt: document.createdAt,
+  };
+}
+
+export function mapCallRecording(document: CallRecordingMongoDocument): CallRecording {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    callSessionId: document.callSessionId.toHexString(),
+    providerRecordingSid: document.providerRecordingSid,
+    recordingUrl: document.recordingUrl,
+    status: document.status,
+    durationSeconds: document.durationSeconds,
+    createdAt: document.createdAt,
+  };
+}
+
+export function mapCallTransfer(document: CallTransferMongoDocument): CallTransfer {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    callSessionId: document.callSessionId.toHexString(),
+    fromUserId: document.fromUserId.toHexString(),
+    toPhoneNumber: document.toPhoneNumber,
+    status: document.status,
+    reason: document.reason,
+    createdAt: document.createdAt,
   };
 }

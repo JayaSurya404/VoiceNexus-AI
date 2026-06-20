@@ -14,6 +14,31 @@ export const leadStatuses = [
 export const activityTypes = ["CALL", "WHATSAPP", "EMAIL", "NOTE", "TASK", "MEETING"] as const;
 export const customerTypes = ["LEAD", "CUSTOMER", "PARTNER", "VENDOR"] as const;
 export const memorySources = ["CALL", "WHATSAPP", "EMAIL", "NOTE"] as const;
+export const telephonyProviders = ["TWILIO", "EXOTEL"] as const;
+export const callDirections = ["INBOUND", "OUTBOUND"] as const;
+export const callStatuses = [
+  "QUEUED",
+  "RINGING",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "FAILED",
+  "BUSY",
+  "NO_ANSWER",
+  "CANCELED",
+] as const;
+export const callEventTypes = [
+  "CALL_CREATED",
+  "CALL_QUEUED",
+  "CALL_RINGING",
+  "CALL_ANSWERED",
+  "CALL_COMPLETED",
+  "CALL_FAILED",
+  "CALL_TRANSFERRED",
+  "RECORDING_AVAILABLE",
+  "WEBHOOK_RECEIVED",
+] as const;
+export const callRecordingStatuses = ["PROCESSING", "COMPLETED", "FAILED"] as const;
+export const callTransferStatuses = ["REQUESTED", "COMPLETED", "FAILED"] as const;
 export const timelineEventTypes = [
   "CALL_COMPLETED",
   "LEAD_CREATED",
@@ -33,6 +58,12 @@ export const LeadStatusSchema = z.enum(leadStatuses);
 export const ActivityTypeSchema = z.enum(activityTypes);
 export const CustomerTypeSchema = z.enum(customerTypes);
 export const MemorySourceSchema = z.enum(memorySources);
+export const TelephonyProviderSchema = z.enum(telephonyProviders);
+export const CallDirectionSchema = z.enum(callDirections);
+export const CallStatusSchema = z.enum(callStatuses);
+export const CallEventTypeSchema = z.enum(callEventTypes);
+export const CallRecordingStatusSchema = z.enum(callRecordingStatuses);
+export const CallTransferStatusSchema = z.enum(callTransferStatuses);
 export const TimelineEventTypeSchema = z.enum(timelineEventTypes);
 export const MemorySentimentSchema = z.enum(memorySentiments);
 
@@ -42,6 +73,12 @@ export type LeadStatus = z.infer<typeof LeadStatusSchema>;
 export type ActivityType = z.infer<typeof ActivityTypeSchema>;
 export type CustomerType = z.infer<typeof CustomerTypeSchema>;
 export type MemorySource = z.infer<typeof MemorySourceSchema>;
+export type TelephonyProvider = z.infer<typeof TelephonyProviderSchema>;
+export type CallDirection = z.infer<typeof CallDirectionSchema>;
+export type CallStatus = z.infer<typeof CallStatusSchema>;
+export type CallEventType = z.infer<typeof CallEventTypeSchema>;
+export type CallRecordingStatus = z.infer<typeof CallRecordingStatusSchema>;
+export type CallTransferStatus = z.infer<typeof CallTransferStatusSchema>;
 export type TimelineEventType = z.infer<typeof TimelineEventTypeSchema>;
 export type MemorySentiment = z.infer<typeof MemorySentimentSchema>;
 
@@ -204,6 +241,38 @@ export const CreateCustomerPreferenceInputSchema = z.object({
   communicationStyle: z.string().trim().min(1).max(500).default("Friendly and concise"),
 });
 
+const e164PhoneSchema = z
+  .string()
+  .trim()
+  .regex(/^\+[1-9]\d{7,14}$/, "Use E.164 format, for example +14155552671");
+
+export const ListCallsQuerySchema = z.object({
+  organizationId: idSchema,
+  leadId: idSchema.optional(),
+  status: CallStatusSchema.optional(),
+});
+
+export const CreateOutboundCallInputSchema = z.object({
+  organizationId: idSchema,
+  leadId: idSchema,
+  to: e164PhoneSchema,
+  from: e164PhoneSchema.optional(),
+  record: z.coerce.boolean().default(true),
+  initialMessage: z
+    .string()
+    .trim()
+    .min(1)
+    .max(500)
+    .default("Hello from VoiceNexus AI. Please hold while we connect your assistant."),
+});
+
+export const TransferCallInputSchema = z.object({
+  organizationId: idSchema,
+  callSessionId: idSchema,
+  toPhoneNumber: e164PhoneSchema,
+  reason: z.string().trim().max(500).default("Human handoff requested"),
+});
+
 export type RegisterInput = z.input<typeof RegisterInputSchema>;
 export type LoginInput = z.input<typeof LoginInputSchema>;
 export type RefreshInput = z.input<typeof RefreshInputSchema>;
@@ -220,6 +289,9 @@ export type CreateCustomerMemoryInput = z.input<typeof CreateCustomerMemoryInput
 export type CreateConversationMemoryInput = z.input<typeof CreateConversationMemoryInputSchema>;
 export type CreateTimelineEventInput = z.input<typeof CreateTimelineEventInputSchema>;
 export type CreateCustomerPreferenceInput = z.input<typeof CreateCustomerPreferenceInputSchema>;
+export type ListCallsQuery = z.input<typeof ListCallsQuerySchema>;
+export type CreateOutboundCallInput = z.input<typeof CreateOutboundCallInputSchema>;
+export type TransferCallInput = z.input<typeof TransferCallInputSchema>;
 export type RegisterPayload = z.infer<typeof RegisterInputSchema>;
 export type LoginPayload = z.infer<typeof LoginInputSchema>;
 export type RefreshPayload = z.infer<typeof RefreshInputSchema>;
@@ -236,6 +308,9 @@ export type CreateCustomerMemoryPayload = z.infer<typeof CreateCustomerMemoryInp
 export type CreateConversationMemoryPayload = z.infer<typeof CreateConversationMemoryInputSchema>;
 export type CreateTimelineEventPayload = z.infer<typeof CreateTimelineEventInputSchema>;
 export type CreateCustomerPreferencePayload = z.infer<typeof CreateCustomerPreferenceInputSchema>;
+export type ListCallsPayload = z.infer<typeof ListCallsQuerySchema>;
+export type CreateOutboundCallPayload = z.infer<typeof CreateOutboundCallInputSchema>;
+export type TransferCallPayload = z.infer<typeof TransferCallInputSchema>;
 
 export interface UserDto {
   id: string;
@@ -395,6 +470,93 @@ export interface MemoryBundleDto {
   conversationMemories: ConversationMemoryDto[];
   timelineEvents: TimelineEventDto[];
   preferences: CustomerPreferenceDto | null;
+}
+
+export interface PhoneNumberDto {
+  id: string;
+  organizationId: string;
+  provider: TelephonyProvider;
+  phoneNumber: string;
+  label: string;
+  providerSid: string | null;
+  status: "ACTIVE" | "INACTIVE";
+  capabilities: {
+    voice: boolean;
+    sms: boolean;
+    whatsapp: boolean;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CallSessionDto {
+  id: string;
+  organizationId: string;
+  leadId: string | null;
+  phoneNumberId: string | null;
+  provider: TelephonyProvider;
+  providerCallSid: string | null;
+  direction: CallDirection;
+  status: CallStatus;
+  from: string;
+  to: string;
+  initiatedBy: string | null;
+  startedAt: string | null;
+  endedAt: string | null;
+  durationSeconds: number | null;
+  recordingEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CallEventDto {
+  id: string;
+  organizationId: string;
+  callSessionId: string;
+  type: CallEventType;
+  title: string;
+  description: string;
+  providerStatus: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface CallRecordingDto {
+  id: string;
+  organizationId: string;
+  callSessionId: string;
+  providerRecordingSid: string;
+  recordingUrl: string;
+  status: CallRecordingStatus;
+  durationSeconds: number | null;
+  createdAt: string;
+}
+
+export interface CallTransferDto {
+  id: string;
+  organizationId: string;
+  callSessionId: string;
+  fromUserId: string;
+  toPhoneNumber: string;
+  status: CallTransferStatus;
+  reason: string;
+  createdAt: string;
+}
+
+export interface CallDetailsDto {
+  call: CallSessionDto;
+  events: CallEventDto[];
+  recordings: CallRecordingDto[];
+  transfers: CallTransferDto[];
+  lead: LeadDto | null;
+  memory: CustomerMemoryDto | null;
+}
+
+export interface CallMetricsDto {
+  totalCalls: number;
+  inboundCalls: number;
+  outboundCalls: number;
+  completedCalls: number;
 }
 
 export interface ApiResponse<T> {

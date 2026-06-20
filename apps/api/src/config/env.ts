@@ -33,6 +33,10 @@ const envSchema = z.object({
     .default(604_800),
   BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
   FRONTEND_URL: z.string().url().default("http://localhost:3000"),
+  API_PUBLIC_URL: z.string().url().default("http://localhost:4000"),
+  TWILIO_ACCOUNT_SID: z.string().default(""),
+  TWILIO_AUTH_TOKEN: z.string().default(""),
+  TWILIO_PHONE_NUMBER: z.string().default(""),
   COOKIE_SECURE: booleanString,
   TRUST_PROXY: z.coerce.number().int().min(0).max(10).default(1),
 });

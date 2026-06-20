@@ -11,6 +11,15 @@ import type {
   RefreshSession,
 } from "../../domain/entities/refresh-session.js";
 import type { Activity, NewActivity } from "../../domain/entities/activity.js";
+import type { CallEvent, NewCallEvent } from "../../domain/entities/call-event.js";
+import type { NewCallRecording, CallRecording } from "../../domain/entities/call-recording.js";
+import type {
+  CallSession,
+  CallSessionListQuery,
+  CallSessionUpdate,
+  NewCallSession,
+} from "../../domain/entities/call-session.js";
+import type { CallTransfer, NewCallTransfer } from "../../domain/entities/call-transfer.js";
 import type { Contact, NewContact } from "../../domain/entities/contact.js";
 import type {
   CustomerMemory,
@@ -27,6 +36,7 @@ import type {
 import type { Lead, LeadListQuery, LeadUpdate, NewLead } from "../../domain/entities/lead.js";
 import type { MemoryTag, NewMemoryTag } from "../../domain/entities/memory-tag.js";
 import type { NewNote, Note } from "../../domain/entities/note.js";
+import type { NewPhoneNumber, PhoneNumber } from "../../domain/entities/phone-number.js";
 import type { NewTag, Tag } from "../../domain/entities/tag.js";
 import type { NewTimelineEvent, TimelineEvent } from "../../domain/entities/timeline-event.js";
 import type { NewUser, User } from "../../domain/entities/user.js";
@@ -140,4 +150,38 @@ export interface MemoryTagRepository {
   create(input: NewMemoryTag): Promise<MemoryTag>;
   listByOrganization(organizationId: string): Promise<MemoryTag[]>;
   findByIdsForOrganization(ids: string[], organizationId: string): Promise<MemoryTag[]>;
+}
+
+export interface PhoneNumberRepository {
+  create(input: NewPhoneNumber): Promise<PhoneNumber>;
+  findByPhoneNumber(phoneNumber: string): Promise<PhoneNumber | null>;
+  findDefaultForOrganization(organizationId: string): Promise<PhoneNumber | null>;
+}
+
+export interface CallSessionRepository {
+  create(input: NewCallSession): Promise<CallSession>;
+  list(query: CallSessionListQuery): Promise<CallSession[]>;
+  findByIdForOrganization(id: string, organizationId: string): Promise<CallSession | null>;
+  findByProviderCallSid(providerCallSid: string): Promise<CallSession | null>;
+  updateForOrganization(
+    id: string,
+    organizationId: string,
+    input: CallSessionUpdate,
+  ): Promise<CallSession | null>;
+  updateByProviderCallSid(providerCallSid: string, input: CallSessionUpdate): Promise<CallSession | null>;
+}
+
+export interface CallEventRepository {
+  create(input: NewCallEvent): Promise<CallEvent>;
+  listByCallSession(organizationId: string, callSessionId: string): Promise<CallEvent[]>;
+}
+
+export interface CallRecordingRepository {
+  upsert(input: NewCallRecording): Promise<CallRecording>;
+  listByCallSession(organizationId: string, callSessionId: string): Promise<CallRecording[]>;
+}
+
+export interface CallTransferRepository {
+  create(input: NewCallTransfer): Promise<CallTransfer>;
+  listByCallSession(organizationId: string, callSessionId: string): Promise<CallTransfer[]>;
 }
