@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from "express";
+import { ZodError } from "zod";
 
 import { env } from "../../config/env.js";
 import { AppError } from "../../shared/app-error.js";
@@ -19,6 +20,18 @@ export const errorHandler: ErrorRequestHandler = (error, request, response, _nex
         code: error.code,
         message: error.message,
         details: error.details,
+      },
+      requestId: request.requestId,
+    });
+    return;
+  }
+
+  if (error instanceof ZodError) {
+    response.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Request parameters are invalid",
+        details: error.flatten().fieldErrors as Record<string, string[]>,
       },
       requestId: request.requestId,
     });

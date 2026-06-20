@@ -1,9 +1,15 @@
 import { AuthService } from "./application/services/auth-service.js";
+import { CrmService } from "./application/services/crm-service.js";
 import { OrganizationService } from "./application/services/organization-service.js";
 import { env } from "./config/env.js";
+import { MongoActivityRepository } from "./infrastructure/database/mongoose/repositories/mongo-activity-repository.js";
+import { MongoContactRepository } from "./infrastructure/database/mongoose/repositories/mongo-contact-repository.js";
+import { MongoLeadRepository } from "./infrastructure/database/mongoose/repositories/mongo-lead-repository.js";
+import { MongoNoteRepository } from "./infrastructure/database/mongoose/repositories/mongo-note-repository.js";
 import { MongoOrganizationMemberRepository } from "./infrastructure/database/mongoose/repositories/mongo-organization-member-repository.js";
 import { MongoOrganizationRepository } from "./infrastructure/database/mongoose/repositories/mongo-organization-repository.js";
 import { MongoRefreshSessionRepository } from "./infrastructure/database/mongoose/repositories/mongo-refresh-session-repository.js";
+import { MongoTagRepository } from "./infrastructure/database/mongoose/repositories/mongo-tag-repository.js";
 import { MongoUserRepository } from "./infrastructure/database/mongoose/repositories/mongo-user-repository.js";
 import { MongoTransactionManager } from "./infrastructure/database/mongoose/transaction-manager.js";
 import { BcryptPasswordHasher } from "./infrastructure/security/bcrypt-password-hasher.js";
@@ -14,6 +20,11 @@ export function createContainer() {
   const organizations = new MongoOrganizationRepository();
   const members = new MongoOrganizationMemberRepository();
   const refreshSessions = new MongoRefreshSessionRepository();
+  const leads = new MongoLeadRepository();
+  const contacts = new MongoContactRepository();
+  const activities = new MongoActivityRepository();
+  const notes = new MongoNoteRepository();
+  const tags = new MongoTagRepository();
   const transactionManager = new MongoTransactionManager();
   const passwordHasher = new BcryptPasswordHasher(env.BCRYPT_ROUNDS);
   const tokenService = new JwtTokenService({
@@ -35,6 +46,15 @@ export function createContainer() {
     tokenService,
   );
   const organizationService = new OrganizationService(organizations, members, transactionManager);
+  const crmService = new CrmService(
+    leads,
+    contacts,
+    activities,
+    notes,
+    tags,
+    members,
+    transactionManager,
+  );
 
   return {
     repositories: {
@@ -42,10 +62,16 @@ export function createContainer() {
       organizations,
       members,
       refreshSessions,
+      leads,
+      contacts,
+      activities,
+      notes,
+      tags,
     },
     services: {
       authService,
       organizationService,
+      crmService,
     },
     security: {
       tokenService,

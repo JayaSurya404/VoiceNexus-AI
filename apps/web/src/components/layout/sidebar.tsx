@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Building2, Headphones, LayoutDashboard, MessageCircle, PhoneCall } from "lucide-react";
+import { BarChart3, Building2, Headphones, LayoutDashboard, MessageCircle, PhoneCall, UsersRound } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, active: true },
+  { label: "CRM", href: "/crm", icon: UsersRound, active: true },
   { label: "Organizations", href: "/organizations", icon: Building2, active: true },
   { label: "Calls", href: "/dashboard", icon: PhoneCall, active: false },
   { label: "WhatsApp", href: "/dashboard", icon: MessageCircle, active: false },
@@ -47,7 +48,7 @@ export function SidebarContent({
 
       <nav className="space-y-1 px-4">
         {navigation.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
           return (
             <Link
