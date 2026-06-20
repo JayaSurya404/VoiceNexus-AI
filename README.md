@@ -19,6 +19,8 @@ roles, MongoDB Atlas persistence, and a Next.js dashboard shell.
 apps/
   api/       Express API service
   web/       Next.js dashboard and marketing app
+services/
+  realtime-gateway/ Twilio Media Streams WebSocket and live-call supervisor gateway
 packages/
   contracts/ Shared API contracts, DTOs, roles, and validation schemas
 docs/
@@ -74,10 +76,13 @@ Create environment files:
 ```bash
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
+cp services/realtime-gateway/.env.example services/realtime-gateway/.env
 ```
 
 Set a real MongoDB Atlas connection string in `apps/api/.env` and replace both JWT
 secrets with strong random values of at least 32 characters.
+Use the same JWT access secret in `services/realtime-gateway/.env`, and set Redis
+plus `MEDIA_STREAM_SECRET` for realtime Media Stream session validation.
 
 Start development:
 
@@ -90,6 +95,7 @@ Run individual apps:
 ```bash
 pnpm dev:api
 pnpm dev:web
+pnpm dev:realtime
 ```
 
 ## Quality checks

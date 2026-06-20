@@ -13,6 +13,7 @@
     "dev": "turbo dev --parallel",
     "dev:web": "pnpm --filter @voicenexus/web dev",
     "dev:api": "pnpm --filter @voicenexus/api dev",
+    "dev:realtime": "pnpm --filter @voicenexus/realtime-gateway dev",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "lint": "turbo lint",

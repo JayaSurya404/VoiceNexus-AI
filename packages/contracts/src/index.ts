@@ -39,6 +39,9 @@ export const callEventTypes = [
 ] as const;
 export const callRecordingStatuses = ["PROCESSING", "COMPLETED", "FAILED"] as const;
 export const callTransferStatuses = ["REQUESTED", "COMPLETED", "FAILED"] as const;
+export const aiConversationStatuses = ["CONNECTING", "ACTIVE", "ENDED", "FAILED"] as const;
+export const realtimeTranscriptEventTypes = ["PARTIAL", "FINAL"] as const;
+export const realtimeTopics = ["call.lifecycle", "call.audio", "transcript.partial", "transcript.final"] as const;
 export const timelineEventTypes = [
   "CALL_COMPLETED",
   "LEAD_CREATED",
@@ -64,6 +67,9 @@ export const CallStatusSchema = z.enum(callStatuses);
 export const CallEventTypeSchema = z.enum(callEventTypes);
 export const CallRecordingStatusSchema = z.enum(callRecordingStatuses);
 export const CallTransferStatusSchema = z.enum(callTransferStatuses);
+export const AiConversationStatusSchema = z.enum(aiConversationStatuses);
+export const RealtimeTranscriptEventTypeSchema = z.enum(realtimeTranscriptEventTypes);
+export const RealtimeTopicSchema = z.enum(realtimeTopics);
 export const TimelineEventTypeSchema = z.enum(timelineEventTypes);
 export const MemorySentimentSchema = z.enum(memorySentiments);
 
@@ -79,6 +85,9 @@ export type CallStatus = z.infer<typeof CallStatusSchema>;
 export type CallEventType = z.infer<typeof CallEventTypeSchema>;
 export type CallRecordingStatus = z.infer<typeof CallRecordingStatusSchema>;
 export type CallTransferStatus = z.infer<typeof CallTransferStatusSchema>;
+export type AiConversationStatus = z.infer<typeof AiConversationStatusSchema>;
+export type RealtimeTranscriptEventType = z.infer<typeof RealtimeTranscriptEventTypeSchema>;
+export type RealtimeTopic = z.infer<typeof RealtimeTopicSchema>;
 export type TimelineEventType = z.infer<typeof TimelineEventTypeSchema>;
 export type MemorySentiment = z.infer<typeof MemorySentimentSchema>;
 
@@ -558,6 +567,55 @@ export interface CallMetricsDto {
   outboundCalls: number;
   completedCalls: number;
 }
+
+export interface ActiveCallSessionDto {
+  organizationId: string;
+  callSessionId: string;
+  providerCallSid: string | null;
+  streamSid: string | null;
+  status: AiConversationStatus;
+  connectedAt: string;
+  updatedAt: string;
+  from: string | null;
+  to: string | null;
+}
+
+export interface RealtimeTranscriptEventDto {
+  id: string;
+  organizationId: string;
+  callSessionId: string;
+  aiConversationSessionId: string | null;
+  type: RealtimeTranscriptEventType;
+  speaker: "CUSTOMER" | "ASSISTANT" | "SYSTEM";
+  text: string;
+  language: string | null;
+  confidence: number | null;
+  sequenceNumber: number;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface RealtimeEventEnvelopeDto<TPayload = Record<string, unknown>> {
+  id: string;
+  topic: RealtimeTopic;
+  organizationId: string;
+  callSessionId: string | null;
+  occurredAt: string;
+  payload: TPayload;
+}
+
+export interface LiveCallsSnapshotMessageDto {
+  type: "SNAPSHOT";
+  organizationId: string;
+  calls: ActiveCallSessionDto[];
+}
+
+export interface LiveCallsEventMessageDto {
+  type: "EVENT";
+  event: RealtimeEventEnvelopeDto;
+}
+
+export type LiveCallsWebSocketMessageDto = LiveCallsSnapshotMessageDto | LiveCallsEventMessageDto;
 
 export interface ApiResponse<T> {
   data: T;
