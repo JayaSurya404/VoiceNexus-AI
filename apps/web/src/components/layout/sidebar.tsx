@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Bot,
   BrainCircuit,
   Building2,
   Headphones,
@@ -24,6 +25,7 @@ const navigation = [
   { label: "Organizations", href: "/organizations", icon: Building2, active: true },
   { label: "Calls", href: "/calls", icon: PhoneCall, active: true },
   { label: "Live Calls", href: "/live-calls", icon: Radio, active: true },
+  { label: "AI Monitor", href: "/ai-monitor", icon: Bot, active: true },
   { label: "WhatsApp", href: "/dashboard", icon: MessageCircle, active: false },
   { label: "Agents", href: "/dashboard", icon: Headphones, active: false },
   { label: "Analytics", href: "/dashboard", icon: BarChart3, active: false },
