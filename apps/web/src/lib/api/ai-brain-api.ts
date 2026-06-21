@@ -136,6 +136,78 @@ export interface RuntimeMetricsDto {
   handoffDecisions: number;
   averageConfidence: number;
   hotLeads: number;
+  actionSuccessRate?: number;
+  pendingFollowups?: number;
+}
+
+export interface WorkflowExecutionDto {
+  id: string;
+  organizationId: string;
+  agentSessionId: string;
+  conversationId: string | null;
+  leadId: string | null;
+  trigger: "TRANSCRIPT_FINAL" | "MANUAL" | "SYSTEM";
+  status: "PLANNED" | "RUNNING" | "COMPLETED" | "FAILED" | "PARTIAL";
+  plannedActions: string[];
+  completedActions: number;
+  failedActions: number;
+  reasoning: string;
+  startedAt: string;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkflowActionDto {
+  id: string;
+  organizationId: string;
+  workflowExecutionId: string;
+  agentSessionId: string | null;
+  conversationId: string | null;
+  leadId: string | null;
+  actionType: string;
+  toolName: string;
+  input: Record<string, unknown>;
+  output: Record<string, unknown>;
+  status: "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | "SKIPPED";
+  reasoning: string;
+  confidence: number;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScheduledFollowupDto {
+  id: string;
+  organizationId: string;
+  agentSessionId: string | null;
+  conversationId: string | null;
+  leadId: string;
+  assignedTo: string | null;
+  followupDate: string;
+  reason: string;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  status: "PENDING" | "SCHEDULED" | "COMPLETED" | "CANCELLED";
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+}
+
+export interface ActionAuditDto {
+  id: string;
+  organizationId: string;
+  sessionId: string | null;
+  conversationId: string | null;
+  workflowExecutionId: string | null;
+  workflowActionId: string | null;
+  actionType: string;
+  toolName: string;
+  input: Record<string, unknown>;
+  output: Record<string, unknown>;
+  status: "SUCCESS" | "FAILED" | "SKIPPED";
+  reasoning: string;
+  confidence: number;
+  createdAt: string;
 }
 
 export class AiBrainClientError extends Error {
@@ -190,4 +262,16 @@ export const aiBrainApi = {
     request<AgentDecisionDto[]>(`/ai/sessions/${encodeURIComponent(sessionId)}/decisions`),
   runtimeMetrics: (organizationId: string) =>
     request<RuntimeMetricsDto>(`/ai/runtime/metrics?${query({ organizationId })}`),
+  listWorkflows: (organizationId: string) =>
+    request<WorkflowExecutionDto[]>(`/ai/workflows?${query({ organizationId })}`),
+  listActions: (organizationId: string) =>
+    request<WorkflowActionDto[]>(`/ai/actions?${query({ organizationId })}`),
+  listFollowups: (organizationId: string) =>
+    request<ScheduledFollowupDto[]>(`/ai/followups?${query({ organizationId })}`),
+  completeFollowup: (id: string, organizationId: string) =>
+    request<ScheduledFollowupDto>(`/ai/followups/${encodeURIComponent(id)}/complete?${query({ organizationId })}`, {
+      method: "POST",
+    }),
+  listAudits: (organizationId: string) =>
+    request<ActionAuditDto[]>(`/ai/audits?${query({ organizationId })}`),
 };

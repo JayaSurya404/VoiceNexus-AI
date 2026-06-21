@@ -18,6 +18,7 @@ import { MemoryInjectionService } from "./memory-injection-service.js";
 import { ObjectionHandlerService } from "./objection-handler-service.js";
 import { PromptEngineService } from "./prompt-engine-service.js";
 import { ResponseGenerationService } from "./response-generation-service.js";
+import { WorkflowEngineService } from "./workflow-engine-service.js";
 
 export interface FinalTranscriptEvent {
   organizationId: string;
@@ -45,6 +46,7 @@ export class AgentRuntimeService {
     private readonly responseGeneration: ResponseGenerationService,
     private readonly summaryEngine: ConversationSummaryEngine,
     private readonly toolRouter: ToolRouter,
+    private readonly workflowEngine: WorkflowEngineService,
   ) {}
 
   async processTranscript(event: FinalTranscriptEvent): Promise<void> {
@@ -140,6 +142,17 @@ export class AgentRuntimeService {
       handoffRequired: handoff.shouldHandoff,
     });
     const followup = this.followupDecision.decide(event.text);
+    await this.workflowEngine.executeForTranscript({
+      organizationId: event.organizationId,
+      session: { ...session, aiConversationId: conversation.id },
+      conversationId: conversation.id,
+      leadId,
+      transcript: event.text,
+      qualification,
+      objection,
+      followup,
+      handoff,
+    });
     const response = await this.responseGeneration.generate({
       messages: this.promptEngine.build({ context, memory, persona, state, transcript }),
       tools: this.toolRouter.definitions(),

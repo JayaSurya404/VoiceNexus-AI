@@ -6,6 +6,10 @@ import type { AIMessage } from "../../../../domain/entities/ai-message.js";
 import type { ConversationState } from "../../../../domain/entities/conversation-state.js";
 import type { LeadQualification } from "../../../../domain/entities/lead-qualification.js";
 import type { ToolExecution } from "../../../../domain/entities/tool-execution.js";
+import type { ActionAudit } from "../../../../domain/entities/action-audit.js";
+import type { ScheduledFollowup } from "../../../../domain/entities/scheduled-followup.js";
+import type { WorkflowAction } from "../../../../domain/entities/workflow-action.js";
+import type { WorkflowExecution } from "../../../../domain/entities/workflow-execution.js";
 
 type Doc = Record<string, unknown> & { _id: { toString(): string } };
 
@@ -159,6 +163,84 @@ export function toAgentDecision(doc: Doc): AgentDecision {
     confidence: Number(doc.confidence),
     reasoning: String(doc.reasoning),
     metadata: (doc.metadata as Record<string, unknown>) ?? {},
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toWorkflowExecution(doc: Doc): WorkflowExecution {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    agentSessionId: id(doc.agentSessionId) ?? "",
+    conversationId: id(doc.conversationId),
+    leadId: id(doc.leadId),
+    trigger: doc.trigger as WorkflowExecution["trigger"],
+    status: doc.status as WorkflowExecution["status"],
+    plannedActions: (doc.plannedActions as WorkflowExecution["plannedActions"] | undefined) ?? [],
+    completedActions: Number(doc.completedActions),
+    failedActions: Number(doc.failedActions),
+    reasoning: String(doc.reasoning),
+    startedAt: date(doc.startedAt),
+    completedAt: doc.completedAt ? date(doc.completedAt) : null,
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toWorkflowAction(doc: Doc): WorkflowAction {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    workflowExecutionId: id(doc.workflowExecutionId) ?? "",
+    agentSessionId: id(doc.agentSessionId),
+    conversationId: id(doc.conversationId),
+    leadId: id(doc.leadId),
+    actionType: doc.actionType as WorkflowAction["actionType"],
+    toolName: String(doc.toolName),
+    input: (doc.input as Record<string, unknown>) ?? {},
+    output: (doc.output as Record<string, unknown>) ?? {},
+    status: doc.status as WorkflowAction["status"],
+    reasoning: String(doc.reasoning),
+    confidence: Number(doc.confidence),
+    error: doc.error ? String(doc.error) : null,
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toScheduledFollowup(doc: Doc): ScheduledFollowup {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    agentSessionId: id(doc.agentSessionId),
+    conversationId: id(doc.conversationId),
+    leadId: id(doc.leadId) ?? "",
+    assignedTo: id(doc.assignedTo),
+    followupDate: date(doc.followupDate),
+    reason: String(doc.reason),
+    priority: doc.priority as ScheduledFollowup["priority"],
+    status: doc.status as ScheduledFollowup["status"],
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+    completedAt: doc.completedAt ? date(doc.completedAt) : null,
+  };
+}
+
+export function toActionAudit(doc: Doc): ActionAudit {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    sessionId: id(doc.sessionId),
+    conversationId: id(doc.conversationId),
+    workflowExecutionId: id(doc.workflowExecutionId),
+    workflowActionId: id(doc.workflowActionId),
+    actionType: doc.actionType as ActionAudit["actionType"],
+    toolName: String(doc.toolName),
+    input: (doc.input as Record<string, unknown>) ?? {},
+    output: (doc.output as Record<string, unknown>) ?? {},
+    status: doc.status as ActionAudit["status"],
+    reasoning: String(doc.reasoning),
+    confidence: Number(doc.confidence),
     createdAt: date(doc.createdAt),
   };
 }

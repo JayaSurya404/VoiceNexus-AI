@@ -8,11 +8,15 @@ import {
   toAgentDecisionDto,
   toAgentPersonaDto,
   toAgentSessionDto,
+  toActionAuditDto,
   toConversationDto,
   toConversationStateDto,
   toMessageDto,
   toQualificationDto,
+  toScheduledFollowupDto,
   toToolExecutionDto,
+  toWorkflowActionDto,
+  toWorkflowExecutionDto,
 } from "./serializers.js";
 import type { AgentDecision } from "../domain/entities/agent-decision.js";
 import type { AgentSession } from "../domain/entities/agent-session.js";
@@ -106,6 +110,10 @@ async function handleRequest(container: Container, request: IncomingMessage, res
         container.repositories.qualifications.listByOrganization(organizationId),
         container.repositories.decisions.listByOrganization(organizationId, 200),
       ]);
+      const [actions, followups] = await Promise.all([
+        container.repositories.workflowActions.listByOrganization(organizationId),
+        container.repositories.followups.listByOrganization(organizationId),
+      ]);
       const activeSessions = sessions.filter((session: AgentSession) => session.status === "ACTIVE").length;
       const completedSessions = sessions.filter((session: AgentSession) => session.status === "COMPLETED").length;
       const handoffDecisions = decisions.filter((decision: AgentDecision) => decision.type === "HANDOFF").length;
@@ -113,7 +121,86 @@ async function handleRequest(container: Container, request: IncomingMessage, res
         ? sessions.reduce((total: number, session: AgentSession) => total + session.confidence, 0) / sessions.length
         : 0;
       const hotLeads = qualifications.filter((qualification: LeadQualification) => qualification.interestLevel === "HOT").length;
-      sendJson(response, 200, { data: { activeSessions, completedSessions, handoffDecisions, averageConfidence, hotLeads } });
+      const successfulActions = actions.filter((action) => action.status === "SUCCEEDED").length;
+      const actionSuccessRate = actions.length ? successfulActions / actions.length : 0;
+      const pendingFollowups = followups.filter((followup) => followup.status === "PENDING" || followup.status === "SCHEDULED").length;
+      sendJson(response, 200, {
+        data: { activeSessions, completedSessions, handoffDecisions, averageConfidence, hotLeads, actionSuccessRate, pendingFollowups },
+      });
+      return;
+    }
+
+    if ((url.pathname === "/ai/workflows" || url.pathname === "/ai/runtime/workflows") && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.workflows.listByOrganization(organizationId)).map(toWorkflowExecutionDto) });
+      return;
+    }
+
+    const workflowMatch = /^\/ai\/workflows\/([^/]+)$/.exec(url.pathname);
+    if (workflowMatch?.[1] && request.method === "GET") {
+      const workflow = await container.repositories.workflows.findById(workflowMatch[1]);
+      if (!workflow) throw AiBrainError.notFound("Workflow execution");
+      await authorize(container, token, workflow.organizationId);
+      sendJson(response, 200, { data: toWorkflowExecutionDto(workflow) });
+      return;
+    }
+
+    if ((url.pathname === "/ai/actions" || url.pathname === "/ai/runtime/actions") && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.workflowActions.listByOrganization(organizationId)).map(toWorkflowActionDto) });
+      return;
+    }
+
+    const actionMatch = /^\/ai\/actions\/([^/]+)$/.exec(url.pathname);
+    if (actionMatch?.[1] && request.method === "GET") {
+      const action = await container.repositories.workflowActions.findById(actionMatch[1]);
+      if (!action) throw AiBrainError.notFound("Workflow action");
+      await authorize(container, token, action.organizationId);
+      sendJson(response, 200, { data: toWorkflowActionDto(action) });
+      return;
+    }
+
+    if ((url.pathname === "/ai/followups" || url.pathname === "/ai/runtime/followups") && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.followups.listByOrganization(organizationId)).map(toScheduledFollowupDto) });
+      return;
+    }
+
+    const followupCompleteMatch = /^\/ai\/followups\/([^/]+)\/complete$/.exec(url.pathname);
+    if (followupCompleteMatch?.[1] && request.method === "POST") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const followup = await container.services.followupScheduler.complete(followupCompleteMatch[1], organizationId);
+      if (!followup) throw AiBrainError.notFound("Scheduled follow-up");
+      sendJson(response, 200, { data: toScheduledFollowupDto(followup) });
+      return;
+    }
+
+    const followupMatch = /^\/ai\/followups\/([^/]+)$/.exec(url.pathname);
+    if (followupMatch?.[1] && request.method === "GET") {
+      const followup = await container.repositories.followups.findById(followupMatch[1]);
+      if (!followup) throw AiBrainError.notFound("Scheduled follow-up");
+      await authorize(container, token, followup.organizationId);
+      sendJson(response, 200, { data: toScheduledFollowupDto(followup) });
+      return;
+    }
+
+    if (url.pathname === "/ai/audits" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.audits.listByOrganization(organizationId)).map(toActionAuditDto) });
+      return;
+    }
+
+    const auditMatch = /^\/ai\/audits\/([^/]+)$/.exec(url.pathname);
+    if (auditMatch?.[1] && request.method === "GET") {
+      const audit = await container.repositories.audits.findById(auditMatch[1]);
+      if (!audit) throw AiBrainError.notFound("Action audit");
+      await authorize(container, token, audit.organizationId);
+      sendJson(response, 200, { data: toActionAuditDto(audit) });
       return;
     }
 

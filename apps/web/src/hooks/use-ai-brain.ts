@@ -14,6 +14,10 @@ export const aiBrainKeys = {
   sessionState: (sessionId: string) => ["ai", "session-state", sessionId] as const,
   decisions: (sessionId: string) => ["ai", "decisions", sessionId] as const,
   metrics: (organizationId: string) => ["ai", "metrics", organizationId] as const,
+  workflows: (organizationId: string) => ["ai", "workflows", organizationId] as const,
+  actions: (organizationId: string) => ["ai", "actions", organizationId] as const,
+  followups: (organizationId: string) => ["ai", "followups", organizationId] as const,
+  audits: (organizationId: string) => ["ai", "audits", organizationId] as const,
 };
 
 export function useAiConversations(organizationId: string | null) {
@@ -93,5 +97,41 @@ export function useRuntimeMetrics(organizationId: string | null) {
     queryFn: () => aiBrainApi.runtimeMetrics(organizationId ?? ""),
     enabled: Boolean(organizationId),
     refetchInterval: 15_000,
+  });
+}
+
+export function useWorkflows(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.workflows(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listWorkflows(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useWorkflowActions(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.actions(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listActions(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useFollowups(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.followups(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listFollowups(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useActionAudits(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.audits(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listAudits(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 20_000,
   });
 }

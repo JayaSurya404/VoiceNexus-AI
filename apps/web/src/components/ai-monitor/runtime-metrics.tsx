@@ -8,10 +8,12 @@ export function RuntimeMetrics({ metrics }: Readonly<{ metrics: RuntimeMetricsDt
     ["Human handoffs", metrics?.handoffDecisions ?? 0],
     ["Avg confidence", `${Math.round((metrics?.averageConfidence ?? 0) * 100)}%`],
     ["Hot leads", metrics?.hotLeads ?? 0],
+    ["Action success", `${Math.round((metrics?.actionSuccessRate ?? 0) * 100)}%`],
+    ["Pending follow-ups", metrics?.pendingFollowups ?? 0],
   ];
 
   return (
-    <section className="grid gap-4 md:grid-cols-5">
+    <section className="grid gap-4 md:grid-cols-4 xl:grid-cols-7">
       {values.map(([label, value]) => (
         <Card key={String(label)}>
           <CardHeader className="pb-2">

@@ -4,6 +4,8 @@ const looseSchema = new Schema({}, { strict: false, timestamps: false });
 
 export const LeadModel = (mongoose.models.AiBrainLead ?? mongoose.model("AiBrainLead", looseSchema, "leads")) as mongoose.Model<any>;
 export const NoteModel = (mongoose.models.AiBrainNote ?? mongoose.model("AiBrainNote", looseSchema, "notes")) as mongoose.Model<any>;
+export const ContactModel =
+  (mongoose.models.AiBrainContact ?? mongoose.model("AiBrainContact", looseSchema, "contacts")) as mongoose.Model<any>;
 export const ActivityModel =
   (mongoose.models.AiBrainActivity ?? mongoose.model("AiBrainActivity", looseSchema, "activities")) as mongoose.Model<any>;
 export const CustomerMemoryModel =

@@ -57,6 +57,39 @@ export class ToolRouter {
         },
         required: ["timeframe", "reason"],
       }),
+      tool("createMemory", "Create durable customer memory from a conversation signal.", {
+        type: "object",
+        additionalProperties: false,
+        properties: { summary: { type: "string" } },
+        required: ["summary"],
+      }),
+      tool("updatePreference", "Update customer communication preferences.", {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          language: { type: "string" },
+          timezone: { type: "string" },
+          preferredContactTime: { type: "string" },
+          communicationStyle: { type: "string" },
+        },
+        required: [],
+      }),
+      tool("createTimelineEvent", "Create a customer timeline event.", {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          eventType: { type: "string" },
+          title: { type: "string" },
+          description: { type: "string" },
+        },
+        required: ["eventType", "title", "description"],
+      }),
+      tool("triggerHandoff", "Trigger human handoff by recording a handoff timeline event.", {
+        type: "object",
+        additionalProperties: false,
+        properties: { reason: { type: "string" } },
+        required: ["reason"],
+      }),
     ];
   }
 
@@ -153,6 +186,52 @@ export class ToolRouter {
           createdAt: new Date(),
         });
         return { activityId: activity._id.toString(), scheduled: true };
+      }
+      case "createMemory": {
+        const memory = await CustomerMemoryModel.create({
+          organizationId,
+          leadId,
+          summary: String(input.summary ?? ""),
+          relationshipScore: 50,
+          lastInteractionAt: new Date(),
+          memoryTags: ["AI_TOOL"],
+        });
+        return { memoryId: memory._id.toString() };
+      }
+      case "updatePreference": {
+        return {
+          preference: serialize(
+            await import("../infrastructure/database/mongoose/models/external-models.js").then(({ CustomerPreferenceModel }) =>
+              CustomerPreferenceModel.findOneAndUpdate({ organizationId, leadId }, input, { new: true, upsert: true }).lean(),
+            ),
+          ),
+        };
+      }
+      case "createTimelineEvent": {
+        const event = await TimelineEventModel.create({
+          organizationId,
+          leadId,
+          eventType: typeof input.eventType === "string" ? input.eventType : "AI_ACTION",
+          title: typeof input.title === "string" ? input.title : "AI action",
+          description: typeof input.description === "string" ? input.description : "",
+          metadata: {},
+          createdBy: null,
+          createdAt: new Date(),
+        });
+        return { timelineEventId: event._id.toString() };
+      }
+      case "triggerHandoff": {
+        const event = await TimelineEventModel.create({
+          organizationId,
+          leadId,
+          eventType: "HUMAN_HANDOFF",
+          title: "Human handoff requested",
+          description: typeof input.reason === "string" ? input.reason : "AI requested human handoff.",
+          metadata: {},
+          createdBy: null,
+          createdAt: new Date(),
+        });
+        return { timelineEventId: event._id.toString(), handoff: true };
       }
       default:
         return { skipped: true, reason: `Unsupported tool ${name}` };

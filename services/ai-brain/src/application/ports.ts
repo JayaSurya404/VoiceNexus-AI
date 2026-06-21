@@ -6,6 +6,10 @@ import type { AIMessage } from "../domain/entities/ai-message.js";
 import type { ConversationState, ConversationStateName } from "../domain/entities/conversation-state.js";
 import type { LeadQualification } from "../domain/entities/lead-qualification.js";
 import type { ToolExecution } from "../domain/entities/tool-execution.js";
+import type { ActionAudit } from "../domain/entities/action-audit.js";
+import type { ScheduledFollowup } from "../domain/entities/scheduled-followup.js";
+import type { WorkflowAction, WorkflowActionType } from "../domain/entities/workflow-action.js";
+import type { WorkflowExecution } from "../domain/entities/workflow-execution.js";
 
 export interface AIConversationRepository {
   create(input: Omit<AIConversation, "id" | "createdAt" | "updatedAt">): Promise<AIConversation>;
@@ -64,12 +68,59 @@ export interface OrganizationAccessRepository {
   userHasAccess(userId: string, organizationId: string): Promise<boolean>;
 }
 
+export interface WorkflowExecutionRepository {
+  create(input: Omit<WorkflowExecution, "id" | "createdAt" | "updatedAt">): Promise<WorkflowExecution>;
+  findById(id: string): Promise<WorkflowExecution | null>;
+  listByOrganization(organizationId: string): Promise<WorkflowExecution[]>;
+  update(id: string, input: Partial<Pick<WorkflowExecution, "status" | "completedActions" | "failedActions" | "completedAt">>): Promise<WorkflowExecution | null>;
+}
+
+export interface WorkflowActionRepository {
+  create(input: Omit<WorkflowAction, "id" | "createdAt" | "updatedAt">): Promise<WorkflowAction>;
+  findById(id: string): Promise<WorkflowAction | null>;
+  listByOrganization(organizationId: string): Promise<WorkflowAction[]>;
+  listByWorkflow(workflowExecutionId: string): Promise<WorkflowAction[]>;
+  update(id: string, input: Partial<Pick<WorkflowAction, "status" | "output" | "error">>): Promise<WorkflowAction | null>;
+}
+
+export interface ScheduledFollowupRepository {
+  create(input: Omit<ScheduledFollowup, "id" | "createdAt" | "updatedAt" | "completedAt">): Promise<ScheduledFollowup>;
+  complete(id: string, organizationId: string): Promise<ScheduledFollowup | null>;
+  findById(id: string): Promise<ScheduledFollowup | null>;
+  listByOrganization(organizationId: string): Promise<ScheduledFollowup[]>;
+}
+
+export interface ActionAuditRepository {
+  create(input: Omit<ActionAudit, "id">): Promise<ActionAudit>;
+  findById(id: string): Promise<ActionAudit | null>;
+  listByOrganization(organizationId: string): Promise<ActionAudit[]>;
+}
+
+export interface ExternalActionRepository {
+  lookupLead(input: TenantLeadInput): Promise<Record<string, unknown> | null>;
+  updateLead(input: TenantLeadInput & { update: Record<string, unknown> }): Promise<Record<string, unknown> | null>;
+  updateContact(input: TenantLeadInput & { update: Record<string, unknown> }): Promise<Record<string, unknown> | null>;
+  createNote(input: TenantLeadInput & { content: string }): Promise<Record<string, unknown>>;
+  createActivity(input: TenantLeadInput & { type: string; title: string; description: string }): Promise<Record<string, unknown>>;
+  lookupMemory(input: TenantLeadInput): Promise<Record<string, unknown>>;
+  createMemory(input: TenantLeadInput & { summary: string; source: string }): Promise<Record<string, unknown>>;
+  updatePreference(input: TenantLeadInput & { update: Record<string, unknown> }): Promise<Record<string, unknown> | null>;
+  createTimelineEvent(input: TenantLeadInput & { eventType: string; title: string; description: string; metadata?: Record<string, unknown> }): Promise<Record<string, unknown>>;
+}
+
+export interface TenantLeadInput {
+  organizationId: string;
+  leadId: string;
+}
+
 export interface RuntimeMetrics {
   activeSessions: number;
   completedSessions: number;
   handoffDecisions: number;
   averageConfidence: number;
   hotLeads: number;
+  actionSuccessRate?: number;
+  pendingFollowups?: number;
 }
 
 export interface AgentPersonaSeed {
@@ -100,4 +151,13 @@ export interface SessionUpdateInput {
   lastTranscriptAt?: Date | null;
   confidence?: number;
   aiConversationId?: string | null;
+}
+
+export interface PlannedWorkflowAction {
+  actionType: WorkflowActionType;
+  toolName: string;
+  input: Record<string, unknown>;
+  reasoning: string;
+  confidence: number;
+  condition?: string;
 }

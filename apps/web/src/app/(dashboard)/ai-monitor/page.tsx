@@ -7,6 +7,13 @@ import { ConversationFeed } from "@/components/ai-monitor/conversation-feed";
 import { DecisionTimeline } from "@/components/ai-monitor/decision-timeline";
 import { RuntimeMetrics } from "@/components/ai-monitor/runtime-metrics";
 import { StateAndQualification } from "@/components/ai-monitor/state-and-qualification";
+import {
+  ActionHistoryPanel,
+  AuditTrailPanel,
+  FollowupQueuePanel,
+  HandoffEventsPanel,
+  WorkflowExecutionsPanel,
+} from "@/components/ai-monitor/workflow-action-panels";
 import { CrmEmptyState } from "@/components/crm/crm-empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,8 +25,12 @@ import {
   useAiMessages,
   useAiQualifications,
   useAiTools,
+  useActionAudits,
+  useFollowups,
   useConversationState,
   useRuntimeMetrics,
+  useWorkflowActions,
+  useWorkflows,
 } from "@/hooks/use-ai-brain";
 import { useAuthStore } from "@/store/auth-store";
 
@@ -31,6 +42,10 @@ export default function AiMonitorPage() {
   const qualificationsQuery = useAiQualifications(activeOrganizationId);
   const personasQuery = useAgentPersonas(activeOrganizationId);
   const metricsQuery = useRuntimeMetrics(activeOrganizationId);
+  const workflowsQuery = useWorkflows(activeOrganizationId);
+  const workflowActionsQuery = useWorkflowActions(activeOrganizationId);
+  const followupsQuery = useFollowups(activeOrganizationId);
+  const auditsQuery = useActionAudits(activeOrganizationId);
   const sessions = useMemo(() => sessionsQuery.data ?? [], [sessionsQuery.data]);
 
   useEffect(() => {
@@ -96,6 +111,17 @@ export default function AiMonitorPage() {
       )}
 
       <StateAndQualification qualification={selectedQualification} state={stateQuery.data} />
+
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <WorkflowExecutionsPanel workflows={workflowsQuery.data ?? []} />
+        <ActionHistoryPanel actions={workflowActionsQuery.data ?? []} />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <FollowupQueuePanel followups={followupsQuery.data ?? []} />
+        <HandoffEventsPanel audits={auditsQuery.data ?? []} />
+        <AuditTrailPanel audits={auditsQuery.data ?? []} />
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <ConversationFeed conversation={selectedConversation} messages={messagesQuery.data ?? []} />
