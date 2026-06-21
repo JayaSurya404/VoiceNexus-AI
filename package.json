@@ -15,6 +15,7 @@
     "dev:api": "pnpm --filter @voicenexus/api dev",
     "dev:realtime": "pnpm --filter @voicenexus/realtime-gateway dev",
     "dev:ai": "pnpm --filter @voicenexus/ai-brain dev",
+    "dev:worker": "pnpm --filter @voicenexus/automation-worker dev",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "lint": "turbo lint",
