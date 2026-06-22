@@ -10,8 +10,11 @@ import {
   toAgentSessionDto,
   toAgentAvailabilityDto,
   toActionAuditDto,
+  toAgentPerformanceDto,
   toConversationDto,
+  toConversationAnalyticsDto,
   toConversationStateDto,
+  toCallOutcomeDto,
   toHumanAgentDto,
   toHumanAgentSessionDto,
   toLiveTakeoverDto,
@@ -20,10 +23,13 @@ import {
   toQualificationDto,
   toQueueDto,
   toQueueMemberDto,
+  toQueueAnalyticsDto,
   toQueueSessionDto,
+  toQualityScoreDto,
   toRoutingDecisionDto,
   toRoutingRuleDto,
   toScheduledFollowupDto,
+  toSentimentAnalysisDto,
   toSupervisorSessionDto,
   toToolExecutionDto,
   toWhisperMessageDto,
@@ -169,6 +175,69 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       const organizationId = requiredQuery(url, "organizationId");
       await authorize(container, token, organizationId);
       sendJson(response, 200, { data: (await container.repositories.humanAgents.listByOrganization(organizationId)).map(toHumanAgentDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/overview" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: await container.services.analyticsEngine.overview(organizationId) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/conversations" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      await container.services.analyticsEngine.refreshOrganization(organizationId);
+      sendJson(response, 200, { data: (await container.repositories.conversationAnalytics.listByOrganization(organizationId)).map(toConversationAnalyticsDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/agents" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      await container.services.analyticsEngine.refreshOrganization(organizationId);
+      sendJson(response, 200, { data: (await container.repositories.agentPerformances.listByOrganization(organizationId)).map(toAgentPerformanceDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/queues" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      await container.services.analyticsEngine.refreshOrganization(organizationId);
+      sendJson(response, 200, { data: (await container.repositories.queueAnalytics.listByOrganization(organizationId)).map(toQueueAnalyticsDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/conversions" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      await container.services.analyticsEngine.refreshOrganization(organizationId);
+      sendJson(response, 200, { data: await container.services.conversionAnalytics.summarize(organizationId) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/outcomes" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      await container.services.analyticsEngine.refreshOrganization(organizationId);
+      sendJson(response, 200, { data: (await container.repositories.callOutcomes.listByOrganization(organizationId)).map(toCallOutcomeDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/sentiment" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      await container.services.analyticsEngine.refreshOrganization(organizationId);
+      sendJson(response, 200, { data: (await container.repositories.sentimentAnalyses.listByOrganization(organizationId)).map(toSentimentAnalysisDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/quality" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      await container.services.analyticsEngine.refreshOrganization(organizationId);
+      sendJson(response, 200, { data: (await container.repositories.qualityScores.listByOrganization(organizationId)).map(toQualityScoreDto) });
       return;
     }
 

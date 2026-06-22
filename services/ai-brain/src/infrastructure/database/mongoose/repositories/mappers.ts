@@ -22,6 +22,12 @@ import type { QueueMember } from "../../../../domain/entities/queue-member.js";
 import type { QueueSession } from "../../../../domain/entities/queue-session.js";
 import type { RoutingDecision } from "../../../../domain/entities/routing-decision.js";
 import type { RoutingRule } from "../../../../domain/entities/routing-rule.js";
+import type { AgentPerformance } from "../../../../domain/entities/agent-performance.js";
+import type { CallOutcome } from "../../../../domain/entities/call-outcome.js";
+import type { ConversationAnalytics } from "../../../../domain/entities/conversation-analytics.js";
+import type { QualityScore } from "../../../../domain/entities/quality-score.js";
+import type { QueueAnalytics } from "../../../../domain/entities/queue-analytics.js";
+import type { SentimentAnalysis } from "../../../../domain/entities/sentiment-analysis.js";
 
 type Doc = Record<string, unknown> & { _id: { toString(): string } };
 
@@ -444,6 +450,113 @@ export function toAgentSkill(doc: Doc): AgentSkill {
     level: Number(doc.level),
     certified: Boolean(doc.certified),
     active: Boolean(doc.active),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toConversationAnalytics(doc: Doc): ConversationAnalytics {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    conversationId: id(doc.conversationId) ?? "",
+    agentSessionId: id(doc.agentSessionId),
+    leadId: id(doc.leadId),
+    callId: id(doc.callId),
+    aiConfidence: Number(doc.aiConfidence),
+    sentiment: doc.sentiment as ConversationAnalytics["sentiment"],
+    sentimentScore: Number(doc.sentimentScore),
+    qualityScore: Number(doc.qualityScore),
+    outcome: (doc.outcome as ConversationAnalytics["outcome"]) ?? null,
+    leadScore: Number(doc.leadScore),
+    qualificationLevel: doc.qualificationLevel as ConversationAnalytics["qualificationLevel"],
+    workflowSuccessRate: Number(doc.workflowSuccessRate),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toAgentPerformance(doc: Doc): AgentPerformance {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    agentId: id(doc.agentId) ?? "",
+    callsHandled: Number(doc.callsHandled),
+    averageDuration: Number(doc.averageDuration),
+    averageQaScore: Number(doc.averageQaScore),
+    averageSentiment: Number(doc.averageSentiment),
+    transfers: Number(doc.transfers),
+    conversions: Number(doc.conversions),
+    leadQuality: Number(doc.leadQuality),
+    computedAt: date(doc.computedAt),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toQueueAnalytics(doc: Doc): QueueAnalytics {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    queueId: id(doc.queueId) ?? "",
+    waitTime: Number(doc.waitTime),
+    abandonmentRate: Number(doc.abandonmentRate),
+    transferRate: Number(doc.transferRate),
+    escalationRate: Number(doc.escalationRate),
+    resolutionRate: Number(doc.resolutionRate),
+    sessionsHandled: Number(doc.sessionsHandled),
+    computedAt: date(doc.computedAt),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toCallOutcome(doc: Doc): CallOutcome {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    conversationId: id(doc.conversationId),
+    agentSessionId: id(doc.agentSessionId),
+    leadId: id(doc.leadId),
+    callId: id(doc.callId),
+    outcome: doc.outcome as CallOutcome["outcome"],
+    confidence: Number(doc.confidence),
+    reasoning: String(doc.reasoning),
+    occurredAt: date(doc.occurredAt),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toQualityScore(doc: Doc): QualityScore {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    conversationId: id(doc.conversationId) ?? "",
+    agentSessionId: id(doc.agentSessionId),
+    greetingQuality: Number(doc.greetingQuality),
+    discoveryQuality: Number(doc.discoveryQuality),
+    qualificationQuality: Number(doc.qualificationQuality),
+    objectionHandling: Number(doc.objectionHandling),
+    complianceScore: Number(doc.complianceScore),
+    closingQuality: Number(doc.closingQuality),
+    overallScore: Number(doc.overallScore),
+    reasoning: String(doc.reasoning),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toSentimentAnalysis(doc: Doc): SentimentAnalysis {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    conversationId: id(doc.conversationId) ?? "",
+    agentSessionId: id(doc.agentSessionId),
+    sentiment: doc.sentiment as SentimentAnalysis["sentiment"],
+    score: Number(doc.score),
+    confidence: Number(doc.confidence),
+    reasoning: String(doc.reasoning),
     createdAt: date(doc.createdAt),
     updatedAt: date(doc.updatedAt),
   };

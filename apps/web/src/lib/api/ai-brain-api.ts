@@ -316,6 +316,122 @@ export interface QueueHealthDto {
   priority: number;
 }
 
+export interface AnalyticsOverviewDto {
+  aiPerformance: number;
+  humanPerformance: number;
+  queuePerformance: number;
+  leadConversionRate: number;
+  qualificationAccuracy: number;
+  callOutcomeRate: number;
+  agentProductivity: number;
+  workflowEffectiveness: number;
+}
+
+export interface ConversationAnalyticsDto {
+  id: string;
+  organizationId: string;
+  conversationId: string;
+  agentSessionId: string | null;
+  leadId: string | null;
+  callId: string | null;
+  aiConfidence: number;
+  sentiment: "POSITIVE" | "NEUTRAL" | "NEGATIVE";
+  sentimentScore: number;
+  qualityScore: number;
+  outcome: CallOutcomeDto["outcome"] | null;
+  leadScore: number;
+  qualificationLevel: "HOT" | "WARM" | "COLD" | "UNKNOWN";
+  workflowSuccessRate: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentPerformanceDto {
+  id: string;
+  organizationId: string;
+  agentId: string;
+  callsHandled: number;
+  averageDuration: number;
+  averageQaScore: number;
+  averageSentiment: number;
+  transfers: number;
+  conversions: number;
+  leadQuality: number;
+  computedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QueueAnalyticsDto {
+  id: string;
+  organizationId: string;
+  queueId: string;
+  waitTime: number;
+  abandonmentRate: number;
+  transferRate: number;
+  escalationRate: number;
+  resolutionRate: number;
+  sessionsHandled: number;
+  computedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversionAnalyticsDto {
+  hotLeads: number;
+  warmLeads: number;
+  coldLeads: number;
+  hotConversionRate: number;
+  warmConversionRate: number;
+  coldConversionRate: number;
+  overallConversionRate: number;
+}
+
+export interface CallOutcomeDto {
+  id: string;
+  organizationId: string;
+  conversationId: string | null;
+  agentSessionId: string | null;
+  leadId: string | null;
+  callId: string | null;
+  outcome: "SALE" | "BOOKED_MEETING" | "FOLLOW_UP" | "TRANSFERRED" | "VOICEMAIL" | "NO_INTEREST" | "FAILED";
+  confidence: number;
+  reasoning: string;
+  occurredAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SentimentAnalysisDto {
+  id: string;
+  organizationId: string;
+  conversationId: string;
+  agentSessionId: string | null;
+  sentiment: "POSITIVE" | "NEUTRAL" | "NEGATIVE";
+  score: number;
+  confidence: number;
+  reasoning: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QualityScoreDto {
+  id: string;
+  organizationId: string;
+  conversationId: string;
+  agentSessionId: string | null;
+  greetingQuality: number;
+  discoveryQuality: number;
+  qualificationQuality: number;
+  objectionHandling: number;
+  complianceScore: number;
+  closingQuality: number;
+  overallScore: number;
+  reasoning: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface HumanAgentSessionDto {
   id: string;
   organizationId: string;
@@ -464,6 +580,22 @@ export const aiBrainApi = {
     request<RoutingDecisionDto[]>(`/routing/decisions?${query({ organizationId })}`),
   queueHealth: (organizationId: string) =>
     request<QueueHealthDto[]>(`/supervisor/queue-health?${query({ organizationId })}`),
+  analyticsOverview: (organizationId: string) =>
+    request<AnalyticsOverviewDto>(`/analytics/overview?${query({ organizationId })}`),
+  analyticsConversations: (organizationId: string) =>
+    request<ConversationAnalyticsDto[]>(`/analytics/conversations?${query({ organizationId })}`),
+  analyticsAgents: (organizationId: string) =>
+    request<AgentPerformanceDto[]>(`/analytics/agents?${query({ organizationId })}`),
+  analyticsQueues: (organizationId: string) =>
+    request<QueueAnalyticsDto[]>(`/analytics/queues?${query({ organizationId })}`),
+  analyticsConversions: (organizationId: string) =>
+    request<ConversionAnalyticsDto>(`/analytics/conversions?${query({ organizationId })}`),
+  analyticsOutcomes: (organizationId: string) =>
+    request<CallOutcomeDto[]>(`/analytics/outcomes?${query({ organizationId })}`),
+  analyticsSentiment: (organizationId: string) =>
+    request<SentimentAnalysisDto[]>(`/analytics/sentiment?${query({ organizationId })}`),
+  analyticsQuality: (organizationId: string) =>
+    request<QualityScoreDto[]>(`/analytics/quality?${query({ organizationId })}`),
   updateAvailability: (
     agentId: string,
     input: { organizationId: string; status: HumanAgentDto["status"]; statusReason?: string | null; capacity?: number },

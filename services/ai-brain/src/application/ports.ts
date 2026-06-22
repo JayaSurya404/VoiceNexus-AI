@@ -22,6 +22,12 @@ import type { QueueMember } from "../domain/entities/queue-member.js";
 import type { QueueSession } from "../domain/entities/queue-session.js";
 import type { RoutingDecision } from "../domain/entities/routing-decision.js";
 import type { RoutingRule } from "../domain/entities/routing-rule.js";
+import type { AgentPerformance } from "../domain/entities/agent-performance.js";
+import type { CallOutcome } from "../domain/entities/call-outcome.js";
+import type { ConversationAnalytics } from "../domain/entities/conversation-analytics.js";
+import type { QualityScore } from "../domain/entities/quality-score.js";
+import type { QueueAnalytics } from "../domain/entities/queue-analytics.js";
+import type { SentimentAnalysis } from "../domain/entities/sentiment-analysis.js";
 
 export interface AIConversationRepository {
   create(input: Omit<AIConversation, "id" | "createdAt" | "updatedAt">): Promise<AIConversation>;
@@ -192,6 +198,36 @@ export interface AgentSkillRepository {
   update(id: string, organizationId: string, input: Partial<Pick<AgentSkill, "skill" | "level" | "certified" | "active">>): Promise<AgentSkill | null>;
 }
 
+export interface ConversationAnalyticsRepository {
+  listByOrganization(organizationId: string): Promise<ConversationAnalytics[]>;
+  upsert(input: Omit<ConversationAnalytics, "id" | "createdAt" | "updatedAt">): Promise<ConversationAnalytics>;
+}
+
+export interface AgentPerformanceRepository {
+  listByOrganization(organizationId: string): Promise<AgentPerformance[]>;
+  upsert(input: Omit<AgentPerformance, "id" | "createdAt" | "updatedAt">): Promise<AgentPerformance>;
+}
+
+export interface QueueAnalyticsRepository {
+  listByOrganization(organizationId: string): Promise<QueueAnalytics[]>;
+  upsert(input: Omit<QueueAnalytics, "id" | "createdAt" | "updatedAt">): Promise<QueueAnalytics>;
+}
+
+export interface CallOutcomeRepository {
+  listByOrganization(organizationId: string): Promise<CallOutcome[]>;
+  upsert(input: Omit<CallOutcome, "id" | "createdAt" | "updatedAt">): Promise<CallOutcome>;
+}
+
+export interface QualityScoreRepository {
+  listByOrganization(organizationId: string): Promise<QualityScore[]>;
+  upsert(input: Omit<QualityScore, "id" | "createdAt" | "updatedAt">): Promise<QualityScore>;
+}
+
+export interface SentimentAnalysisRepository {
+  listByOrganization(organizationId: string): Promise<SentimentAnalysis[]>;
+  upsert(input: Omit<SentimentAnalysis, "id" | "createdAt" | "updatedAt">): Promise<SentimentAnalysis>;
+}
+
 export interface ExternalActionRepository {
   lookupLead(input: TenantLeadInput): Promise<Record<string, unknown> | null>;
   updateLead(input: TenantLeadInput & { update: Record<string, unknown> }): Promise<Record<string, unknown> | null>;
@@ -288,4 +324,25 @@ export interface QueueHealth {
   longestWaitTime: number;
   activeAgents: number;
   priority: number;
+}
+
+export interface AnalyticsOverview {
+  aiPerformance: number;
+  humanPerformance: number;
+  queuePerformance: number;
+  leadConversionRate: number;
+  qualificationAccuracy: number;
+  callOutcomeRate: number;
+  agentProductivity: number;
+  workflowEffectiveness: number;
+}
+
+export interface ConversionAnalytics {
+  hotLeads: number;
+  warmLeads: number;
+  coldLeads: number;
+  hotConversionRate: number;
+  warmConversionRate: number;
+  coldConversionRate: number;
+  overallConversionRate: number;
 }

@@ -1,12 +1,16 @@
 import { AgentPersonaService } from "./application/services/agent-persona-service.js";
 import { AgentAssistService } from "./application/services/agent-assist-service.js";
+import { AgentPerformanceService } from "./application/services/agent-performance-service.js";
 import { AgentManagementService } from "./application/services/agent-management-service.js";
 import { AgentRuntimeService } from "./application/services/agent-runtime-service.js";
 import { ActionExecutionService } from "./application/services/action-execution-service.js";
+import { AnalyticsEngineService } from "./application/services/analytics-engine-service.js";
 import { AuditService } from "./application/services/audit-service.js";
+import { CallScoringService } from "./application/services/call-scoring-service.js";
 import { ContextBuilder } from "./application/services/context-builder.js";
 import { ConversationStateService } from "./application/services/conversation-state-service.js";
 import { ConversationSummaryEngine } from "./application/services/conversation-summary-engine.js";
+import { ConversionAnalyticsService } from "./application/services/conversion-analytics-service.js";
 import { CrmActionService } from "./application/services/crm-action-service.js";
 import { FollowupDecisionService } from "./application/services/followup-decision-service.js";
 import { FollowupSchedulerService } from "./application/services/followup-scheduler-service.js";
@@ -18,8 +22,11 @@ import { MemoryInjectionService } from "./application/services/memory-injection-
 import { MemoryActionService } from "./application/services/memory-action-service.js";
 import { ObjectionHandlerService } from "./application/services/objection-handler-service.js";
 import { PromptEngineService } from "./application/services/prompt-engine-service.js";
+import { QualityAssuranceService } from "./application/services/quality-assurance-service.js";
+import { QueuePerformanceService } from "./application/services/queue-performance-service.js";
 import { ResponseGenerationService } from "./application/services/response-generation-service.js";
 import { RoutingEngineService } from "./application/services/routing-engine-service.js";
+import { SentimentAnalysisService } from "./application/services/sentiment-analysis-service.js";
 import { SupervisorConsoleService } from "./application/services/supervisor-console-service.js";
 import { TimelineActionService } from "./application/services/timeline-action-service.js";
 import { WhisperService } from "./application/services/whisper-service.js";
@@ -60,6 +67,14 @@ import {
   MongoRoutingDecisionRepository,
   MongoRoutingRuleRepository,
 } from "./infrastructure/database/mongoose/repositories/routing-repositories.js";
+import {
+  MongoAgentPerformanceRepository,
+  MongoCallOutcomeRepository,
+  MongoConversationAnalyticsRepository,
+  MongoQualityScoreRepository,
+  MongoQueueAnalyticsRepository,
+  MongoSentimentAnalysisRepository,
+} from "./infrastructure/database/mongoose/repositories/analytics-repositories.js";
 import { TranscriptFinalSubscriber } from "./infrastructure/redis/transcript-final-subscriber.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
 import { AccessTokenService } from "./security/access-token-service.js";
@@ -91,6 +106,12 @@ export function createContainer() {
   const routingDecisions = new MongoRoutingDecisionRepository();
   const queueSessions = new MongoQueueSessionRepository();
   const agentSkills = new MongoAgentSkillRepository();
+  const conversationAnalytics = new MongoConversationAnalyticsRepository();
+  const agentPerformances = new MongoAgentPerformanceRepository();
+  const queueAnalytics = new MongoQueueAnalyticsRepository();
+  const callOutcomes = new MongoCallOutcomeRepository();
+  const qualityScores = new MongoQualityScoreRepository();
+  const sentimentAnalyses = new MongoSentimentAnalysisRepository();
   const organizationAccess = new MongoOrganizationAccessRepository();
 
   const provider = new OpenAIProvider({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
@@ -123,6 +144,36 @@ export function createContainer() {
     humanAgents,
     agentAvailability,
     humanConsoleEvents,
+  );
+  const sentimentAnalysis = new SentimentAnalysisService(sentimentAnalyses);
+  const qualityAssurance = new QualityAssuranceService(qualityScores);
+  const callScoring = new CallScoringService(callOutcomes);
+  const agentPerformance = new AgentPerformanceService(
+    agentPerformances,
+    humanAgents,
+    humanAgentSessions,
+    queueSessions,
+    qualifications,
+  );
+  const queuePerformance = new QueuePerformanceService(queueAnalytics, queues, queueSessions);
+  const conversionAnalytics = new ConversionAnalyticsService(qualifications, callOutcomes);
+  const analyticsEngine = new AnalyticsEngineService(
+    conversations,
+    sessions,
+    decisions,
+    qualifications,
+    workflows,
+    conversationAnalytics,
+    agentPerformances,
+    queueAnalytics,
+    qualityScores,
+    sentimentAnalyses,
+    sentimentAnalysis,
+    qualityAssurance,
+    callScoring,
+    agentPerformance,
+    queuePerformance,
+    conversionAnalytics,
   );
   const supervisorConsole = new SupervisorConsoleService(
     humanAgents,
@@ -204,15 +255,25 @@ export function createContainer() {
       routingDecisions,
       queueSessions,
       agentSkills,
+      conversationAnalytics,
+      agentPerformances,
+      queueAnalytics,
+      callOutcomes,
+      qualityScores,
+      sentimentAnalyses,
       organizationAccess,
     },
     services: {
       accessTokenService,
       actionExecution,
       agentAssist,
+      agentPerformance,
       agentManagement,
+      analyticsEngine,
       auditService,
+      callScoring,
       contextBuilder,
+      conversionAnalytics,
       crmActionService,
       followupDecision,
       followupScheduler,
@@ -224,9 +285,12 @@ export function createContainer() {
       objectionHandler,
       personaService,
       promptEngine,
+      qualityAssurance,
+      queuePerformance,
       qualificationRuntime,
       responseGeneration,
       routingEngine,
+      sentimentAnalysis,
       supervisorConsole,
       runtime,
       stateService,

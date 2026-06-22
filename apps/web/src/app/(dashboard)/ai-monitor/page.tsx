@@ -3,6 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { AgentSessionsTable } from "@/components/ai-monitor/agent-sessions-table";
+import {
+  AgentPerformanceAnalyticsPanel,
+  AnalyticsDashboard,
+  CallOutcomesPanel,
+  ConversionFunnelPanel,
+  QualityDashboard,
+  QueueAnalyticsPanel,
+  SentimentTrendsPanel,
+} from "@/components/ai-monitor/analytics-panels";
 import { ConversationFeed } from "@/components/ai-monitor/conversation-feed";
 import { DecisionTimeline } from "@/components/ai-monitor/decision-timeline";
 import {
@@ -38,21 +47,29 @@ import {
   useAgentAssist,
   useAgentAvailability,
   useAgentSkills,
+  useAgentPerformanceAnalytics,
+  useAnalyticsOverview,
   useAiConversations,
   useAiMessages,
   useAiQualifications,
   useAiTools,
   useActionAudits,
+  useCallOutcomes,
+  useConversionAnalytics,
   useFollowups,
   useConversationState,
+  useConversationAnalytics,
   useHumanAgents,
   useHumanConsoleActions,
   useLiveTakeovers,
   useQueueHealth,
+  useQueueAnalytics,
   useQueueSessions,
   useQueues,
+  useQualityScores,
   useRoutingDecisions,
   useRuntimeMetrics,
+  useSentimentAnalytics,
   useSupervisorOverview,
   useSupervisorSessions,
   useWorkflowActions,
@@ -79,6 +96,14 @@ export default function AiMonitorPage() {
   const qualificationsQuery = useAiQualifications(activeOrganizationId);
   const personasQuery = useAgentPersonas(activeOrganizationId);
   const metricsQuery = useRuntimeMetrics(activeOrganizationId);
+  const analyticsOverviewQuery = useAnalyticsOverview(activeOrganizationId);
+  const conversationAnalyticsQuery = useConversationAnalytics(activeOrganizationId);
+  const agentPerformanceQuery = useAgentPerformanceAnalytics(activeOrganizationId);
+  const analyticsQueuesQuery = useQueueAnalytics(activeOrganizationId);
+  const conversionAnalyticsQuery = useConversionAnalytics(activeOrganizationId);
+  const callOutcomesQuery = useCallOutcomes(activeOrganizationId);
+  const sentimentAnalyticsQuery = useSentimentAnalytics(activeOrganizationId);
+  const qualityScoresQuery = useQualityScores(activeOrganizationId);
   const workflowsQuery = useWorkflows(activeOrganizationId);
   const workflowActionsQuery = useWorkflowActions(activeOrganizationId);
   const followupsQuery = useFollowups(activeOrganizationId);
@@ -159,6 +184,7 @@ export default function AiMonitorPage() {
       </section>
 
       <RuntimeMetrics metrics={metricsQuery.data} />
+      <AnalyticsDashboard overview={analyticsOverviewQuery.data} />
       <SupervisorOverviewPanel overview={supervisorOverviewQuery.data} />
       <QueueDashboardPanel health={queueHealthQuery.data ?? []} queues={queuesQuery.data ?? []} />
       <RealtimeRuntimeMetricsPanel metrics={realtimeMetricsQuery.data} />
@@ -195,6 +221,18 @@ export default function AiMonitorPage() {
       <div className="grid gap-6 xl:grid-cols-2">
         <RoutingDecisionPanel decisions={routingDecisionsQuery.data ?? []} />
         <EscalationTimelinePanel queues={queuesQuery.data ?? []} sessions={queueSessionsQuery.data ?? []} />
+      </div>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <QualityDashboard qualityScores={qualityScoresQuery.data ?? []} />
+        <SentimentTrendsPanel sentiments={sentimentAnalyticsQuery.data ?? []} />
+      </div>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <AgentPerformanceAnalyticsPanel agents={humanAgents} performance={agentPerformanceQuery.data ?? []} />
+        <QueueAnalyticsPanel analytics={analyticsQueuesQuery.data ?? []} queues={queuesQuery.data ?? []} />
+      </div>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <ConversionFunnelPanel conversions={conversionAnalyticsQuery.data} />
+        <CallOutcomesPanel outcomes={callOutcomesQuery.data ?? []} />
       </div>
       <TakeoverPanel
         onEnd={(id) => humanConsoleActions.endTakeover.mutate(id)}
@@ -260,6 +298,25 @@ export default function AiMonitorPage() {
         <ConversationFeed conversation={selectedConversation} messages={messagesQuery.data ?? []} />
         <DecisionTimeline decisions={decisionsQuery.data ?? []} tools={toolsQuery.data ?? []} />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Conversation analytics</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {(conversationAnalyticsQuery.data ?? []).slice(0, 8).map((item) => (
+            <div className="rounded-2xl border p-4" key={item.id}>
+              <p className="font-medium">Conversation {item.conversationId.slice(-8)}</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                QA {Math.round(item.qualityScore)} / AI {Math.round(item.aiConfidence * 100)}% / {item.sentiment}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {item.qualificationLevel} lead / outcome {item.outcome?.replaceAll("_", " ") ?? "pending"}
+              </p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }

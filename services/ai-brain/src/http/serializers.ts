@@ -22,6 +22,12 @@ import type { QueueMember } from "../domain/entities/queue-member.js";
 import type { QueueSession } from "../domain/entities/queue-session.js";
 import type { RoutingDecision } from "../domain/entities/routing-decision.js";
 import type { RoutingRule } from "../domain/entities/routing-rule.js";
+import type { AgentPerformance } from "../domain/entities/agent-performance.js";
+import type { CallOutcome } from "../domain/entities/call-outcome.js";
+import type { ConversationAnalytics } from "../domain/entities/conversation-analytics.js";
+import type { QualityScore } from "../domain/entities/quality-score.js";
+import type { QueueAnalytics } from "../domain/entities/queue-analytics.js";
+import type { SentimentAnalysis } from "../domain/entities/sentiment-analysis.js";
 
 export const toConversationDto = (value: AIConversation) => ({ ...value, startedAt: iso(value.startedAt), endedAt: maybeIso(value.endedAt), createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 export const toMessageDto = (value: AIMessage) => ({ ...value, timestamp: iso(value.timestamp) });
@@ -99,6 +105,27 @@ export const toQueueSessionDto = (value: QueueSession) => ({
   updatedAt: iso(value.updatedAt),
 });
 export const toAgentSkillDto = (value: AgentSkill) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toConversationAnalyticsDto = (value: ConversationAnalytics) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toAgentPerformanceDto = (value: AgentPerformance) => ({
+  ...value,
+  computedAt: iso(value.computedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toQueueAnalyticsDto = (value: QueueAnalytics) => ({
+  ...value,
+  computedAt: iso(value.computedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toCallOutcomeDto = (value: CallOutcome) => ({
+  ...value,
+  occurredAt: iso(value.occurredAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toQualityScoreDto = (value: QualityScore) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toSentimentAnalysisDto = (value: SentimentAnalysis) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 
 function iso(date: Date): string {
   return date.toISOString();

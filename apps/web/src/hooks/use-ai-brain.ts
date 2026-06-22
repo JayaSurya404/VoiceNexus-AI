@@ -26,6 +26,14 @@ export const aiBrainKeys = {
   queueSessions: (organizationId: string) => ["ai", "queue-sessions", organizationId] as const,
   routingDecisions: (organizationId: string) => ["ai", "routing-decisions", organizationId] as const,
   queueHealth: (organizationId: string) => ["ai", "queue-health", organizationId] as const,
+  analyticsOverview: (organizationId: string) => ["ai", "analytics-overview", organizationId] as const,
+  analyticsConversations: (organizationId: string) => ["ai", "analytics-conversations", organizationId] as const,
+  analyticsAgents: (organizationId: string) => ["ai", "analytics-agents", organizationId] as const,
+  analyticsQueues: (organizationId: string) => ["ai", "analytics-queues", organizationId] as const,
+  analyticsConversions: (organizationId: string) => ["ai", "analytics-conversions", organizationId] as const,
+  analyticsOutcomes: (organizationId: string) => ["ai", "analytics-outcomes", organizationId] as const,
+  analyticsSentiment: (organizationId: string) => ["ai", "analytics-sentiment", organizationId] as const,
+  analyticsQuality: (organizationId: string) => ["ai", "analytics-quality", organizationId] as const,
   takeovers: (organizationId: string) => ["ai", "takeovers", organizationId] as const,
   whispers: (organizationId: string) => ["ai", "whispers", organizationId] as const,
   supervisorOverview: (organizationId: string) => ["ai", "supervisor-overview", organizationId] as const,
@@ -218,6 +226,78 @@ export function useQueueHealth(organizationId: string | null) {
     queryFn: () => aiBrainApi.queueHealth(organizationId ?? ""),
     enabled: Boolean(organizationId),
     refetchInterval: 10_000,
+  });
+}
+
+export function useAnalyticsOverview(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.analyticsOverview(organizationId ?? ""),
+    queryFn: () => aiBrainApi.analyticsOverview(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useConversationAnalytics(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.analyticsConversations(organizationId ?? ""),
+    queryFn: () => aiBrainApi.analyticsConversations(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useAgentPerformanceAnalytics(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.analyticsAgents(organizationId ?? ""),
+    queryFn: () => aiBrainApi.analyticsAgents(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useQueueAnalytics(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.analyticsQueues(organizationId ?? ""),
+    queryFn: () => aiBrainApi.analyticsQueues(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useConversionAnalytics(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.analyticsConversions(organizationId ?? ""),
+    queryFn: () => aiBrainApi.analyticsConversions(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useCallOutcomes(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.analyticsOutcomes(organizationId ?? ""),
+    queryFn: () => aiBrainApi.analyticsOutcomes(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useSentimentAnalytics(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.analyticsSentiment(organizationId ?? ""),
+    queryFn: () => aiBrainApi.analyticsSentiment(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useQualityScores(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.analyticsQuality(organizationId ?? ""),
+    queryFn: () => aiBrainApi.analyticsQuality(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
   });
 }
 
