@@ -20,7 +20,12 @@ import {
   toKnowledgeCitationDto,
   toKnowledgeChunkDto,
   toKnowledgeDocumentDto,
+  toKnowledgeFeedbackDto,
+  toKnowledgeGapDto,
+  toKnowledgeImprovementDto,
+  toKnowledgeLearningEventDto,
   toKnowledgeSearchDto,
+  toKnowledgeSuggestionDto,
   toLiveTakeoverDto,
   toMessageDto,
   toAgentSkillDto,
@@ -169,6 +174,25 @@ const knowledgeSearchInputSchema = z.object({
   memoryContext: z.record(z.unknown()).default({}),
   conversationId: z.string().nullable().optional(),
   agentSessionId: z.string().nullable().optional(),
+});
+
+const knowledgeFeedbackInputSchema = z.object({
+  organizationId: z.string().min(1),
+  searchId: z.string().nullable().optional(),
+  citationId: z.string().nullable().optional(),
+  conversationId: z.string().nullable().optional(),
+  agentSessionId: z.string().nullable().optional(),
+  chunkId: z.string().nullable().optional(),
+  type: z.enum(["HELPFUL", "UNHELPFUL", "ESCALATED_CALL", "HUMAN_TAKEOVER", "LOW_CONFIDENCE_RESPONSE", "FAILED_SEARCH"]),
+  retrievalUsage: z.enum(["RETRIEVED", "USED", "IGNORED", "HELPFUL", "UNHELPFUL"]),
+  rating: z.number().int().min(1).max(5).nullable().optional(),
+  comment: z.string().nullable().optional(),
+  createdBy: z.string().nullable().optional(),
+});
+
+const suggestionReviewSchema = z.object({
+  organizationId: z.string().min(1),
+  reviewedBy: z.string().nullable().optional(),
 });
 
 export function createAiBrainHttpServer(container: Container) {
@@ -356,6 +380,95 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       await authorize(container, token, organizationId);
       sendJson(response, 200, {
         data: (await container.repositories.knowledgeCitations.listByOrganization(organizationId)).map(toKnowledgeCitationDto),
+      });
+      return;
+    }
+
+    if (url.pathname === "/knowledge/feedback" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: (await container.repositories.knowledgeFeedback.listByOrganization(organizationId)).map(toKnowledgeFeedbackDto),
+      });
+      return;
+    }
+
+    if (url.pathname === "/knowledge/feedback" && request.method === "POST") {
+      const input = knowledgeFeedbackInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 201, {
+        data: toKnowledgeFeedbackDto(
+          await container.services.knowledgeFeedbackService.create({
+            ...input,
+            searchId: input.searchId ?? null,
+            citationId: input.citationId ?? null,
+            conversationId: input.conversationId ?? null,
+            agentSessionId: input.agentSessionId ?? null,
+            chunkId: input.chunkId ?? null,
+            rating: input.rating ?? null,
+            comment: input.comment ?? null,
+            createdBy: input.createdBy ?? null,
+          }),
+        ),
+      });
+      return;
+    }
+
+    if (url.pathname === "/knowledge/gaps" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      await container.services.knowledgeGapAnalysis.analyzeOrganization(organizationId);
+      sendJson(response, 200, {
+        data: (await container.repositories.knowledgeGaps.listByOrganization(organizationId)).map(toKnowledgeGapDto),
+      });
+      return;
+    }
+
+    if (url.pathname === "/knowledge/suggestions" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      await container.services.knowledgeSuggestion.generateForOrganization(organizationId);
+      sendJson(response, 200, {
+        data: (await container.repositories.knowledgeSuggestions.listByOrganization(organizationId)).map(toKnowledgeSuggestionDto),
+      });
+      return;
+    }
+
+    const suggestionApproveMatch = /^\/knowledge\/suggestions\/([^/]+)\/approve$/.exec(url.pathname);
+    if (suggestionApproveMatch?.[1] && request.method === "POST") {
+      const input = suggestionReviewSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      const suggestion = await container.services.knowledgeSuggestion.approve(suggestionApproveMatch[1], input.organizationId, input.reviewedBy ?? null);
+      if (!suggestion) throw AiBrainError.notFound("Knowledge suggestion");
+      sendJson(response, 200, { data: toKnowledgeSuggestionDto(suggestion) });
+      return;
+    }
+
+    const suggestionRejectMatch = /^\/knowledge\/suggestions\/([^/]+)\/reject$/.exec(url.pathname);
+    if (suggestionRejectMatch?.[1] && request.method === "POST") {
+      const input = suggestionReviewSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      const suggestion = await container.services.knowledgeSuggestion.reject(suggestionRejectMatch[1], input.organizationId, input.reviewedBy ?? null);
+      if (!suggestion) throw AiBrainError.notFound("Knowledge suggestion");
+      sendJson(response, 200, { data: toKnowledgeSuggestionDto(suggestion) });
+      return;
+    }
+
+    if (url.pathname === "/knowledge/learning-events" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: (await container.repositories.knowledgeLearningEvents.listByOrganization(organizationId)).map(toKnowledgeLearningEventDto),
+      });
+      return;
+    }
+
+    if (url.pathname === "/knowledge/improvements" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      await container.services.knowledgeImprovement.scoreOrganization(organizationId);
+      sendJson(response, 200, {
+        data: (await container.repositories.knowledgeImprovements.listByOrganization(organizationId)).map(toKnowledgeImprovementDto),
       });
       return;
     }

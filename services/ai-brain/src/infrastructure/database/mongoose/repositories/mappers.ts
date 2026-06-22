@@ -32,7 +32,12 @@ import type { KnowledgeBase } from "../../../../domain/entities/knowledge-base.j
 import type { KnowledgeChunk } from "../../../../domain/entities/knowledge-chunk.js";
 import type { KnowledgeCitation } from "../../../../domain/entities/knowledge-citation.js";
 import type { KnowledgeDocument } from "../../../../domain/entities/knowledge-document.js";
+import type { KnowledgeFeedback } from "../../../../domain/entities/knowledge-feedback.js";
+import type { KnowledgeGap } from "../../../../domain/entities/knowledge-gap.js";
+import type { KnowledgeImprovement } from "../../../../domain/entities/knowledge-improvement.js";
+import type { KnowledgeLearningEvent } from "../../../../domain/entities/knowledge-learning-event.js";
 import type { KnowledgeSearch } from "../../../../domain/entities/knowledge-search.js";
+import type { KnowledgeSuggestion } from "../../../../domain/entities/knowledge-suggestion.js";
 
 type Doc = Record<string, unknown> & { _id: { toString(): string } };
 
@@ -640,6 +645,92 @@ export function toKnowledgeCitation(doc: Doc): KnowledgeCitation {
     chunkId: id(doc.chunkId) ?? "",
     quote: String(doc.quote),
     relevanceScore: Number(doc.relevanceScore),
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toKnowledgeFeedback(doc: Doc): KnowledgeFeedback {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    searchId: id(doc.searchId),
+    citationId: id(doc.citationId),
+    conversationId: id(doc.conversationId),
+    agentSessionId: id(doc.agentSessionId),
+    chunkId: id(doc.chunkId),
+    type: doc.type as KnowledgeFeedback["type"],
+    retrievalUsage: doc.retrievalUsage as KnowledgeFeedback["retrievalUsage"],
+    rating: doc.rating === null || doc.rating === undefined ? null : Number(doc.rating),
+    comment: doc.comment ? String(doc.comment) : null,
+    createdBy: id(doc.createdBy),
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toKnowledgeGap(doc: Doc): KnowledgeGap {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    topic: String(doc.topic),
+    description: String(doc.description),
+    triggerCount: Number(doc.triggerCount),
+    unansweredCount: Number(doc.unansweredCount),
+    escalationCount: Number(doc.escalationCount),
+    averageConfidence: Number(doc.averageConfidence),
+    severityScore: Number(doc.severityScore),
+    status: doc.status as KnowledgeGap["status"],
+    sourceSearchIds: ((doc.sourceSearchIds as unknown[] | undefined) ?? []).map((value) => id(value) ?? ""),
+    sourceConversationIds: ((doc.sourceConversationIds as unknown[] | undefined) ?? []).map((value) => id(value) ?? ""),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toKnowledgeSuggestion(doc: Doc): KnowledgeSuggestion {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    gapId: id(doc.gapId),
+    type: doc.type as KnowledgeSuggestion["type"],
+    title: String(doc.title),
+    content: String(doc.content),
+    rationale: String(doc.rationale),
+    confidence: Number(doc.confidence),
+    status: doc.status as KnowledgeSuggestion["status"],
+    reviewedBy: id(doc.reviewedBy),
+    reviewedAt: doc.reviewedAt ? date(doc.reviewedAt) : null,
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toKnowledgeLearningEvent(doc: Doc): KnowledgeLearningEvent {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    sourceConversationId: id(doc.sourceConversationId),
+    sourceSessionId: id(doc.sourceSessionId),
+    searchId: id(doc.searchId),
+    topic: String(doc.topic),
+    confidence: Number(doc.confidence),
+    triggerReason: doc.triggerReason as KnowledgeLearningEvent["triggerReason"],
+    metadata: (doc.metadata as Record<string, unknown>) ?? {},
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toKnowledgeImprovement(doc: Doc): KnowledgeImprovement {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    knowledgeQualityScore: Number(doc.knowledgeQualityScore),
+    coverageScore: Number(doc.coverageScore),
+    retrievalSuccessRate: Number(doc.retrievalSuccessRate),
+    gapSeverityScore: Number(doc.gapSeverityScore),
+    feedbackCount: Number(doc.feedbackCount),
+    openGapCount: Number(doc.openGapCount),
+    suggestionCount: Number(doc.suggestionCount),
+    computedAt: date(doc.computedAt),
     createdAt: date(doc.createdAt),
   };
 }

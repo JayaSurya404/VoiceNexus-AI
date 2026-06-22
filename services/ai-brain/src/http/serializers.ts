@@ -32,7 +32,12 @@ import type { KnowledgeBase } from "../domain/entities/knowledge-base.js";
 import type { KnowledgeChunk } from "../domain/entities/knowledge-chunk.js";
 import type { KnowledgeCitation } from "../domain/entities/knowledge-citation.js";
 import type { KnowledgeDocument } from "../domain/entities/knowledge-document.js";
+import type { KnowledgeFeedback } from "../domain/entities/knowledge-feedback.js";
+import type { KnowledgeGap } from "../domain/entities/knowledge-gap.js";
+import type { KnowledgeImprovement } from "../domain/entities/knowledge-improvement.js";
+import type { KnowledgeLearningEvent } from "../domain/entities/knowledge-learning-event.js";
 import type { KnowledgeSearch } from "../domain/entities/knowledge-search.js";
+import type { KnowledgeSuggestion } from "../domain/entities/knowledge-suggestion.js";
 
 export const toConversationDto = (value: AIConversation) => ({ ...value, startedAt: iso(value.startedAt), endedAt: maybeIso(value.endedAt), createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 export const toMessageDto = (value: AIMessage) => ({ ...value, timestamp: iso(value.timestamp) });
@@ -136,6 +141,20 @@ export const toKnowledgeDocumentDto = (value: KnowledgeDocument) => ({ ...value,
 export const toKnowledgeChunkDto = (value: KnowledgeChunk) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 export const toKnowledgeSearchDto = (value: KnowledgeSearch) => ({ ...value, createdAt: iso(value.createdAt) });
 export const toKnowledgeCitationDto = (value: KnowledgeCitation) => ({ ...value, createdAt: iso(value.createdAt) });
+export const toKnowledgeFeedbackDto = (value: KnowledgeFeedback) => ({ ...value, createdAt: iso(value.createdAt) });
+export const toKnowledgeGapDto = (value: KnowledgeGap) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toKnowledgeSuggestionDto = (value: KnowledgeSuggestion) => ({
+  ...value,
+  reviewedAt: maybeIso(value.reviewedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toKnowledgeLearningEventDto = (value: KnowledgeLearningEvent) => ({ ...value, createdAt: iso(value.createdAt) });
+export const toKnowledgeImprovementDto = (value: KnowledgeImprovement) => ({
+  ...value,
+  computedAt: iso(value.computedAt),
+  createdAt: iso(value.createdAt),
+});
 
 function iso(date: Date): string {
   return date.toISOString();

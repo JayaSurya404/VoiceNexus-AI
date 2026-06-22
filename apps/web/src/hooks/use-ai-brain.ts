@@ -37,6 +37,11 @@ export const aiBrainKeys = {
   knowledgeDocuments: (organizationId: string) => ["ai", "knowledge-documents", organizationId] as const,
   knowledgeSearches: (organizationId: string) => ["ai", "knowledge-searches", organizationId] as const,
   knowledgeCitations: (organizationId: string) => ["ai", "knowledge-citations", organizationId] as const,
+  knowledgeFeedback: (organizationId: string) => ["ai", "knowledge-feedback", organizationId] as const,
+  knowledgeGaps: (organizationId: string) => ["ai", "knowledge-gaps", organizationId] as const,
+  knowledgeSuggestions: (organizationId: string) => ["ai", "knowledge-suggestions", organizationId] as const,
+  knowledgeLearningEvents: (organizationId: string) => ["ai", "knowledge-learning-events", organizationId] as const,
+  knowledgeImprovements: (organizationId: string) => ["ai", "knowledge-improvements", organizationId] as const,
   takeovers: (organizationId: string) => ["ai", "takeovers", organizationId] as const,
   whispers: (organizationId: string) => ["ai", "whispers", organizationId] as const,
   supervisorOverview: (organizationId: string) => ["ai", "supervisor-overview", organizationId] as const,
@@ -331,6 +336,51 @@ export function useKnowledgeCitations(organizationId: string | null) {
   });
 }
 
+export function useKnowledgeFeedback(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.knowledgeFeedback(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listKnowledgeFeedback(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useKnowledgeGaps(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.knowledgeGaps(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listKnowledgeGaps(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useKnowledgeSuggestions(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.knowledgeSuggestions(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listKnowledgeSuggestions(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useKnowledgeLearningEvents(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.knowledgeLearningEvents(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listKnowledgeLearningEvents(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useKnowledgeImprovements(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.knowledgeImprovements(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listKnowledgeImprovements(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
 export function useKnowledgeActions(organizationId: string | null) {
   const queryClient = useQueryClient();
   const invalidate = async () => {
@@ -339,6 +389,11 @@ export function useKnowledgeActions(organizationId: string | null) {
       queryClient.invalidateQueries({ queryKey: aiBrainKeys.knowledgeDocuments(organizationId) }),
       queryClient.invalidateQueries({ queryKey: aiBrainKeys.knowledgeSearches(organizationId) }),
       queryClient.invalidateQueries({ queryKey: aiBrainKeys.knowledgeCitations(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.knowledgeFeedback(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.knowledgeGaps(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.knowledgeSuggestions(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.knowledgeLearningEvents(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.knowledgeImprovements(organizationId) }),
     ]);
   };
 
@@ -369,6 +424,31 @@ export function useKnowledgeActions(organizationId: string | null) {
     }),
     deleteDocument: useMutation({
       mutationFn: (id: string) => aiBrainApi.deleteKnowledgeDocument(id, organizationId ?? ""),
+      onSuccess: invalidate,
+    }),
+    createFeedback: useMutation({
+      mutationFn: (input: {
+        searchId?: string | null;
+        citationId?: string | null;
+        conversationId?: string | null;
+        agentSessionId?: string | null;
+        chunkId?: string | null;
+        type: "HELPFUL" | "UNHELPFUL" | "ESCALATED_CALL" | "HUMAN_TAKEOVER" | "LOW_CONFIDENCE_RESPONSE" | "FAILED_SEARCH";
+        retrievalUsage: "RETRIEVED" | "USED" | "IGNORED" | "HELPFUL" | "UNHELPFUL";
+        rating?: number | null;
+        comment?: string | null;
+        createdBy?: string | null;
+      }) => aiBrainApi.createKnowledgeFeedback({ organizationId: organizationId ?? "", ...input }),
+      onSuccess: invalidate,
+    }),
+    approveSuggestion: useMutation({
+      mutationFn: (input: { id: string; reviewedBy?: string | null }) =>
+        aiBrainApi.approveKnowledgeSuggestion(input.id, organizationId ?? "", input.reviewedBy),
+      onSuccess: invalidate,
+    }),
+    rejectSuggestion: useMutation({
+      mutationFn: (input: { id: string; reviewedBy?: string | null }) =>
+        aiBrainApi.rejectKnowledgeSuggestion(input.id, organizationId ?? "", input.reviewedBy),
       onSuccess: invalidate,
     }),
   };

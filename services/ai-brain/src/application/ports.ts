@@ -32,7 +32,12 @@ import type { KnowledgeBase } from "../domain/entities/knowledge-base.js";
 import type { KnowledgeChunk } from "../domain/entities/knowledge-chunk.js";
 import type { KnowledgeCitation } from "../domain/entities/knowledge-citation.js";
 import type { KnowledgeDocument } from "../domain/entities/knowledge-document.js";
+import type { KnowledgeFeedback } from "../domain/entities/knowledge-feedback.js";
+import type { KnowledgeGap } from "../domain/entities/knowledge-gap.js";
+import type { KnowledgeImprovement } from "../domain/entities/knowledge-improvement.js";
+import type { KnowledgeLearningEvent } from "../domain/entities/knowledge-learning-event.js";
 import type { KnowledgeSearch } from "../domain/entities/knowledge-search.js";
+import type { KnowledgeSuggestion } from "../domain/entities/knowledge-suggestion.js";
 
 export interface AIConversationRepository {
   create(input: Omit<AIConversation, "id" | "createdAt" | "updatedAt">): Promise<AIConversation>;
@@ -264,6 +269,32 @@ export interface KnowledgeSearchRepository {
 export interface KnowledgeCitationRepository {
   createMany(input: Array<Omit<KnowledgeCitation, "id">>): Promise<KnowledgeCitation[]>;
   listByOrganization(organizationId: string): Promise<KnowledgeCitation[]>;
+}
+
+export interface KnowledgeFeedbackRepository {
+  create(input: Omit<KnowledgeFeedback, "id">): Promise<KnowledgeFeedback>;
+  listByOrganization(organizationId: string): Promise<KnowledgeFeedback[]>;
+}
+
+export interface KnowledgeGapRepository {
+  listByOrganization(organizationId: string): Promise<KnowledgeGap[]>;
+  upsert(input: Omit<KnowledgeGap, "id" | "createdAt" | "updatedAt">): Promise<KnowledgeGap>;
+}
+
+export interface KnowledgeSuggestionRepository {
+  create(input: Omit<KnowledgeSuggestion, "id" | "createdAt" | "updatedAt">): Promise<KnowledgeSuggestion>;
+  listByOrganization(organizationId: string): Promise<KnowledgeSuggestion[]>;
+  updateStatus(id: string, organizationId: string, input: Pick<KnowledgeSuggestion, "status" | "reviewedBy" | "reviewedAt">): Promise<KnowledgeSuggestion | null>;
+}
+
+export interface KnowledgeLearningEventRepository {
+  create(input: Omit<KnowledgeLearningEvent, "id">): Promise<KnowledgeLearningEvent>;
+  listByOrganization(organizationId: string): Promise<KnowledgeLearningEvent[]>;
+}
+
+export interface KnowledgeImprovementRepository {
+  create(input: Omit<KnowledgeImprovement, "id" | "createdAt">): Promise<KnowledgeImprovement>;
+  listByOrganization(organizationId: string): Promise<KnowledgeImprovement[]>;
 }
 
 export interface RagContextPackage {

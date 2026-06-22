@@ -14,6 +14,12 @@ import {
 } from "@/components/ai-monitor/analytics-panels";
 import { ConversationFeed } from "@/components/ai-monitor/conversation-feed";
 import { DecisionTimeline } from "@/components/ai-monitor/decision-timeline";
+import {
+  KnowledgeGapDashboard,
+  KnowledgeImprovementPanel,
+  KnowledgeSuggestionsDashboard,
+  LearningEventsTimeline,
+} from "@/components/ai-monitor/knowledge-learning-panels";
 import { KnowledgeMonitorPanel } from "@/components/ai-monitor/knowledge-panels";
 import {
   AgentPanel,
@@ -64,7 +70,12 @@ import {
   useHumanConsoleActions,
   useKnowledgeCitations,
   useKnowledgeDocuments,
+  useKnowledgeGaps,
+  useKnowledgeImprovements,
+  useKnowledgeLearningEvents,
   useKnowledgeSearches,
+  useKnowledgeSuggestions,
+  useKnowledgeActions,
   useLiveTakeovers,
   useQueueHealth,
   useQueueAnalytics,
@@ -111,6 +122,11 @@ export default function AiMonitorPage() {
   const knowledgeDocumentsQuery = useKnowledgeDocuments(activeOrganizationId);
   const knowledgeSearchesQuery = useKnowledgeSearches(activeOrganizationId);
   const knowledgeCitationsQuery = useKnowledgeCitations(activeOrganizationId);
+  const knowledgeGapsQuery = useKnowledgeGaps(activeOrganizationId);
+  const knowledgeSuggestionsQuery = useKnowledgeSuggestions(activeOrganizationId);
+  const knowledgeLearningEventsQuery = useKnowledgeLearningEvents(activeOrganizationId);
+  const knowledgeImprovementsQuery = useKnowledgeImprovements(activeOrganizationId);
+  const knowledgeActions = useKnowledgeActions(activeOrganizationId);
   const workflowsQuery = useWorkflows(activeOrganizationId);
   const workflowActionsQuery = useWorkflowActions(activeOrganizationId);
   const followupsQuery = useFollowups(activeOrganizationId);
@@ -246,6 +262,16 @@ export default function AiMonitorPage() {
         documents={knowledgeDocumentsQuery.data ?? []}
         searches={knowledgeSearchesQuery.data ?? []}
       />
+      <KnowledgeImprovementPanel improvements={knowledgeImprovementsQuery.data ?? []} />
+      <div className="grid gap-6 xl:grid-cols-2">
+        <KnowledgeGapDashboard gaps={knowledgeGapsQuery.data ?? []} />
+        <KnowledgeSuggestionsDashboard
+          onApprove={(id) => knowledgeActions.approveSuggestion.mutate({ id })}
+          onReject={(id) => knowledgeActions.rejectSuggestion.mutate({ id })}
+          suggestions={knowledgeSuggestionsQuery.data ?? []}
+        />
+      </div>
+      <LearningEventsTimeline events={knowledgeLearningEventsQuery.data ?? []} />
       <TakeoverPanel
         onEnd={(id) => humanConsoleActions.endTakeover.mutate(id)}
         onStart={(id) => humanConsoleActions.startTakeover.mutate(id)}

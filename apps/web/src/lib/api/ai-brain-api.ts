@@ -500,6 +500,82 @@ export interface KnowledgeSearchResultDto {
   contextText: string;
 }
 
+export interface KnowledgeFeedbackDto {
+  id: string;
+  organizationId: string;
+  searchId: string | null;
+  citationId: string | null;
+  conversationId: string | null;
+  agentSessionId: string | null;
+  chunkId: string | null;
+  type: "HELPFUL" | "UNHELPFUL" | "ESCALATED_CALL" | "HUMAN_TAKEOVER" | "LOW_CONFIDENCE_RESPONSE" | "FAILED_SEARCH";
+  retrievalUsage: "RETRIEVED" | "USED" | "IGNORED" | "HELPFUL" | "UNHELPFUL";
+  rating: number | null;
+  comment: string | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface KnowledgeGapDto {
+  id: string;
+  organizationId: string;
+  topic: string;
+  description: string;
+  triggerCount: number;
+  unansweredCount: number;
+  escalationCount: number;
+  averageConfidence: number;
+  severityScore: number;
+  status: "OPEN" | "IN_REVIEW" | "RESOLVED" | "DISMISSED";
+  sourceSearchIds: string[];
+  sourceConversationIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KnowledgeSuggestionDto {
+  id: string;
+  organizationId: string;
+  gapId: string | null;
+  type: "FAQ_ENTRY" | "SOP_UPDATE" | "KNOWLEDGE_ARTICLE" | "MISSING_DOCUMENTATION";
+  title: string;
+  content: string;
+  rationale: string;
+  confidence: number;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KnowledgeLearningEventDto {
+  id: string;
+  organizationId: string;
+  sourceConversationId: string | null;
+  sourceSessionId: string | null;
+  searchId: string | null;
+  topic: string;
+  confidence: number;
+  triggerReason: "LOW_RETRIEVAL_CONFIDENCE" | "FAILED_SEARCH" | "UNHELPFUL_FEEDBACK" | "HELPFUL_FEEDBACK" | "ESCALATION" | "HUMAN_TAKEOVER";
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface KnowledgeImprovementDto {
+  id: string;
+  organizationId: string;
+  knowledgeQualityScore: number;
+  coverageScore: number;
+  retrievalSuccessRate: number;
+  gapSeverityScore: number;
+  feedbackCount: number;
+  openGapCount: number;
+  suggestionCount: number;
+  computedAt: string;
+  createdAt: string;
+}
+
 export interface HumanAgentSessionDto {
   id: string;
   organizationId: string;
@@ -694,6 +770,39 @@ export const aiBrainApi = {
     request<KnowledgeSearchDto[]>(`/knowledge/searches?${query({ organizationId })}`),
   listKnowledgeCitations: (organizationId: string) =>
     request<KnowledgeCitationDto[]>(`/knowledge/citations?${query({ organizationId })}`),
+  listKnowledgeFeedback: (organizationId: string) =>
+    request<KnowledgeFeedbackDto[]>(`/knowledge/feedback?${query({ organizationId })}`),
+  createKnowledgeFeedback: (input: {
+    organizationId: string;
+    searchId?: string | null;
+    citationId?: string | null;
+    conversationId?: string | null;
+    agentSessionId?: string | null;
+    chunkId?: string | null;
+    type: KnowledgeFeedbackDto["type"];
+    retrievalUsage: KnowledgeFeedbackDto["retrievalUsage"];
+    rating?: number | null;
+    comment?: string | null;
+    createdBy?: string | null;
+  }) => request<KnowledgeFeedbackDto>("/knowledge/feedback", { method: "POST", body: JSON.stringify(input) }),
+  listKnowledgeGaps: (organizationId: string) =>
+    request<KnowledgeGapDto[]>(`/knowledge/gaps?${query({ organizationId })}`),
+  listKnowledgeSuggestions: (organizationId: string) =>
+    request<KnowledgeSuggestionDto[]>(`/knowledge/suggestions?${query({ organizationId })}`),
+  approveKnowledgeSuggestion: (id: string, organizationId: string, reviewedBy?: string | null) =>
+    request<KnowledgeSuggestionDto>(`/knowledge/suggestions/${encodeURIComponent(id)}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ organizationId, reviewedBy }),
+    }),
+  rejectKnowledgeSuggestion: (id: string, organizationId: string, reviewedBy?: string | null) =>
+    request<KnowledgeSuggestionDto>(`/knowledge/suggestions/${encodeURIComponent(id)}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ organizationId, reviewedBy }),
+    }),
+  listKnowledgeLearningEvents: (organizationId: string) =>
+    request<KnowledgeLearningEventDto[]>(`/knowledge/learning-events?${query({ organizationId })}`),
+  listKnowledgeImprovements: (organizationId: string) =>
+    request<KnowledgeImprovementDto[]>(`/knowledge/improvements?${query({ organizationId })}`),
   updateAvailability: (
     agentId: string,
     input: { organizationId: string; status: HumanAgentDto["status"]; statusReason?: string | null; capacity?: number },

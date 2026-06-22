@@ -22,6 +22,11 @@ import { DocumentParserService } from "./application/services/document-parser-se
 import { EmbeddingService } from "./application/services/embedding-service.js";
 import { KnowledgeIngestionService } from "./application/services/knowledge-ingestion-service.js";
 import { KnowledgeSearchService } from "./application/services/knowledge-search-service.js";
+import { KnowledgeFeedbackService } from "./application/services/knowledge-feedback-service.js";
+import { KnowledgeGapAnalysisService } from "./application/services/knowledge-gap-analysis-service.js";
+import { KnowledgeImprovementService } from "./application/services/knowledge-improvement-service.js";
+import { KnowledgeLearningService } from "./application/services/knowledge-learning-service.js";
+import { KnowledgeSuggestionService } from "./application/services/knowledge-suggestion-service.js";
 import { LeadQualificationRuntime } from "./application/services/lead-qualification-runtime.js";
 import { LiveTakeoverService } from "./application/services/live-takeover-service.js";
 import { MemoryInjectionService } from "./application/services/memory-injection-service.js";
@@ -89,6 +94,13 @@ import {
   MongoKnowledgeDocumentRepository,
   MongoKnowledgeSearchRepository,
 } from "./infrastructure/database/mongoose/repositories/knowledge-repositories.js";
+import {
+  MongoKnowledgeFeedbackRepository,
+  MongoKnowledgeGapRepository,
+  MongoKnowledgeImprovementRepository,
+  MongoKnowledgeLearningEventRepository,
+  MongoKnowledgeSuggestionRepository,
+} from "./infrastructure/database/mongoose/repositories/knowledge-learning-repositories.js";
 import { TranscriptFinalSubscriber } from "./infrastructure/redis/transcript-final-subscriber.js";
 import { OpenAIEmbeddingProvider } from "./providers/openai-embedding-provider.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
@@ -132,6 +144,11 @@ export function createContainer() {
   const knowledgeChunks = new MongoKnowledgeChunkRepository();
   const knowledgeSearches = new MongoKnowledgeSearchRepository();
   const knowledgeCitations = new MongoKnowledgeCitationRepository();
+  const knowledgeFeedback = new MongoKnowledgeFeedbackRepository();
+  const knowledgeGaps = new MongoKnowledgeGapRepository();
+  const knowledgeSuggestions = new MongoKnowledgeSuggestionRepository();
+  const knowledgeLearningEvents = new MongoKnowledgeLearningEventRepository();
+  const knowledgeImprovements = new MongoKnowledgeImprovementRepository();
   const organizationAccess = new MongoOrganizationAccessRepository();
 
   const provider = new OpenAIProvider({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
@@ -159,7 +176,24 @@ export function createContainer() {
   );
   const knowledgeSearch = new KnowledgeSearchService(knowledgeChunks, knowledgeSearches, embeddingService);
   const citationService = new CitationService(knowledgeCitations);
-  const ragRuntime = new RagRuntimeService(knowledgeSearch, citationService);
+  const knowledgeLearning = new KnowledgeLearningService(knowledgeLearningEvents);
+  const knowledgeFeedbackService = new KnowledgeFeedbackService(knowledgeFeedback, knowledgeLearning);
+  const knowledgeGapAnalysis = new KnowledgeGapAnalysisService(
+    knowledgeGaps,
+    knowledgeSearches,
+    knowledgeFeedback,
+    knowledgeLearningEvents,
+  );
+  const knowledgeSuggestion = new KnowledgeSuggestionService(knowledgeSuggestions, knowledgeGaps);
+  const knowledgeImprovement = new KnowledgeImprovementService(
+    knowledgeImprovements,
+    knowledgeChunks,
+    knowledgeSearches,
+    knowledgeFeedback,
+    knowledgeGaps,
+    knowledgeSuggestions,
+  );
+  const ragRuntime = new RagRuntimeService(knowledgeSearch, citationService, knowledgeLearning);
   const humanConsoleEvents = new HumanConsoleEventService();
   const agentManagement = new AgentManagementService(
     humanAgents,
@@ -302,6 +336,11 @@ export function createContainer() {
       knowledgeChunks,
       knowledgeSearches,
       knowledgeCitations,
+      knowledgeFeedback,
+      knowledgeGaps,
+      knowledgeSuggestions,
+      knowledgeLearningEvents,
+      knowledgeImprovements,
       organizationAccess,
     },
     services: {
@@ -325,6 +364,11 @@ export function createContainer() {
       humanConsoleEvents,
       knowledgeIngestion,
       knowledgeSearch,
+      knowledgeFeedbackService,
+      knowledgeGapAnalysis,
+      knowledgeSuggestion,
+      knowledgeLearning,
+      knowledgeImprovement,
       citationService,
       ragRuntime,
       liveTakeover,
