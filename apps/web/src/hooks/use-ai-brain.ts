@@ -34,6 +34,14 @@ export const aiBrainKeys = {
   analyticsOutcomes: (organizationId: string) => ["ai", "analytics-outcomes", organizationId] as const,
   analyticsSentiment: (organizationId: string) => ["ai", "analytics-sentiment", organizationId] as const,
   analyticsQuality: (organizationId: string) => ["ai", "analytics-quality", organizationId] as const,
+  revenueAnalytics: (organizationId: string) => ["ai", "revenue-analytics", organizationId] as const,
+  revenueForecasts: (organizationId: string) => ["ai", "revenue-forecasts", organizationId] as const,
+  revenueRisks: (organizationId: string) => ["ai", "revenue-risks", organizationId] as const,
+  revenueOpportunities: (organizationId: string) => ["ai", "revenue-opportunities", organizationId] as const,
+  revenueWinLoss: (organizationId: string) => ["ai", "revenue-win-loss", organizationId] as const,
+  revenueInsights: (organizationId: string) => ["ai", "revenue-insights", organizationId] as const,
+  revenueUpsell: (organizationId: string) => ["ai", "revenue-upsell", organizationId] as const,
+  revenueCrossSell: (organizationId: string) => ["ai", "revenue-cross-sell", organizationId] as const,
   knowledgeDocuments: (organizationId: string) => ["ai", "knowledge-documents", organizationId] as const,
   knowledgeSearches: (organizationId: string) => ["ai", "knowledge-searches", organizationId] as const,
   knowledgeCitations: (organizationId: string) => ["ai", "knowledge-citations", organizationId] as const,
@@ -315,6 +323,78 @@ export function useQualityScores(organizationId: string | null) {
   return useQuery({
     queryKey: aiBrainKeys.analyticsQuality(organizationId ?? ""),
     queryFn: () => aiBrainApi.analyticsQuality(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useRevenueAnalytics(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.revenueAnalytics(organizationId ?? ""),
+    queryFn: () => aiBrainApi.revenueAnalytics(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useRevenueForecasts(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.revenueForecasts(organizationId ?? ""),
+    queryFn: () => aiBrainApi.revenueForecasts(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useRevenueRisks(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.revenueRisks(organizationId ?? ""),
+    queryFn: () => aiBrainApi.revenueRisks(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useRevenueOpportunities(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.revenueOpportunities(organizationId ?? ""),
+    queryFn: () => aiBrainApi.revenueOpportunities(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useRevenueWinLoss(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.revenueWinLoss(organizationId ?? ""),
+    queryFn: () => aiBrainApi.revenueWinLoss(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useRevenueInsights(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.revenueInsights(organizationId ?? ""),
+    queryFn: () => aiBrainApi.revenueInsights(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useRevenueUpsell(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.revenueUpsell(organizationId ?? ""),
+    queryFn: () => aiBrainApi.revenueUpsell(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useRevenueCrossSell(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.revenueCrossSell(organizationId ?? ""),
+    queryFn: () => aiBrainApi.revenueCrossSell(organizationId ?? ""),
     enabled: Boolean(organizationId),
     refetchInterval: 30_000,
   });

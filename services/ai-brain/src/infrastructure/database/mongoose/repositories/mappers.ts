@@ -49,6 +49,14 @@ import type { AgentRecommendation } from "../../../../domain/entities/agent-reco
 import type { ComplianceAlert } from "../../../../domain/entities/compliance-alert.js";
 import type { ConversationScorecard } from "../../../../domain/entities/conversation-scorecard.js";
 import type { NextBestAction } from "../../../../domain/entities/next-best-action.js";
+import type { CrossSellOpportunity } from "../../../../domain/entities/cross-sell-opportunity.js";
+import type { DealRisk } from "../../../../domain/entities/deal-risk.js";
+import type { DealStage } from "../../../../domain/entities/deal-stage.js";
+import type { Opportunity } from "../../../../domain/entities/opportunity.js";
+import type { RevenueForecast } from "../../../../domain/entities/revenue-forecast.js";
+import type { SalesInsight } from "../../../../domain/entities/sales-insight.js";
+import type { UpsellOpportunity } from "../../../../domain/entities/upsell-opportunity.js";
+import type { WinLossAnalysis } from "../../../../domain/entities/win-loss-analysis.js";
 
 type Doc = Record<string, unknown> & { _id: { toString(): string } };
 
@@ -929,5 +937,141 @@ export function toNextBestAction(doc: Doc): NextBestAction {
     completed: Boolean(doc.completed),
     confidence: Number(doc.confidence),
     createdAt: date(doc.createdAt),
+  };
+}
+
+export function toOpportunity(doc: Doc): Opportunity {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    leadId: id(doc.leadId),
+    crmContactId: doc.crmContactId === null || doc.crmContactId === undefined ? null : String(doc.crmContactId),
+    crmDealId: doc.crmDealId === null || doc.crmDealId === undefined ? null : String(doc.crmDealId),
+    name: String(doc.name),
+    value: Number(doc.value),
+    probability: Number(doc.probability),
+    expectedCloseDate: doc.expectedCloseDate ? date(doc.expectedCloseDate) : null,
+    stageId: id(doc.stageId),
+    stageName: String(doc.stageName),
+    source: String(doc.source),
+    ownerId: id(doc.ownerId),
+    aiScore: Number(doc.aiScore),
+    status: doc.status as Opportunity["status"],
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toDealStage(doc: Doc): DealStage {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    name: String(doc.name),
+    order: Number(doc.order),
+    probability: Number(doc.probability),
+    active: Boolean(doc.active),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toRevenueForecast(doc: Doc): RevenueForecast {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    period: doc.period as RevenueForecast["period"],
+    periodStart: date(doc.periodStart),
+    periodEnd: date(doc.periodEnd),
+    pipelineValue: Number(doc.pipelineValue),
+    weightedRevenue: Number(doc.weightedRevenue),
+    committedRevenue: Number(doc.committedRevenue),
+    projectedRevenue: Number(doc.projectedRevenue),
+    opportunityCount: Number(doc.opportunityCount),
+    confidence: Number(doc.confidence),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toDealRisk(doc: Doc): DealRisk {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    opportunityId: id(doc.opportunityId) ?? "",
+    riskType: doc.riskType as DealRisk["riskType"],
+    riskScore: Number(doc.riskScore),
+    reasons: Array.isArray(doc.reasons) ? doc.reasons.map(String) : [],
+    recommendedActions: Array.isArray(doc.recommendedActions) ? doc.recommendedActions.map(String) : [],
+    active: Boolean(doc.active),
+    detectedAt: date(doc.detectedAt),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toWinLossAnalysis(doc: Doc): WinLossAnalysis {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    opportunityId: id(doc.opportunityId) ?? "",
+    outcome: doc.outcome as WinLossAnalysis["outcome"],
+    reason: String(doc.reason),
+    competitors: Array.isArray(doc.competitors) ? doc.competitors.map(String) : [],
+    successFactors: Array.isArray(doc.successFactors) ? doc.successFactors.map(String) : [],
+    failureFactors: Array.isArray(doc.failureFactors) ? doc.failureFactors.map(String) : [],
+    improvementSuggestions: Array.isArray(doc.improvementSuggestions) ? doc.improvementSuggestions.map(String) : [],
+    analyzedAt: date(doc.analyzedAt),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toSalesInsight(doc: Doc): SalesInsight {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    type: doc.type as SalesInsight["type"],
+    title: String(doc.title),
+    message: String(doc.message),
+    value: Number(doc.value),
+    trend: doc.trend as SalesInsight["trend"],
+    confidence: Number(doc.confidence),
+    metadata: doc.metadata && typeof doc.metadata === "object" && !Array.isArray(doc.metadata) ? doc.metadata as Record<string, unknown> : {},
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toUpsellOpportunity(doc: Doc): UpsellOpportunity {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    customerId: id(doc.customerId),
+    opportunityId: id(doc.opportunityId),
+    product: String(doc.product),
+    estimatedValue: Number(doc.estimatedValue),
+    fitScore: Number(doc.fitScore),
+    reasons: Array.isArray(doc.reasons) ? doc.reasons.map(String) : [],
+    recommendedActions: Array.isArray(doc.recommendedActions) ? doc.recommendedActions.map(String) : [],
+    status: doc.status as UpsellOpportunity["status"],
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toCrossSellOpportunity(doc: Doc): CrossSellOpportunity {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    customerId: id(doc.customerId),
+    opportunityId: id(doc.opportunityId),
+    product: String(doc.product),
+    affinityScore: Number(doc.affinityScore),
+    estimatedValue: Number(doc.estimatedValue),
+    complementaryServices: Array.isArray(doc.complementaryServices) ? doc.complementaryServices.map(String) : [],
+    reasons: Array.isArray(doc.reasons) ? doc.reasons.map(String) : [],
+    status: doc.status as CrossSellOpportunity["status"],
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
   };
 }

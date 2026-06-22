@@ -37,6 +37,7 @@ import {
 } from "@/components/ai-monitor/queue-routing-panels";
 import { RuntimeMetrics } from "@/components/ai-monitor/runtime-metrics";
 import { RealtimeRuntimeMetricsPanel, RealtimeRuntimePanel } from "@/components/ai-monitor/realtime-runtime-panels";
+import { RevenueIntelligencePanel } from "@/components/ai-monitor/revenue-panels";
 import { StateAndQualification } from "@/components/ai-monitor/state-and-qualification";
 import { VoiceResponseMetricsPanel, VoiceResponsesPanel } from "@/components/ai-monitor/voice-response-panels";
 import {
@@ -95,6 +96,14 @@ import {
   useQueueSessions,
   useQueues,
   useQualityScores,
+  useRevenueAnalytics,
+  useRevenueCrossSell,
+  useRevenueForecasts,
+  useRevenueInsights,
+  useRevenueOpportunities,
+  useRevenueRisks,
+  useRevenueUpsell,
+  useRevenueWinLoss,
   useRoutingDecisions,
   useRuntimeMetrics,
   useSentimentAnalytics,
@@ -132,6 +141,14 @@ export default function AiMonitorPage() {
   const callOutcomesQuery = useCallOutcomes(activeOrganizationId);
   const sentimentAnalyticsQuery = useSentimentAnalytics(activeOrganizationId);
   const qualityScoresQuery = useQualityScores(activeOrganizationId);
+  const revenueAnalyticsQuery = useRevenueAnalytics(activeOrganizationId);
+  const revenueForecastsQuery = useRevenueForecasts(activeOrganizationId);
+  const revenueRisksQuery = useRevenueRisks(activeOrganizationId);
+  const revenueOpportunitiesQuery = useRevenueOpportunities(activeOrganizationId);
+  const revenueWinLossQuery = useRevenueWinLoss(activeOrganizationId);
+  const revenueInsightsQuery = useRevenueInsights(activeOrganizationId);
+  const revenueUpsellQuery = useRevenueUpsell(activeOrganizationId);
+  const revenueCrossSellQuery = useRevenueCrossSell(activeOrganizationId);
   const knowledgeDocumentsQuery = useKnowledgeDocuments(activeOrganizationId);
   const knowledgeSearchesQuery = useKnowledgeSearches(activeOrganizationId);
   const knowledgeCitationsQuery = useKnowledgeCitations(activeOrganizationId);
@@ -281,6 +298,16 @@ export default function AiMonitorPage() {
         <ConversionFunnelPanel conversions={conversionAnalyticsQuery.data} />
         <CallOutcomesPanel outcomes={callOutcomesQuery.data ?? []} />
       </div>
+      <RevenueIntelligencePanel
+        crossSell={revenueCrossSellQuery.data ?? []}
+        forecasts={revenueForecastsQuery.data ?? []}
+        insights={revenueInsightsQuery.data ?? []}
+        opportunities={revenueOpportunitiesQuery.data ?? []}
+        overview={revenueAnalyticsQuery.data}
+        risks={revenueRisksQuery.data ?? []}
+        upsell={revenueUpsellQuery.data ?? []}
+        winLoss={revenueWinLossQuery.data ?? []}
+      />
       <KnowledgeMonitorPanel
         citations={knowledgeCitationsQuery.data ?? []}
         documents={knowledgeDocumentsQuery.data ?? []}

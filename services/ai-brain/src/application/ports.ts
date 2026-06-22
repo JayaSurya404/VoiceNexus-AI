@@ -49,6 +49,14 @@ import type { AgentRecommendation } from "../domain/entities/agent-recommendatio
 import type { ComplianceAlert } from "../domain/entities/compliance-alert.js";
 import type { ConversationScorecard } from "../domain/entities/conversation-scorecard.js";
 import type { NextBestAction } from "../domain/entities/next-best-action.js";
+import type { CrossSellOpportunity } from "../domain/entities/cross-sell-opportunity.js";
+import type { DealRisk } from "../domain/entities/deal-risk.js";
+import type { DealStage } from "../domain/entities/deal-stage.js";
+import type { Opportunity } from "../domain/entities/opportunity.js";
+import type { RevenueForecast } from "../domain/entities/revenue-forecast.js";
+import type { SalesInsight } from "../domain/entities/sales-insight.js";
+import type { UpsellOpportunity } from "../domain/entities/upsell-opportunity.js";
+import type { WinLossAnalysis } from "../domain/entities/win-loss-analysis.js";
 
 export interface AIConversationRepository {
   create(input: Omit<AIConversation, "id" | "createdAt" | "updatedAt">): Promise<AIConversation>;
@@ -385,6 +393,76 @@ export interface CoachingEffectivenessMetrics {
   recommendationUsage: number;
   agentImprovementTrend: number;
   coachingEffectiveness: number;
+}
+
+export interface OpportunityRepository {
+  create(input: Omit<Opportunity, "id" | "createdAt" | "updatedAt">): Promise<Opportunity>;
+  update(id: string, organizationId: string, patch: Partial<Omit<Opportunity, "id" | "organizationId" | "createdAt" | "updatedAt">>): Promise<Opportunity | null>;
+  delete(id: string, organizationId: string): Promise<boolean>;
+  findById(id: string): Promise<Opportunity | null>;
+  listByOrganization(organizationId: string): Promise<Opportunity[]>;
+  listOpenByOrganization(organizationId: string): Promise<Opportunity[]>;
+  listClosingBetween(organizationId: string, start: Date, end: Date): Promise<Opportunity[]>;
+}
+
+export interface DealStageRepository {
+  create(input: Omit<DealStage, "id" | "createdAt" | "updatedAt">): Promise<DealStage>;
+  update(id: string, organizationId: string, patch: Partial<Omit<DealStage, "id" | "organizationId" | "createdAt" | "updatedAt">>): Promise<DealStage | null>;
+  delete(id: string, organizationId: string): Promise<boolean>;
+  findById(id: string): Promise<DealStage | null>;
+  listByOrganization(organizationId: string): Promise<DealStage[]>;
+}
+
+export interface RevenueForecastRepository {
+  create(input: Omit<RevenueForecast, "id" | "createdAt" | "updatedAt">): Promise<RevenueForecast>;
+  upsert(input: Omit<RevenueForecast, "id" | "createdAt" | "updatedAt">): Promise<RevenueForecast>;
+  findLatest(organizationId: string, period: RevenueForecast["period"]): Promise<RevenueForecast | null>;
+  listByOrganization(organizationId: string): Promise<RevenueForecast[]>;
+}
+
+export interface DealRiskRepository {
+  create(input: Omit<DealRisk, "id" | "createdAt" | "updatedAt">): Promise<DealRisk>;
+  update(id: string, organizationId: string, patch: Partial<Omit<DealRisk, "id" | "organizationId" | "createdAt" | "updatedAt">>): Promise<DealRisk | null>;
+  listByOrganization(organizationId: string): Promise<DealRisk[]>;
+  listActiveByOrganization(organizationId: string): Promise<DealRisk[]>;
+}
+
+export interface WinLossAnalysisRepository {
+  create(input: Omit<WinLossAnalysis, "id" | "createdAt" | "updatedAt">): Promise<WinLossAnalysis>;
+  upsert(input: Omit<WinLossAnalysis, "id" | "createdAt" | "updatedAt">): Promise<WinLossAnalysis>;
+  listByOrganization(organizationId: string): Promise<WinLossAnalysis[]>;
+}
+
+export interface SalesInsightRepository {
+  create(input: Omit<SalesInsight, "id" | "createdAt" | "updatedAt">): Promise<SalesInsight>;
+  listByOrganization(organizationId: string): Promise<SalesInsight[]>;
+}
+
+export interface UpsellOpportunityRepository {
+  create(input: Omit<UpsellOpportunity, "id" | "createdAt" | "updatedAt">): Promise<UpsellOpportunity>;
+  listByOrganization(organizationId: string): Promise<UpsellOpportunity[]>;
+}
+
+export interface CrossSellOpportunityRepository {
+  create(input: Omit<CrossSellOpportunity, "id" | "createdAt" | "updatedAt">): Promise<CrossSellOpportunity>;
+  listByOrganization(organizationId: string): Promise<CrossSellOpportunity[]>;
+}
+
+export interface RevenueAnalyticsSummary {
+  pipelineValue: number;
+  weightedRevenue: number;
+  committedRevenue: number;
+  projectedRevenue: number;
+  openOpportunities: number;
+  wonRevenue: number;
+  lostRevenue: number;
+  averageDealSize: number;
+  winRate: number;
+  riskValue: number;
+  upsellValue: number;
+  crossSellValue: number;
+  topLeadSource: string | null;
+  topOwnerId: string | null;
 }
 
 export interface CollaborationMetrics {

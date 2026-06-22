@@ -666,6 +666,132 @@ export interface CollaborationsDto {
   metrics: CollaborationMetricsDto;
 }
 
+export interface RevenueAnalyticsSummaryDto {
+  pipelineValue: number;
+  weightedRevenue: number;
+  committedRevenue: number;
+  projectedRevenue: number;
+  openOpportunities: number;
+  wonRevenue: number;
+  lostRevenue: number;
+  averageDealSize: number;
+  winRate: number;
+  riskValue: number;
+  upsellValue: number;
+  crossSellValue: number;
+  topLeadSource: string | null;
+  topOwnerId: string | null;
+}
+
+export interface OpportunityDto {
+  id: string;
+  organizationId: string;
+  leadId: string | null;
+  crmContactId: string | null;
+  crmDealId: string | null;
+  name: string;
+  value: number;
+  probability: number;
+  expectedCloseDate: string | null;
+  stageId: string | null;
+  stageName: string;
+  source: string;
+  ownerId: string | null;
+  aiScore: number;
+  status: "OPEN" | "WON" | "LOST";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RevenueForecastDto {
+  id: string;
+  organizationId: string;
+  period: "MONTH" | "QUARTER" | "YEAR";
+  periodStart: string;
+  periodEnd: string;
+  pipelineValue: number;
+  weightedRevenue: number;
+  committedRevenue: number;
+  projectedRevenue: number;
+  opportunityCount: number;
+  confidence: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DealRiskDto {
+  id: string;
+  organizationId: string;
+  opportunityId: string;
+  riskType: "STALLED_DEAL" | "LOW_ENGAGEMENT" | "MISSING_FOLLOW_UP" | "DECLINING_SENTIMENT" | "LONG_SALES_CYCLE";
+  riskScore: number;
+  reasons: string[];
+  recommendedActions: string[];
+  active: boolean;
+  detectedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WinLossAnalysisDto {
+  id: string;
+  organizationId: string;
+  opportunityId: string;
+  outcome: "WIN" | "LOSS";
+  reason: string;
+  competitors: string[];
+  successFactors: string[];
+  failureFactors: string[];
+  improvementSuggestions: string[];
+  analyzedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesInsightDto {
+  id: string;
+  organizationId: string;
+  type: "PIPELINE_GROWTH" | "RISK_CONCENTRATION" | "TOP_AGENT" | "LEAD_SOURCE" | "UPSELL_TREND" | "REVENUE_DRIVER";
+  title: string;
+  message: string;
+  value: number;
+  trend: "UP" | "DOWN" | "FLAT";
+  confidence: number;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsellOpportunityDto {
+  id: string;
+  organizationId: string;
+  customerId: string | null;
+  opportunityId: string | null;
+  product: string;
+  estimatedValue: number;
+  fitScore: number;
+  reasons: string[];
+  recommendedActions: string[];
+  status: "OPEN" | "ACCEPTED" | "DISMISSED";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrossSellOpportunityDto {
+  id: string;
+  organizationId: string;
+  customerId: string | null;
+  opportunityId: string | null;
+  product: string;
+  affinityScore: number;
+  estimatedValue: number;
+  complementaryServices: string[];
+  reasons: string[];
+  status: "OPEN" | "ACCEPTED" | "DISMISSED";
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AgentCoachingSessionDto {
   id: string;
   organizationId: string;
@@ -926,6 +1052,22 @@ export const aiBrainApi = {
     request<SentimentAnalysisDto[]>(`/analytics/sentiment?${query({ organizationId })}`),
   analyticsQuality: (organizationId: string) =>
     request<QualityScoreDto[]>(`/analytics/quality?${query({ organizationId })}`),
+  revenueAnalytics: (organizationId: string) =>
+    request<RevenueAnalyticsSummaryDto>(`/analytics/revenue?${query({ organizationId })}`),
+  revenueForecasts: (organizationId: string) =>
+    request<RevenueForecastDto[]>(`/analytics/revenue/forecast?${query({ organizationId })}`),
+  revenueRisks: (organizationId: string) =>
+    request<DealRiskDto[]>(`/analytics/revenue/risks?${query({ organizationId })}`),
+  revenueOpportunities: (organizationId: string) =>
+    request<OpportunityDto[]>(`/analytics/revenue/opportunities?${query({ organizationId })}`),
+  revenueWinLoss: (organizationId: string) =>
+    request<WinLossAnalysisDto[]>(`/analytics/revenue/win-loss?${query({ organizationId })}`),
+  revenueInsights: (organizationId: string) =>
+    request<SalesInsightDto[]>(`/analytics/revenue/insights?${query({ organizationId })}`),
+  revenueUpsell: (organizationId: string) =>
+    request<UpsellOpportunityDto[]>(`/analytics/revenue/upsell?${query({ organizationId })}`),
+  revenueCrossSell: (organizationId: string) =>
+    request<CrossSellOpportunityDto[]>(`/analytics/revenue/cross-sell?${query({ organizationId })}`),
   uploadKnowledge: (input: {
     organizationId: string;
     knowledgeBaseId?: string | null;

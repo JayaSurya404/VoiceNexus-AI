@@ -19,6 +19,8 @@ import {
   toConversationDto,
   toConversationAnalyticsDto,
   toConversationStateDto,
+  toCrossSellOpportunityDto,
+  toDealRiskDto,
   toCallOutcomeDto,
   toHumanAgentDto,
   toHumanAgentSessionDto,
@@ -33,6 +35,7 @@ import {
   toKnowledgeSuggestionDto,
   toLiveTakeoverDto,
   toMessageDto,
+  toOpportunityDto,
   toAgentSkillDto,
   toQualificationDto,
   toQueueDto,
@@ -40,13 +43,17 @@ import {
   toQueueAnalyticsDto,
   toQueueSessionDto,
   toQualityScoreDto,
+  toRevenueForecastDto,
   toRoutingDecisionDto,
   toRoutingRuleDto,
+  toSalesInsightDto,
   toScheduledFollowupDto,
   toSentimentAnalysisDto,
   toSupervisorSessionDto,
   toToolExecutionDto,
+  toUpsellOpportunityDto,
   toWhisperMessageDto,
+  toWinLossAnalysisDto,
   toWorkflowActionDto,
   toWorkflowExecutionDto,
 } from "./serializers.js";
@@ -316,6 +323,69 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       await authorize(container, token, organizationId);
       await container.services.analyticsEngine.refreshOrganization(organizationId);
       sendJson(response, 200, { data: (await container.repositories.qualityScores.listByOrganization(organizationId)).map(toQualityScoreDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/revenue" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      await Promise.all([
+        container.services.dealRisk.analyzeOrganization(organizationId),
+        container.services.winLoss.analyzeOrganization(organizationId),
+        container.services.upsellIntelligence.identifyUpsell(organizationId),
+        container.services.upsellIntelligence.identifyCrossSell(organizationId),
+        container.services.salesInsight.generate(organizationId),
+      ]);
+      sendJson(response, 200, { data: await container.services.revenueAnalytics.summarize(organizationId) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/revenue/forecast" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.revenueForecast.list(organizationId)).map(toRevenueForecastDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/revenue/risks" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.dealRisk.analyzeOrganization(organizationId)).map(toDealRiskDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/revenue/opportunities" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.opportunityIntelligence.enrichScores(organizationId)).map(toOpportunityDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/revenue/win-loss" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.winLoss.analyzeOrganization(organizationId)).map(toWinLossAnalysisDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/revenue/insights" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.salesInsight.generate(organizationId)).map(toSalesInsightDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/revenue/upsell" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.upsellIntelligence.identifyUpsell(organizationId)).map(toUpsellOpportunityDto) });
+      return;
+    }
+
+    if (url.pathname === "/analytics/revenue/cross-sell" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.upsellIntelligence.identifyCrossSell(organizationId)).map(toCrossSellOpportunityDto) });
       return;
     }
 

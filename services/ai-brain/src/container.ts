@@ -24,6 +24,7 @@ import { FollowupDecisionService } from "./application/services/followup-decisio
 import { FollowupSchedulerService } from "./application/services/followup-scheduler-service.js";
 import { HumanHandoffService } from "./application/services/human-handoff-service.js";
 import { HumanConsoleEventService } from "./application/services/human-console-event-service.js";
+import { DealRiskService } from "./application/services/deal-risk-service.js";
 import { ChunkingService } from "./application/services/chunking-service.js";
 import { CitationService } from "./application/services/citation-service.js";
 import { DocumentParserService } from "./application/services/document-parser-service.js";
@@ -42,17 +43,23 @@ import { MemoryActionService } from "./application/services/memory-action-servic
 import { NextBestActionService } from "./application/services/next-best-action-service.js";
 import { ObjectionCoachingService } from "./application/services/objection-coaching-service.js";
 import { ObjectionHandlerService } from "./application/services/objection-handler-service.js";
+import { OpportunityIntelligenceService } from "./application/services/opportunity-intelligence-service.js";
 import { PromptEngineService } from "./application/services/prompt-engine-service.js";
 import { QualityAssuranceService } from "./application/services/quality-assurance-service.js";
 import { QueuePerformanceService } from "./application/services/queue-performance-service.js";
 import { ResponseGenerationService } from "./application/services/response-generation-service.js";
 import { RagRuntimeService } from "./application/services/rag-runtime-service.js";
+import { RevenueAnalyticsService } from "./application/services/revenue-analytics-service.js";
+import { RevenueForecastService } from "./application/services/revenue-forecast-service.js";
 import { RoutingEngineService } from "./application/services/routing-engine-service.js";
+import { SalesInsightService } from "./application/services/sales-insight-service.js";
 import { ScorecardService } from "./application/services/scorecard-service.js";
 import { SentimentAnalysisService } from "./application/services/sentiment-analysis-service.js";
 import { SupervisorConsoleService } from "./application/services/supervisor-console-service.js";
 import { TimelineActionService } from "./application/services/timeline-action-service.js";
+import { UpsellIntelligenceService } from "./application/services/upsell-intelligence-service.js";
 import { WhisperService } from "./application/services/whisper-service.js";
+import { WinLossService } from "./application/services/win-loss-service.js";
 import { WorkflowEngineService } from "./application/services/workflow-engine-service.js";
 import { VoiceResponseRequestService } from "./application/services/voice-response-request-service.js";
 import { env } from "./config/env.js";
@@ -127,6 +134,16 @@ import {
   MongoConversationScorecardRepository,
   MongoNextBestActionRepository,
 } from "./infrastructure/database/mongoose/repositories/coaching-repositories.js";
+import {
+  MongoCrossSellOpportunityRepository,
+  MongoDealRiskRepository,
+  MongoDealStageRepository,
+  MongoOpportunityRepository,
+  MongoRevenueForecastRepository,
+  MongoSalesInsightRepository,
+  MongoUpsellOpportunityRepository,
+  MongoWinLossAnalysisRepository,
+} from "./infrastructure/database/mongoose/repositories/revenue-repositories.js";
 import { TranscriptFinalSubscriber } from "./infrastructure/redis/transcript-final-subscriber.js";
 import { OpenAIEmbeddingProvider } from "./providers/openai-embedding-provider.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
@@ -186,6 +203,14 @@ export function createContainer() {
   const complianceAlerts = new MongoComplianceAlertRepository();
   const conversationScorecards = new MongoConversationScorecardRepository();
   const nextBestActions = new MongoNextBestActionRepository();
+  const opportunities = new MongoOpportunityRepository();
+  const dealStages = new MongoDealStageRepository();
+  const revenueForecasts = new MongoRevenueForecastRepository();
+  const dealRisks = new MongoDealRiskRepository();
+  const winLossAnalyses = new MongoWinLossAnalysisRepository();
+  const salesInsights = new MongoSalesInsightRepository();
+  const upsellOpportunities = new MongoUpsellOpportunityRepository();
+  const crossSellOpportunities = new MongoCrossSellOpportunityRepository();
   const organizationAccess = new MongoOrganizationAccessRepository();
 
   const provider = new OpenAIProvider({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
@@ -257,6 +282,18 @@ export function createContainer() {
     nextBestActionService,
     complianceMonitor,
     scorecardService,
+  );
+  const opportunityIntelligence = new OpportunityIntelligenceService(opportunities, dealStages);
+  const revenueForecast = new RevenueForecastService(revenueForecasts, opportunities);
+  const dealRisk = new DealRiskService(dealRisks, opportunities);
+  const winLoss = new WinLossService(winLossAnalyses, opportunities);
+  const upsellIntelligence = new UpsellIntelligenceService(upsellOpportunities, crossSellOpportunities, opportunities);
+  const salesInsight = new SalesInsightService(salesInsights, opportunities, dealRisks, upsellOpportunities);
+  const revenueAnalytics = new RevenueAnalyticsService(
+    opportunities,
+    dealRisks,
+    upsellOpportunities,
+    crossSellOpportunities,
   );
   const humanConsoleEvents = new HumanConsoleEventService();
   const agentManagement = new AgentManagementService(
@@ -416,6 +453,14 @@ export function createContainer() {
       complianceAlerts,
       conversationScorecards,
       nextBestActions,
+      opportunities,
+      dealStages,
+      revenueForecasts,
+      dealRisks,
+      winLossAnalyses,
+      salesInsights,
+      upsellOpportunities,
+      crossSellOpportunities,
       organizationAccess,
     },
     services: {
@@ -437,6 +482,7 @@ export function createContainer() {
       conversionAnalytics,
       complianceMonitor,
       conversationAnalysis,
+      dealRisk,
       crmActionService,
       documentParser,
       chunking,
@@ -460,13 +506,17 @@ export function createContainer() {
       nextBestActionService,
       objectionCoaching,
       objectionHandler,
+      opportunityIntelligence,
       personaService,
       promptEngine,
       qualityAssurance,
       queuePerformance,
       qualificationRuntime,
       responseGeneration,
+      revenueAnalytics,
+      revenueForecast,
       routingEngine,
+      salesInsight,
       scorecardService,
       sentimentAnalysis,
       supervisorConsole,
@@ -475,7 +525,9 @@ export function createContainer() {
       summaryEngine,
       timelineActionService,
       toolRouter,
+      upsellIntelligence,
       whisperService,
+      winLoss,
       transcriptFinalSubscriber,
       workflowEngine,
       voiceResponseRequests,
