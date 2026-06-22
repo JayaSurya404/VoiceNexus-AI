@@ -16,6 +16,12 @@ import { FollowupDecisionService } from "./application/services/followup-decisio
 import { FollowupSchedulerService } from "./application/services/followup-scheduler-service.js";
 import { HumanHandoffService } from "./application/services/human-handoff-service.js";
 import { HumanConsoleEventService } from "./application/services/human-console-event-service.js";
+import { ChunkingService } from "./application/services/chunking-service.js";
+import { CitationService } from "./application/services/citation-service.js";
+import { DocumentParserService } from "./application/services/document-parser-service.js";
+import { EmbeddingService } from "./application/services/embedding-service.js";
+import { KnowledgeIngestionService } from "./application/services/knowledge-ingestion-service.js";
+import { KnowledgeSearchService } from "./application/services/knowledge-search-service.js";
 import { LeadQualificationRuntime } from "./application/services/lead-qualification-runtime.js";
 import { LiveTakeoverService } from "./application/services/live-takeover-service.js";
 import { MemoryInjectionService } from "./application/services/memory-injection-service.js";
@@ -25,6 +31,7 @@ import { PromptEngineService } from "./application/services/prompt-engine-servic
 import { QualityAssuranceService } from "./application/services/quality-assurance-service.js";
 import { QueuePerformanceService } from "./application/services/queue-performance-service.js";
 import { ResponseGenerationService } from "./application/services/response-generation-service.js";
+import { RagRuntimeService } from "./application/services/rag-runtime-service.js";
 import { RoutingEngineService } from "./application/services/routing-engine-service.js";
 import { SentimentAnalysisService } from "./application/services/sentiment-analysis-service.js";
 import { SupervisorConsoleService } from "./application/services/supervisor-console-service.js";
@@ -75,7 +82,15 @@ import {
   MongoQueueAnalyticsRepository,
   MongoSentimentAnalysisRepository,
 } from "./infrastructure/database/mongoose/repositories/analytics-repositories.js";
+import {
+  MongoKnowledgeBaseRepository,
+  MongoKnowledgeChunkRepository,
+  MongoKnowledgeCitationRepository,
+  MongoKnowledgeDocumentRepository,
+  MongoKnowledgeSearchRepository,
+} from "./infrastructure/database/mongoose/repositories/knowledge-repositories.js";
 import { TranscriptFinalSubscriber } from "./infrastructure/redis/transcript-final-subscriber.js";
+import { OpenAIEmbeddingProvider } from "./providers/openai-embedding-provider.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
 import { AccessTokenService } from "./security/access-token-service.js";
 import { ToolRouter } from "./tools/tool-router.js";
@@ -112,9 +127,15 @@ export function createContainer() {
   const callOutcomes = new MongoCallOutcomeRepository();
   const qualityScores = new MongoQualityScoreRepository();
   const sentimentAnalyses = new MongoSentimentAnalysisRepository();
+  const knowledgeBases = new MongoKnowledgeBaseRepository();
+  const knowledgeDocuments = new MongoKnowledgeDocumentRepository();
+  const knowledgeChunks = new MongoKnowledgeChunkRepository();
+  const knowledgeSearches = new MongoKnowledgeSearchRepository();
+  const knowledgeCitations = new MongoKnowledgeCitationRepository();
   const organizationAccess = new MongoOrganizationAccessRepository();
 
   const provider = new OpenAIProvider({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
+  const embeddingProvider = new OpenAIEmbeddingProvider({ apiKey: env.OPENAI_API_KEY });
   const personaService = new AgentPersonaService(personas);
   const contextBuilder = new ContextBuilder();
   const memoryInjection = new MemoryInjectionService();
@@ -125,6 +146,20 @@ export function createContainer() {
   const followupDecision = new FollowupDecisionService();
   const handoffService = new HumanHandoffService();
   const responseGeneration = new ResponseGenerationService(provider);
+  const documentParser = new DocumentParserService();
+  const chunking = new ChunkingService();
+  const embeddingService = new EmbeddingService(embeddingProvider);
+  const knowledgeIngestion = new KnowledgeIngestionService(
+    knowledgeBases,
+    knowledgeDocuments,
+    knowledgeChunks,
+    documentParser,
+    chunking,
+    embeddingService,
+  );
+  const knowledgeSearch = new KnowledgeSearchService(knowledgeChunks, knowledgeSearches, embeddingService);
+  const citationService = new CitationService(knowledgeCitations);
+  const ragRuntime = new RagRuntimeService(knowledgeSearch, citationService);
   const humanConsoleEvents = new HumanConsoleEventService();
   const agentManagement = new AgentManagementService(
     humanAgents,
@@ -224,6 +259,7 @@ export function createContainer() {
     workflowEngine,
     liveTakeover,
     voiceResponseRequests,
+    ragRuntime,
   );
   const transcriptFinalSubscriber = new TranscriptFinalSubscriber(runtime);
   const accessTokenService = new AccessTokenService(organizationAccess);
@@ -261,6 +297,11 @@ export function createContainer() {
       callOutcomes,
       qualityScores,
       sentimentAnalyses,
+      knowledgeBases,
+      knowledgeDocuments,
+      knowledgeChunks,
+      knowledgeSearches,
+      knowledgeCitations,
       organizationAccess,
     },
     services: {
@@ -275,10 +316,17 @@ export function createContainer() {
       contextBuilder,
       conversionAnalytics,
       crmActionService,
+      documentParser,
+      chunking,
+      embeddingService,
       followupDecision,
       followupScheduler,
       handoffService,
       humanConsoleEvents,
+      knowledgeIngestion,
+      knowledgeSearch,
+      citationService,
+      ragRuntime,
       liveTakeover,
       memoryActionService,
       memoryInjection,

@@ -21,6 +21,7 @@ import { ResponseGenerationService } from "./response-generation-service.js";
 import { WorkflowEngineService } from "./workflow-engine-service.js";
 import { VoiceResponseRequestService } from "./voice-response-request-service.js";
 import type { LiveTakeoverService } from "./live-takeover-service.js";
+import type { RagRuntimeService } from "./rag-runtime-service.js";
 
 export interface FinalTranscriptEvent {
   organizationId: string;
@@ -51,6 +52,7 @@ export class AgentRuntimeService {
     private readonly workflowEngine: WorkflowEngineService,
     private readonly liveTakeover: LiveTakeoverService,
     private readonly voiceResponseRequests: VoiceResponseRequestService,
+    private readonly ragRuntime: RagRuntimeService,
   ) {}
 
   async processTranscript(event: FinalTranscriptEvent): Promise<void> {
@@ -123,6 +125,20 @@ export class AgentRuntimeService {
     ]);
     const transcript = history.filter((message) => message.role === "user").map((message) => message.content).join("\n");
     const memory = this.memoryInjection.build(context);
+    const knowledge = await this.ragRuntime.buildContext({
+      organizationId: event.organizationId,
+      query: event.text,
+      transcript,
+      crmContext: {
+        lead: context.lead,
+        notes: context.notes,
+        timeline: context.timeline,
+        callHistory: context.previousCalls,
+      },
+      memoryContext: memory as unknown as Record<string, unknown>,
+      conversationId: conversation.id,
+      agentSessionId: session.id,
+    });
     const restoredState = await this.stateService.restoreOrCreate(session);
     const objection = this.objectionHandler.detect(event.text);
     const handoff = this.handoffService.decide({
@@ -158,7 +174,7 @@ export class AgentRuntimeService {
       handoff,
     });
     const response = await this.responseGeneration.generate({
-      messages: this.promptEngine.build({ context, memory, persona, state, transcript }),
+      messages: this.promptEngine.build({ context, memory, knowledge, persona, state, transcript }),
       tools: this.toolRouter.definitions(),
     });
 

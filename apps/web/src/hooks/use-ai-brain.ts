@@ -34,6 +34,9 @@ export const aiBrainKeys = {
   analyticsOutcomes: (organizationId: string) => ["ai", "analytics-outcomes", organizationId] as const,
   analyticsSentiment: (organizationId: string) => ["ai", "analytics-sentiment", organizationId] as const,
   analyticsQuality: (organizationId: string) => ["ai", "analytics-quality", organizationId] as const,
+  knowledgeDocuments: (organizationId: string) => ["ai", "knowledge-documents", organizationId] as const,
+  knowledgeSearches: (organizationId: string) => ["ai", "knowledge-searches", organizationId] as const,
+  knowledgeCitations: (organizationId: string) => ["ai", "knowledge-citations", organizationId] as const,
   takeovers: (organizationId: string) => ["ai", "takeovers", organizationId] as const,
   whispers: (organizationId: string) => ["ai", "whispers", organizationId] as const,
   supervisorOverview: (organizationId: string) => ["ai", "supervisor-overview", organizationId] as const,
@@ -299,6 +302,76 @@ export function useQualityScores(organizationId: string | null) {
     enabled: Boolean(organizationId),
     refetchInterval: 30_000,
   });
+}
+
+export function useKnowledgeDocuments(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.knowledgeDocuments(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listKnowledgeDocuments(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useKnowledgeSearches(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.knowledgeSearches(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listKnowledgeSearches(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useKnowledgeCitations(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.knowledgeCitations(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listKnowledgeCitations(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useKnowledgeActions(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  const invalidate = async () => {
+    if (!organizationId) return;
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.knowledgeDocuments(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.knowledgeSearches(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.knowledgeCitations(organizationId) }),
+    ]);
+  };
+
+  return {
+    upload: useMutation({
+      mutationFn: (input: {
+        title: string;
+        sourceName: string;
+        documentType: "PDF" | "DOCX" | "TXT" | "MARKDOWN";
+        content: string;
+        encoding?: "text" | "base64";
+        knowledgeBaseId?: string | null;
+        uploadedBy?: string | null;
+        metadata?: Record<string, unknown>;
+      }) => aiBrainApi.uploadKnowledge({ organizationId: organizationId ?? "", ...input }),
+      onSuccess: invalidate,
+    }),
+    search: useMutation({
+      mutationFn: (input: {
+        query: string;
+        transcript?: string | null;
+        crmContext?: Record<string, unknown>;
+        memoryContext?: Record<string, unknown>;
+        conversationId?: string | null;
+        agentSessionId?: string | null;
+      }) => aiBrainApi.searchKnowledge({ organizationId: organizationId ?? "", ...input }),
+      onSuccess: invalidate,
+    }),
+    deleteDocument: useMutation({
+      mutationFn: (id: string) => aiBrainApi.deleteKnowledgeDocument(id, organizationId ?? ""),
+      onSuccess: invalidate,
+    }),
+  };
 }
 
 export function useLiveTakeovers(organizationId: string | null) {

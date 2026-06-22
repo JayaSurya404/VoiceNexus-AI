@@ -17,6 +17,10 @@ import {
   toCallOutcomeDto,
   toHumanAgentDto,
   toHumanAgentSessionDto,
+  toKnowledgeCitationDto,
+  toKnowledgeChunkDto,
+  toKnowledgeDocumentDto,
+  toKnowledgeSearchDto,
   toLiveTakeoverDto,
   toMessageDto,
   toAgentSkillDto,
@@ -145,6 +149,28 @@ const routingAssignInputSchema = z.object({
   metadata: z.record(z.unknown()).default({}),
 });
 
+const knowledgeUploadInputSchema = z.object({
+  organizationId: z.string().min(1),
+  knowledgeBaseId: z.string().nullable().optional(),
+  title: z.string().min(1),
+  sourceName: z.string().min(1),
+  documentType: z.enum(["PDF", "DOCX", "TXT", "MARKDOWN"]),
+  content: z.string().min(1),
+  encoding: z.enum(["text", "base64"]).default("text"),
+  uploadedBy: z.string().nullable().optional(),
+  metadata: z.record(z.unknown()).default({}),
+});
+
+const knowledgeSearchInputSchema = z.object({
+  organizationId: z.string().min(1),
+  query: z.string().min(1),
+  transcript: z.string().nullable().optional(),
+  crmContext: z.record(z.unknown()).default({}),
+  memoryContext: z.record(z.unknown()).default({}),
+  conversationId: z.string().nullable().optional(),
+  agentSessionId: z.string().nullable().optional(),
+});
+
 export function createAiBrainHttpServer(container: Container) {
   return createServer((request, response) => {
     void handleRequest(container, request, response);
@@ -238,6 +264,99 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       await authorize(container, token, organizationId);
       await container.services.analyticsEngine.refreshOrganization(organizationId);
       sendJson(response, 200, { data: (await container.repositories.qualityScores.listByOrganization(organizationId)).map(toQualityScoreDto) });
+      return;
+    }
+
+    if (url.pathname === "/knowledge/upload" && request.method === "POST") {
+      const input = knowledgeUploadInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      const document = await container.services.knowledgeIngestion.upload({
+        ...input,
+        knowledgeBaseId: input.knowledgeBaseId ?? null,
+        uploadedBy: input.uploadedBy ?? null,
+      });
+      const chunks = await container.repositories.knowledgeChunks.listByDocument(input.organizationId, document.id);
+      sendJson(response, 201, {
+        data: {
+          document: toKnowledgeDocumentDto(document),
+          chunks: chunks.map(toKnowledgeChunkDto),
+        },
+      });
+      return;
+    }
+
+    if (url.pathname === "/knowledge/documents" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: (await container.repositories.knowledgeDocuments.listByOrganization(organizationId)).map(toKnowledgeDocumentDto),
+      });
+      return;
+    }
+
+    const knowledgeDocumentMatch = /^\/knowledge\/documents\/([^/]+)$/.exec(url.pathname);
+    if (knowledgeDocumentMatch?.[1] && request.method === "GET") {
+      const document = await container.repositories.knowledgeDocuments.findById(knowledgeDocumentMatch[1]);
+      if (!document) throw AiBrainError.notFound("Knowledge document");
+      await authorize(container, token, document.organizationId);
+      const chunks = await container.repositories.knowledgeChunks.listByDocument(document.organizationId, document.id);
+      sendJson(response, 200, {
+        data: {
+          document: toKnowledgeDocumentDto(document),
+          chunks: chunks.map(toKnowledgeChunkDto),
+        },
+      });
+      return;
+    }
+
+    if (knowledgeDocumentMatch?.[1] && request.method === "DELETE") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      await container.repositories.knowledgeChunks.deleteByDocument(organizationId, knowledgeDocumentMatch[1]);
+      sendJson(response, 200, {
+        data: { deleted: await container.repositories.knowledgeDocuments.delete(knowledgeDocumentMatch[1], organizationId) },
+      });
+      return;
+    }
+
+    if (url.pathname === "/knowledge/search" && request.method === "POST") {
+      const input = knowledgeSearchInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      const result = await container.services.ragRuntime.buildContext({
+        organizationId: input.organizationId,
+        query: input.query,
+        transcript: input.transcript ?? null,
+        crmContext: input.crmContext,
+        memoryContext: input.memoryContext,
+        conversationId: input.conversationId ?? null,
+        agentSessionId: input.agentSessionId ?? null,
+      });
+      sendJson(response, 200, {
+        data: {
+          chunks: result.chunks.map(toKnowledgeChunkDto),
+          citations: result.citations.map(toKnowledgeCitationDto),
+          confidence: result.confidence,
+          contextText: result.contextText,
+        },
+      });
+      return;
+    }
+
+    if (url.pathname === "/knowledge/searches" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: (await container.repositories.knowledgeSearches.listByOrganization(organizationId)).map(toKnowledgeSearchDto),
+      });
+      return;
+    }
+
+    if (url.pathname === "/knowledge/citations" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: (await container.repositories.knowledgeCitations.listByOrganization(organizationId)).map(toKnowledgeCitationDto),
+      });
       return;
     }
 

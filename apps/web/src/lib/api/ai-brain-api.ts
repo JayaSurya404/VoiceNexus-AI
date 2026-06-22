@@ -432,6 +432,74 @@ export interface QualityScoreDto {
   updatedAt: string;
 }
 
+export interface KnowledgeDocumentDto {
+  id: string;
+  organizationId: string;
+  knowledgeBaseId: string;
+  title: string;
+  documentType: "PDF" | "DOCX" | "TXT" | "MARKDOWN";
+  status: "UPLOADED" | "PARSED" | "CHUNKED" | "EMBEDDED" | "FAILED";
+  sourceName: string;
+  contentHash: string;
+  metadata: Record<string, unknown>;
+  error: string | null;
+  chunkCount: number;
+  uploadedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KnowledgeChunkDto {
+  id: string;
+  organizationId: string;
+  knowledgeBaseId: string;
+  documentId: string;
+  chunkIndex: number;
+  content: string;
+  tokenCount: number;
+  embedding: number[];
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KnowledgeSearchDto {
+  id: string;
+  organizationId: string;
+  query: string;
+  transcript: string | null;
+  crmContext: Record<string, unknown>;
+  memoryContext: Record<string, unknown>;
+  resultChunkIds: string[];
+  confidence: number;
+  createdAt: string;
+}
+
+export interface KnowledgeCitationDto {
+  id: string;
+  organizationId: string;
+  searchId: string | null;
+  conversationId: string | null;
+  agentSessionId: string | null;
+  documentId: string;
+  chunkId: string;
+  quote: string;
+  relevanceScore: number;
+  createdAt: string;
+}
+
+export interface KnowledgeDocumentDetailsDto {
+  document: KnowledgeDocumentDto;
+  chunks: KnowledgeChunkDto[];
+}
+
+export interface KnowledgeSearchResultDto {
+  chunks: KnowledgeChunkDto[];
+  citations: KnowledgeCitationDto[];
+  confidence: number;
+  contextText: string;
+}
+
 export interface HumanAgentSessionDto {
   id: string;
   organizationId: string;
@@ -596,6 +664,36 @@ export const aiBrainApi = {
     request<SentimentAnalysisDto[]>(`/analytics/sentiment?${query({ organizationId })}`),
   analyticsQuality: (organizationId: string) =>
     request<QualityScoreDto[]>(`/analytics/quality?${query({ organizationId })}`),
+  uploadKnowledge: (input: {
+    organizationId: string;
+    knowledgeBaseId?: string | null;
+    title: string;
+    sourceName: string;
+    documentType: KnowledgeDocumentDto["documentType"];
+    content: string;
+    encoding?: "text" | "base64";
+    uploadedBy?: string | null;
+    metadata?: Record<string, unknown>;
+  }) => request<KnowledgeDocumentDetailsDto>("/knowledge/upload", { method: "POST", body: JSON.stringify(input) }),
+  listKnowledgeDocuments: (organizationId: string) =>
+    request<KnowledgeDocumentDto[]>(`/knowledge/documents?${query({ organizationId })}`),
+  getKnowledgeDocument: (id: string) =>
+    request<KnowledgeDocumentDetailsDto>(`/knowledge/documents/${encodeURIComponent(id)}`),
+  deleteKnowledgeDocument: (id: string, organizationId: string) =>
+    request<{ deleted: boolean }>(`/knowledge/documents/${encodeURIComponent(id)}?${query({ organizationId })}`, { method: "DELETE" }),
+  searchKnowledge: (input: {
+    organizationId: string;
+    query: string;
+    transcript?: string | null;
+    crmContext?: Record<string, unknown>;
+    memoryContext?: Record<string, unknown>;
+    conversationId?: string | null;
+    agentSessionId?: string | null;
+  }) => request<KnowledgeSearchResultDto>("/knowledge/search", { method: "POST", body: JSON.stringify(input) }),
+  listKnowledgeSearches: (organizationId: string) =>
+    request<KnowledgeSearchDto[]>(`/knowledge/searches?${query({ organizationId })}`),
+  listKnowledgeCitations: (organizationId: string) =>
+    request<KnowledgeCitationDto[]>(`/knowledge/citations?${query({ organizationId })}`),
   updateAvailability: (
     agentId: string,
     input: { organizationId: string; status: HumanAgentDto["status"]; statusReason?: string | null; capacity?: number },

@@ -1,6 +1,7 @@
 import type { AgentPersona } from "../../domain/entities/agent-persona.js";
 import type { ConversationState } from "../../domain/entities/conversation-state.js";
 import type { ProviderMessage } from "../../providers/ai-provider.js";
+import type { RagContextPackage } from "../ports.js";
 import type { ConversationContext } from "./context-builder.js";
 import type { InjectedMemoryContext } from "./memory-injection-service.js";
 
@@ -8,6 +9,7 @@ export class PromptEngineService {
   build(input: {
     context: ConversationContext;
     memory: InjectedMemoryContext;
+    knowledge?: RagContextPackage | null;
     persona: AgentPersona;
     state: ConversationState;
     transcript: string;
@@ -33,6 +35,18 @@ export class PromptEngineService {
             callHistory: input.context.previousCalls,
           },
           memory: input.memory,
+          knowledge: input.knowledge
+            ? {
+                confidence: input.knowledge.confidence,
+                contextText: input.knowledge.contextText,
+                citations: input.knowledge.citations.map((citation) => ({
+                  documentId: citation.documentId,
+                  chunkId: citation.chunkId,
+                  quote: citation.quote,
+                  relevanceScore: citation.relevanceScore,
+                })),
+              }
+            : null,
           timeline: input.context.timeline,
           currentState: input.state,
           currentTranscript: input.transcript,

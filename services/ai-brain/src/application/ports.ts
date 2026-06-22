@@ -28,6 +28,11 @@ import type { ConversationAnalytics } from "../domain/entities/conversation-anal
 import type { QualityScore } from "../domain/entities/quality-score.js";
 import type { QueueAnalytics } from "../domain/entities/queue-analytics.js";
 import type { SentimentAnalysis } from "../domain/entities/sentiment-analysis.js";
+import type { KnowledgeBase } from "../domain/entities/knowledge-base.js";
+import type { KnowledgeChunk } from "../domain/entities/knowledge-chunk.js";
+import type { KnowledgeCitation } from "../domain/entities/knowledge-citation.js";
+import type { KnowledgeDocument } from "../domain/entities/knowledge-document.js";
+import type { KnowledgeSearch } from "../domain/entities/knowledge-search.js";
 
 export interface AIConversationRepository {
   create(input: Omit<AIConversation, "id" | "createdAt" | "updatedAt">): Promise<AIConversation>;
@@ -226,6 +231,47 @@ export interface QualityScoreRepository {
 export interface SentimentAnalysisRepository {
   listByOrganization(organizationId: string): Promise<SentimentAnalysis[]>;
   upsert(input: Omit<SentimentAnalysis, "id" | "createdAt" | "updatedAt">): Promise<SentimentAnalysis>;
+}
+
+export interface KnowledgeBaseRepository {
+  create(input: Omit<KnowledgeBase, "id" | "createdAt" | "updatedAt">): Promise<KnowledgeBase>;
+  findById(id: string): Promise<KnowledgeBase | null>;
+  findDefault(organizationId: string): Promise<KnowledgeBase | null>;
+  listByOrganization(organizationId: string): Promise<KnowledgeBase[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<KnowledgeBase, "name" | "description" | "active">>): Promise<KnowledgeBase | null>;
+}
+
+export interface KnowledgeDocumentRepository {
+  create(input: Omit<KnowledgeDocument, "id" | "createdAt" | "updatedAt">): Promise<KnowledgeDocument>;
+  delete(id: string, organizationId: string): Promise<boolean>;
+  findById(id: string): Promise<KnowledgeDocument | null>;
+  listByOrganization(organizationId: string): Promise<KnowledgeDocument[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<KnowledgeDocument, "status" | "metadata" | "error" | "chunkCount">>): Promise<KnowledgeDocument | null>;
+}
+
+export interface KnowledgeChunkRepository {
+  createMany(input: Array<Omit<KnowledgeChunk, "id" | "createdAt" | "updatedAt">>): Promise<KnowledgeChunk[]>;
+  deleteByDocument(organizationId: string, documentId: string): Promise<number>;
+  listByDocument(organizationId: string, documentId: string): Promise<KnowledgeChunk[]>;
+  listByOrganization(organizationId: string): Promise<KnowledgeChunk[]>;
+}
+
+export interface KnowledgeSearchRepository {
+  create(input: Omit<KnowledgeSearch, "id">): Promise<KnowledgeSearch>;
+  listByOrganization(organizationId: string): Promise<KnowledgeSearch[]>;
+}
+
+export interface KnowledgeCitationRepository {
+  createMany(input: Array<Omit<KnowledgeCitation, "id">>): Promise<KnowledgeCitation[]>;
+  listByOrganization(organizationId: string): Promise<KnowledgeCitation[]>;
+}
+
+export interface RagContextPackage {
+  query: string;
+  chunks: KnowledgeChunk[];
+  citations: KnowledgeCitation[];
+  confidence: number;
+  contextText: string;
 }
 
 export interface ExternalActionRepository {

@@ -14,6 +14,7 @@ import {
 } from "@/components/ai-monitor/analytics-panels";
 import { ConversationFeed } from "@/components/ai-monitor/conversation-feed";
 import { DecisionTimeline } from "@/components/ai-monitor/decision-timeline";
+import { KnowledgeMonitorPanel } from "@/components/ai-monitor/knowledge-panels";
 import {
   AgentPanel,
   SupervisorOverviewPanel,
@@ -61,6 +62,9 @@ import {
   useConversationAnalytics,
   useHumanAgents,
   useHumanConsoleActions,
+  useKnowledgeCitations,
+  useKnowledgeDocuments,
+  useKnowledgeSearches,
   useLiveTakeovers,
   useQueueHealth,
   useQueueAnalytics,
@@ -104,6 +108,9 @@ export default function AiMonitorPage() {
   const callOutcomesQuery = useCallOutcomes(activeOrganizationId);
   const sentimentAnalyticsQuery = useSentimentAnalytics(activeOrganizationId);
   const qualityScoresQuery = useQualityScores(activeOrganizationId);
+  const knowledgeDocumentsQuery = useKnowledgeDocuments(activeOrganizationId);
+  const knowledgeSearchesQuery = useKnowledgeSearches(activeOrganizationId);
+  const knowledgeCitationsQuery = useKnowledgeCitations(activeOrganizationId);
   const workflowsQuery = useWorkflows(activeOrganizationId);
   const workflowActionsQuery = useWorkflowActions(activeOrganizationId);
   const followupsQuery = useFollowups(activeOrganizationId);
@@ -234,6 +241,11 @@ export default function AiMonitorPage() {
         <ConversionFunnelPanel conversions={conversionAnalyticsQuery.data} />
         <CallOutcomesPanel outcomes={callOutcomesQuery.data ?? []} />
       </div>
+      <KnowledgeMonitorPanel
+        citations={knowledgeCitationsQuery.data ?? []}
+        documents={knowledgeDocumentsQuery.data ?? []}
+        searches={knowledgeSearchesQuery.data ?? []}
+      />
       <TakeoverPanel
         onEnd={(id) => humanConsoleActions.endTakeover.mutate(id)}
         onStart={(id) => humanConsoleActions.startTakeover.mutate(id)}

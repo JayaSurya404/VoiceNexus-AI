@@ -28,6 +28,11 @@ import type { ConversationAnalytics } from "../../../../domain/entities/conversa
 import type { QualityScore } from "../../../../domain/entities/quality-score.js";
 import type { QueueAnalytics } from "../../../../domain/entities/queue-analytics.js";
 import type { SentimentAnalysis } from "../../../../domain/entities/sentiment-analysis.js";
+import type { KnowledgeBase } from "../../../../domain/entities/knowledge-base.js";
+import type { KnowledgeChunk } from "../../../../domain/entities/knowledge-chunk.js";
+import type { KnowledgeCitation } from "../../../../domain/entities/knowledge-citation.js";
+import type { KnowledgeDocument } from "../../../../domain/entities/knowledge-document.js";
+import type { KnowledgeSearch } from "../../../../domain/entities/knowledge-search.js";
 
 type Doc = Record<string, unknown> & { _id: { toString(): string } };
 
@@ -559,5 +564,82 @@ export function toSentimentAnalysis(doc: Doc): SentimentAnalysis {
     reasoning: String(doc.reasoning),
     createdAt: date(doc.createdAt),
     updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toKnowledgeBase(doc: Doc): KnowledgeBase {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    name: String(doc.name),
+    description: doc.description ? String(doc.description) : null,
+    active: Boolean(doc.active),
+    createdBy: id(doc.createdBy),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toKnowledgeDocument(doc: Doc): KnowledgeDocument {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    knowledgeBaseId: id(doc.knowledgeBaseId) ?? "",
+    title: String(doc.title),
+    documentType: doc.documentType as KnowledgeDocument["documentType"],
+    status: doc.status as KnowledgeDocument["status"],
+    sourceName: String(doc.sourceName),
+    contentHash: String(doc.contentHash),
+    metadata: (doc.metadata as Record<string, unknown>) ?? {},
+    error: doc.error ? String(doc.error) : null,
+    chunkCount: Number(doc.chunkCount),
+    uploadedBy: id(doc.uploadedBy),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toKnowledgeChunk(doc: Doc): KnowledgeChunk {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    knowledgeBaseId: id(doc.knowledgeBaseId) ?? "",
+    documentId: id(doc.documentId) ?? "",
+    chunkIndex: Number(doc.chunkIndex),
+    content: String(doc.content),
+    tokenCount: Number(doc.tokenCount),
+    embedding: (doc.embedding as number[] | undefined) ?? [],
+    metadata: (doc.metadata as Record<string, unknown>) ?? {},
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toKnowledgeSearch(doc: Doc): KnowledgeSearch {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    query: String(doc.query),
+    transcript: doc.transcript ? String(doc.transcript) : null,
+    crmContext: (doc.crmContext as Record<string, unknown>) ?? {},
+    memoryContext: (doc.memoryContext as Record<string, unknown>) ?? {},
+    resultChunkIds: ((doc.resultChunkIds as unknown[] | undefined) ?? []).map((value) => id(value) ?? ""),
+    confidence: Number(doc.confidence),
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toKnowledgeCitation(doc: Doc): KnowledgeCitation {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    searchId: id(doc.searchId),
+    conversationId: id(doc.conversationId),
+    agentSessionId: id(doc.agentSessionId),
+    documentId: id(doc.documentId) ?? "",
+    chunkId: id(doc.chunkId) ?? "",
+    quote: String(doc.quote),
+    relevanceScore: Number(doc.relevanceScore),
+    createdAt: date(doc.createdAt),
   };
 }
