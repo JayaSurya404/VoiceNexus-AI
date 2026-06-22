@@ -58,11 +58,19 @@ function createTwilioWebSocketServer(container: Container): WebSocketServer {
         }
 
         context = await container.services.realtimeGatewayService.openConnection(claims);
+        container.services.audioPlaybackService.register(context.callSessionId, {
+          streamSid: null,
+          send: (payload) => socket.readyState === socket.OPEN && socket.send(JSON.stringify(payload)),
+        });
 
         socket.on("message", (message) => {
           void (async () => {
             try {
-              await container.services.realtimeGatewayService.handleMessage(context!, rawMessageToString(message));
+              const raw = rawMessageToString(message);
+              registerStreamSid(container, context!.callSessionId, raw, (payload) =>
+                socket.readyState === socket.OPEN && socket.send(JSON.stringify(payload)),
+              );
+              await container.services.realtimeGatewayService.handleMessage(context!, raw);
             } catch (error) {
               socket.close(1008, errorMessage(error));
             }
@@ -70,6 +78,7 @@ function createTwilioWebSocketServer(container: Container): WebSocketServer {
         });
         socket.on("close", () => {
           if (context) {
+            container.services.audioPlaybackService.unregister(context.callSessionId);
             void container.services.realtimeGatewayService.closeConnection(context, "Socket closed");
           }
         });
@@ -80,6 +89,22 @@ function createTwilioWebSocketServer(container: Container): WebSocketServer {
   });
 
   return wss;
+}
+
+function registerStreamSid(
+  container: Container,
+  callSessionId: string,
+  raw: string,
+  send: (payload: Record<string, unknown>) => void,
+): void {
+  try {
+    const parsed = JSON.parse(raw) as { event?: string; streamSid?: string };
+    if (parsed.event === "start" && parsed.streamSid) {
+      container.services.audioPlaybackService.register(callSessionId, { streamSid: parsed.streamSid, send });
+    }
+  } catch {
+    // Validation happens in RealtimeGatewayService.
+  }
 }
 
 async function handleHttpRequest(container: Container, request: IncomingMessage, response: ServerResponse) {
@@ -121,6 +146,47 @@ async function handleHttpRequest(container: Container, request: IncomingMessage,
       return;
     }
 
+    if (request.method === "GET" && url.pathname === "/voice-responses") {
+      const organizationId = requiredQuery(url, "organizationId");
+      const token = bearerToken(request);
+      if (!token) throw RealtimeError.unauthorized();
+      await container.services.accessTokenService.ensureOrganizationAccess(token, organizationId);
+      const responses = await container.repositories.voiceResponses.listByOrganization(organizationId);
+      sendJson(response, 200, { data: responses.map(toVoiceResponseDto) });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/voice-responses/metrics") {
+      const organizationId = requiredQuery(url, "organizationId");
+      const token = bearerToken(request);
+      if (!token) throw RealtimeError.unauthorized();
+      await container.services.accessTokenService.ensureOrganizationAccess(token, organizationId);
+      sendJson(response, 200, { data: await container.repositories.voiceResponses.metrics(organizationId) });
+      return;
+    }
+
+    const sessionResponsesMatch = /^\/voice-responses\/session\/([^/]+)$/.exec(url.pathname);
+    if (request.method === "GET" && sessionResponsesMatch?.[1]) {
+      const organizationId = requiredQuery(url, "organizationId");
+      const token = bearerToken(request);
+      if (!token) throw RealtimeError.unauthorized();
+      await container.services.accessTokenService.ensureOrganizationAccess(token, organizationId);
+      const responses = await container.repositories.voiceResponses.listBySession(organizationId, sessionResponsesMatch[1]);
+      sendJson(response, 200, { data: responses.map(toVoiceResponseDto) });
+      return;
+    }
+
+    const voiceResponseMatch = /^\/voice-responses\/([^/]+)$/.exec(url.pathname);
+    if (request.method === "GET" && voiceResponseMatch?.[1]) {
+      const token = bearerToken(request);
+      if (!token) throw RealtimeError.unauthorized();
+      const voiceResponse = await container.repositories.voiceResponses.findById(voiceResponseMatch[1]);
+      if (!voiceResponse) throw RealtimeError.badRequest("NOT_FOUND", "Voice response was not found");
+      await container.services.accessTokenService.ensureOrganizationAccess(token, voiceResponse.organizationId);
+      sendJson(response, 200, { data: toVoiceResponseDto(voiceResponse) });
+      return;
+    }
+
     sendJson(response, 404, {
       error: {
         code: "NOT_FOUND",
@@ -136,6 +202,41 @@ async function handleHttpRequest(container: Container, request: IncomingMessage,
       },
     });
   }
+}
+
+function requiredQuery(url: URL, key: string): string {
+  const value = url.searchParams.get(key);
+  if (!value) throw RealtimeError.badRequest("VALIDATION_ERROR", `${key} is required`);
+  return value;
+}
+
+function toVoiceResponseDto(value: {
+  id: string;
+  organizationId: string;
+  sessionId: string | null;
+  callId: string;
+  leadId: string | null;
+  responseText: string;
+  provider: string;
+  voice: string;
+  audioUrl: string | null;
+  durationMs: number;
+  audioBytes: number;
+  status: string;
+  latencyMs: number | null;
+  playbackStartedAt: Date | null;
+  playbackCompletedAt: Date | null;
+  error: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    ...value,
+    playbackStartedAt: value.playbackStartedAt?.toISOString() ?? null,
+    playbackCompletedAt: value.playbackCompletedAt?.toISOString() ?? null,
+    createdAt: value.createdAt.toISOString(),
+    updatedAt: value.updatedAt.toISOString(),
+  };
 }
 
 function applyCors(response: ServerResponse): void {

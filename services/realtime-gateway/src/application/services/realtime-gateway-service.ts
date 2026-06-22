@@ -6,6 +6,7 @@ import type { EventBus } from "../ports/event-bus.js";
 import type { AiConversationSessionRepository } from "../ports/repositories.js";
 import type { ActiveCallStateService } from "./active-call-state-service.js";
 import type { RealtimeTranscriptionService } from "./realtime-transcription-service.js";
+import type { AudioSegment } from "../../domain/entities/audio-segment.js";
 import type { MediaStreamClaims } from "../../security/media-stream-token-service.js";
 import { RealtimeError } from "../../shared/errors.js";
 
@@ -160,6 +161,30 @@ export class RealtimeGatewayService {
 
   async closeConnection(context: RealtimeConnectionContext, reason: string): Promise<void> {
     await this.endCall(context, null, reason);
+  }
+
+  async playResponseAudio(segment: AudioSegment): Promise<void> {
+    await this.eventBus.publish("voice.response.playback", {
+      organizationId: "",
+      callSessionId: segment.callId,
+      payload: { type: "PLAY_RESPONSE_AUDIO", voiceResponseId: segment.voiceResponseId, sequence: segment.sequence },
+    });
+  }
+
+  async queueAudio(segment: AudioSegment): Promise<void> {
+    await this.eventBus.publish("voice.response.playback", {
+      organizationId: "",
+      callSessionId: segment.callId,
+      payload: { type: "QUEUE_AUDIO", voiceResponseId: segment.voiceResponseId, sequence: segment.sequence },
+    });
+  }
+
+  async completePlayback(callId: string, voiceResponseId: string): Promise<void> {
+    await this.eventBus.publish("voice.response.playback", {
+      organizationId: "",
+      callSessionId: callId,
+      payload: { type: "COMPLETE_PLAYBACK", voiceResponseId },
+    });
   }
 
   private async handleConnected(context: RealtimeConnectionContext, event: z.infer<typeof twilioBaseEventSchema>) {

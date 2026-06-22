@@ -17,6 +17,7 @@ import { PromptEngineService } from "./application/services/prompt-engine-servic
 import { ResponseGenerationService } from "./application/services/response-generation-service.js";
 import { TimelineActionService } from "./application/services/timeline-action-service.js";
 import { WorkflowEngineService } from "./application/services/workflow-engine-service.js";
+import { VoiceResponseRequestService } from "./application/services/voice-response-request-service.js";
 import { env } from "./config/env.js";
 import {
   MongoAgentDecisionRepository,
@@ -83,6 +84,7 @@ export function createContainer() {
     auditService,
   );
   const workflowEngine = new WorkflowEngineService(workflows, actionExecution);
+  const voiceResponseRequests = new VoiceResponseRequestService();
   const toolRouter = new ToolRouter(toolExecutions);
   const runtime = new AgentRuntimeService(
     sessions,
@@ -102,6 +104,7 @@ export function createContainer() {
     summaryEngine,
     toolRouter,
     workflowEngine,
+    voiceResponseRequests,
   );
   const transcriptFinalSubscriber = new TranscriptFinalSubscriber(runtime);
   const accessTokenService = new AccessTokenService(organizationAccess);
@@ -146,6 +149,7 @@ export function createContainer() {
       toolRouter,
       transcriptFinalSubscriber,
       workflowEngine,
+      voiceResponseRequests,
     },
   };
 }

@@ -3,6 +3,9 @@ export const realtimeTopics = [
   "call.audio",
   "transcript.partial",
   "transcript.final",
+  "voice.response.requested",
+  "voice.response.created",
+  "voice.response.playback",
 ] as const;
 
 export type RealtimeTopic = (typeof realtimeTopics)[number];

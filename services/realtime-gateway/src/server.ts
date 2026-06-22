@@ -9,6 +9,7 @@ await connectRedis();
 
 const container = createContainer();
 await container.services.eventBus.connect();
+await container.services.voiceResponseEventSubscriber.start();
 const server = await createRealtimeHttpServer(container);
 
 server.listen(env.REALTIME_GATEWAY_PORT, () => {

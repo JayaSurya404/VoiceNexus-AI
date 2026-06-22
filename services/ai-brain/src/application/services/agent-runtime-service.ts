@@ -19,6 +19,7 @@ import { ObjectionHandlerService } from "./objection-handler-service.js";
 import { PromptEngineService } from "./prompt-engine-service.js";
 import { ResponseGenerationService } from "./response-generation-service.js";
 import { WorkflowEngineService } from "./workflow-engine-service.js";
+import { VoiceResponseRequestService } from "./voice-response-request-service.js";
 
 export interface FinalTranscriptEvent {
   organizationId: string;
@@ -47,6 +48,7 @@ export class AgentRuntimeService {
     private readonly summaryEngine: ConversationSummaryEngine,
     private readonly toolRouter: ToolRouter,
     private readonly workflowEngine: WorkflowEngineService,
+    private readonly voiceResponseRequests: VoiceResponseRequestService,
   ) {}
 
   async processTranscript(event: FinalTranscriptEvent): Promise<void> {
@@ -244,6 +246,13 @@ export class AgentRuntimeService {
       content: response.content,
       tokens: response.tokens,
       timestamp: new Date(),
+    });
+    await this.voiceResponseRequests.request({
+      organizationId: event.organizationId,
+      callId: event.callSessionId,
+      sessionId: session.id,
+      leadId,
+      responseText: response.content,
     });
     await this.conversations.update(conversation.id, {
       currentIntent: state.detectedIntent,

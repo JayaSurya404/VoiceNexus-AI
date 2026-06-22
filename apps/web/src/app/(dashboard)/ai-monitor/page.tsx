@@ -7,6 +7,7 @@ import { ConversationFeed } from "@/components/ai-monitor/conversation-feed";
 import { DecisionTimeline } from "@/components/ai-monitor/decision-timeline";
 import { RuntimeMetrics } from "@/components/ai-monitor/runtime-metrics";
 import { StateAndQualification } from "@/components/ai-monitor/state-and-qualification";
+import { VoiceResponseMetricsPanel, VoiceResponsesPanel } from "@/components/ai-monitor/voice-response-panels";
 import {
   ActionHistoryPanel,
   AuditTrailPanel,
@@ -33,6 +34,7 @@ import {
   useWorkflows,
 } from "@/hooks/use-ai-brain";
 import { useAuthStore } from "@/store/auth-store";
+import { useVoiceResponseMetrics, useVoiceResponses } from "@/hooks/use-voice-responses";
 
 export default function AiMonitorPage() {
   const activeOrganizationId = useAuthStore((state) => state.activeOrganizationId);
@@ -46,6 +48,8 @@ export default function AiMonitorPage() {
   const workflowActionsQuery = useWorkflowActions(activeOrganizationId);
   const followupsQuery = useFollowups(activeOrganizationId);
   const auditsQuery = useActionAudits(activeOrganizationId);
+  const voiceResponsesQuery = useVoiceResponses(activeOrganizationId);
+  const voiceMetricsQuery = useVoiceResponseMetrics(activeOrganizationId);
   const sessions = useMemo(() => sessionsQuery.data ?? [], [sessionsQuery.data]);
 
   useEffect(() => {
@@ -87,6 +91,7 @@ export default function AiMonitorPage() {
       </section>
 
       <RuntimeMetrics metrics={metricsQuery.data} />
+      <VoiceResponseMetricsPanel metrics={voiceMetricsQuery.data} />
 
       <Card>
         <CardHeader>
@@ -111,6 +116,7 @@ export default function AiMonitorPage() {
       )}
 
       <StateAndQualification qualification={selectedQualification} state={stateQuery.data} />
+      <VoiceResponsesPanel responses={voiceResponsesQuery.data ?? []} />
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <WorkflowExecutionsPanel workflows={workflowsQuery.data ?? []} />
