@@ -792,6 +792,145 @@ export interface CrossSellOpportunityDto {
   updatedAt: string;
 }
 
+export interface ReportTemplateDto {
+  id: string;
+  organizationId: string;
+  name: string;
+  description: string | null;
+  type: "EXECUTIVE" | "KPI" | "TREND" | "BENCHMARK" | "CUSTOM";
+  sections: string[];
+  filters: Record<string, unknown>;
+  active: boolean;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ScheduledReportDto {
+  id: string;
+  organizationId: string;
+  templateId: string | null;
+  name: string;
+  frequency: "DAILY" | "WEEKLY" | "MONTHLY" | "QUARTERLY";
+  recipients: string[];
+  nextRunAt: string;
+  lastRunAt: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GeneratedReportDto {
+  id: string;
+  organizationId: string;
+  templateId: string | null;
+  scheduledReportId: string | null;
+  title: string;
+  status: "GENERATED" | "FAILED";
+  summary: string;
+  data: Record<string, unknown>;
+  generatedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExecutiveDashboardDto {
+  id: string;
+  organizationId: string;
+  revenueOverview: Record<string, unknown>;
+  salesOverview: Record<string, unknown>;
+  coachingOverview: Record<string, unknown>;
+  knowledgeOverview: Record<string, unknown>;
+  agentOverview: Record<string, unknown>;
+  aiPerformanceOverview: Record<string, unknown>;
+  computedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KpiMetricDto {
+  id: string;
+  organizationId: string;
+  category: "REVENUE" | "SALES" | "SUPPORT" | "AI" | "CONVERSION";
+  name: string;
+  value: number;
+  target: number | null;
+  unit: string;
+  trend: "UP" | "DOWN" | "FLAT";
+  period: "DAILY" | "WEEKLY" | "MONTHLY" | "QUARTERLY";
+  measuredAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TrendAnalysisDto {
+  id: string;
+  organizationId: string;
+  metric: string;
+  period: "DAILY" | "WEEKLY" | "MONTHLY" | "QUARTERLY";
+  values: Array<{ label: string; value: number }>;
+  changePercent: number;
+  direction: "UP" | "DOWN" | "FLAT";
+  insight: string;
+  computedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BenchmarkMetricDto {
+  id: string;
+  organizationId: string;
+  scope: "TEAM" | "QUEUE" | "AGENT" | "ORGANIZATION";
+  metric: string;
+  value: number;
+  benchmarkValue: number;
+  percentile: number;
+  comparison: "ABOVE" | "BELOW" | "AT";
+  computedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BusinessInsightDto {
+  id: string;
+  organizationId: string;
+  type: "GROWTH_OPPORTUNITY" | "PERFORMANCE_ANOMALY" | "RISK_INDICATOR" | "OPTIMIZATION_SUGGESTION";
+  title: string;
+  message: string;
+  impactScore: number;
+  recommendedActions: string[];
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExecutiveSummaryDto {
+  id: string;
+  organizationId: string;
+  title: string;
+  summary: string;
+  highlights: string[];
+  risks: string[];
+  recommendations: string[];
+  sourceSections: string[];
+  generatedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReportExportDto {
+  id: string;
+  organizationId: string;
+  reportId: string | null;
+  format: "CSV" | "XLSX" | "PDF";
+  status: "PENDING" | "COMPLETED" | "FAILED";
+  fileName: string;
+  downloadUrl: string | null;
+  requestedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AgentCoachingSessionDto {
   id: string;
   organizationId: string;
@@ -1068,6 +1207,24 @@ export const aiBrainApi = {
     request<UpsellOpportunityDto[]>(`/analytics/revenue/upsell?${query({ organizationId })}`),
   revenueCrossSell: (organizationId: string) =>
     request<CrossSellOpportunityDto[]>(`/analytics/revenue/cross-sell?${query({ organizationId })}`),
+  reportingDashboard: (organizationId: string) =>
+    request<ExecutiveDashboardDto>(`/reports/dashboard?${query({ organizationId })}`),
+  reportingKpis: (organizationId: string) =>
+    request<KpiMetricDto[]>(`/reports/kpis?${query({ organizationId })}`),
+  reportingTrends: (organizationId: string) =>
+    request<TrendAnalysisDto[]>(`/reports/trends?${query({ organizationId })}`),
+  reportingBenchmarks: (organizationId: string) =>
+    request<BenchmarkMetricDto[]>(`/reports/benchmarks?${query({ organizationId })}`),
+  reportingInsights: (organizationId: string) =>
+    request<BusinessInsightDto[]>(`/reports/insights?${query({ organizationId })}`),
+  reportingSummaries: (organizationId: string) =>
+    request<ExecutiveSummaryDto[]>(`/reports/summaries?${query({ organizationId })}`),
+  reportingTemplates: (organizationId: string) =>
+    request<ReportTemplateDto[]>(`/reports/templates?${query({ organizationId })}`),
+  reportingGenerated: (organizationId: string) =>
+    request<GeneratedReportDto[]>(`/reports/generated?${query({ organizationId })}`),
+  reportingExports: (organizationId: string) =>
+    request<ReportExportDto[]>(`/reports/exports?${query({ organizationId })}`),
   uploadKnowledge: (input: {
     organizationId: string;
     knowledgeBaseId?: string | null;

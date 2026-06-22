@@ -42,6 +42,15 @@ export const aiBrainKeys = {
   revenueInsights: (organizationId: string) => ["ai", "revenue-insights", organizationId] as const,
   revenueUpsell: (organizationId: string) => ["ai", "revenue-upsell", organizationId] as const,
   revenueCrossSell: (organizationId: string) => ["ai", "revenue-cross-sell", organizationId] as const,
+  reportingDashboard: (organizationId: string) => ["ai", "reporting-dashboard", organizationId] as const,
+  reportingKpis: (organizationId: string) => ["ai", "reporting-kpis", organizationId] as const,
+  reportingTrends: (organizationId: string) => ["ai", "reporting-trends", organizationId] as const,
+  reportingBenchmarks: (organizationId: string) => ["ai", "reporting-benchmarks", organizationId] as const,
+  reportingInsights: (organizationId: string) => ["ai", "reporting-insights", organizationId] as const,
+  reportingSummaries: (organizationId: string) => ["ai", "reporting-summaries", organizationId] as const,
+  reportingTemplates: (organizationId: string) => ["ai", "reporting-templates", organizationId] as const,
+  reportingGenerated: (organizationId: string) => ["ai", "reporting-generated", organizationId] as const,
+  reportingExports: (organizationId: string) => ["ai", "reporting-exports", organizationId] as const,
   knowledgeDocuments: (organizationId: string) => ["ai", "knowledge-documents", organizationId] as const,
   knowledgeSearches: (organizationId: string) => ["ai", "knowledge-searches", organizationId] as const,
   knowledgeCitations: (organizationId: string) => ["ai", "knowledge-citations", organizationId] as const,
@@ -395,6 +404,87 @@ export function useRevenueCrossSell(organizationId: string | null) {
   return useQuery({
     queryKey: aiBrainKeys.revenueCrossSell(organizationId ?? ""),
     queryFn: () => aiBrainApi.revenueCrossSell(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useReportingDashboard(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.reportingDashboard(organizationId ?? ""),
+    queryFn: () => aiBrainApi.reportingDashboard(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useReportingKpis(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.reportingKpis(organizationId ?? ""),
+    queryFn: () => aiBrainApi.reportingKpis(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useReportingTrends(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.reportingTrends(organizationId ?? ""),
+    queryFn: () => aiBrainApi.reportingTrends(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useReportingBenchmarks(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.reportingBenchmarks(organizationId ?? ""),
+    queryFn: () => aiBrainApi.reportingBenchmarks(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useReportingInsights(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.reportingInsights(organizationId ?? ""),
+    queryFn: () => aiBrainApi.reportingInsights(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useReportingSummaries(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.reportingSummaries(organizationId ?? ""),
+    queryFn: () => aiBrainApi.reportingSummaries(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useReportingTemplates(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.reportingTemplates(organizationId ?? ""),
+    queryFn: () => aiBrainApi.reportingTemplates(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useReportingGenerated(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.reportingGenerated(organizationId ?? ""),
+    queryFn: () => aiBrainApi.reportingGenerated(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useReportingExports(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.reportingExports(organizationId ?? ""),
+    queryFn: () => aiBrainApi.reportingExports(organizationId ?? ""),
     enabled: Boolean(organizationId),
     refetchInterval: 30_000,
   });

@@ -50,6 +50,16 @@ import type { RevenueForecast } from "../domain/entities/revenue-forecast.js";
 import type { SalesInsight } from "../domain/entities/sales-insight.js";
 import type { UpsellOpportunity } from "../domain/entities/upsell-opportunity.js";
 import type { WinLossAnalysis } from "../domain/entities/win-loss-analysis.js";
+import type { BenchmarkMetric } from "../domain/entities/benchmark-metric.js";
+import type { BusinessInsight } from "../domain/entities/business-insight.js";
+import type { ExecutiveDashboard } from "../domain/entities/executive-dashboard.js";
+import type { ExecutiveSummary } from "../domain/entities/executive-summary.js";
+import type { GeneratedReport } from "../domain/entities/generated-report.js";
+import type { KpiMetric } from "../domain/entities/kpi-metric.js";
+import type { ReportExport } from "../domain/entities/report-export.js";
+import type { ReportTemplate } from "../domain/entities/report-template.js";
+import type { ScheduledReport } from "../domain/entities/scheduled-report.js";
+import type { TrendAnalysis } from "../domain/entities/trend-analysis.js";
 
 export const toConversationDto = (value: AIConversation) => ({ ...value, startedAt: iso(value.startedAt), endedAt: maybeIso(value.endedAt), createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 export const toMessageDto = (value: AIMessage) => ({ ...value, timestamp: iso(value.timestamp) });
@@ -218,6 +228,52 @@ export const toCrossSellOpportunityDto = (value: CrossSellOpportunity) => ({
   createdAt: iso(value.createdAt),
   updatedAt: iso(value.updatedAt),
 });
+export const toReportTemplateDto = (value: ReportTemplate) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toScheduledReportDto = (value: ScheduledReport) => ({
+  ...value,
+  nextRunAt: iso(value.nextRunAt),
+  lastRunAt: maybeIso(value.lastRunAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toGeneratedReportDto = (value: GeneratedReport) => ({
+  ...value,
+  generatedAt: iso(value.generatedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toExecutiveDashboardDto = (value: ExecutiveDashboard) => ({
+  ...value,
+  computedAt: iso(value.computedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toKpiMetricDto = (value: KpiMetric) => ({
+  ...value,
+  measuredAt: iso(value.measuredAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toTrendAnalysisDto = (value: TrendAnalysis) => ({
+  ...value,
+  computedAt: iso(value.computedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toBenchmarkMetricDto = (value: BenchmarkMetric) => ({
+  ...value,
+  computedAt: iso(value.computedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toBusinessInsightDto = (value: BusinessInsight) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toExecutiveSummaryDto = (value: ExecutiveSummary) => ({
+  ...value,
+  generatedAt: iso(value.generatedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toReportExportDto = (value: ReportExport) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 
 function iso(date: Date): string {
   return date.toISOString();

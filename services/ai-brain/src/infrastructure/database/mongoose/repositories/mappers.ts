@@ -57,6 +57,16 @@ import type { RevenueForecast } from "../../../../domain/entities/revenue-foreca
 import type { SalesInsight } from "../../../../domain/entities/sales-insight.js";
 import type { UpsellOpportunity } from "../../../../domain/entities/upsell-opportunity.js";
 import type { WinLossAnalysis } from "../../../../domain/entities/win-loss-analysis.js";
+import type { BenchmarkMetric } from "../../../../domain/entities/benchmark-metric.js";
+import type { BusinessInsight } from "../../../../domain/entities/business-insight.js";
+import type { ExecutiveDashboard } from "../../../../domain/entities/executive-dashboard.js";
+import type { ExecutiveSummary } from "../../../../domain/entities/executive-summary.js";
+import type { GeneratedReport } from "../../../../domain/entities/generated-report.js";
+import type { KpiMetric } from "../../../../domain/entities/kpi-metric.js";
+import type { ReportExport } from "../../../../domain/entities/report-export.js";
+import type { ReportTemplate } from "../../../../domain/entities/report-template.js";
+import type { ScheduledReport } from "../../../../domain/entities/scheduled-report.js";
+import type { TrendAnalysis } from "../../../../domain/entities/trend-analysis.js";
 
 type Doc = Record<string, unknown> & { _id: { toString(): string } };
 
@@ -1071,6 +1081,168 @@ export function toCrossSellOpportunity(doc: Doc): CrossSellOpportunity {
     complementaryServices: Array.isArray(doc.complementaryServices) ? doc.complementaryServices.map(String) : [],
     reasons: Array.isArray(doc.reasons) ? doc.reasons.map(String) : [],
     status: doc.status as CrossSellOpportunity["status"],
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+const record = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+
+export function toReportTemplate(doc: Doc): ReportTemplate {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    name: String(doc.name),
+    description: doc.description === null || doc.description === undefined ? null : String(doc.description),
+    type: doc.type as ReportTemplate["type"],
+    sections: Array.isArray(doc.sections) ? doc.sections.map(String) : [],
+    filters: record(doc.filters),
+    active: Boolean(doc.active),
+    createdBy: id(doc.createdBy),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toScheduledReport(doc: Doc): ScheduledReport {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    templateId: id(doc.templateId),
+    name: String(doc.name),
+    frequency: doc.frequency as ScheduledReport["frequency"],
+    recipients: Array.isArray(doc.recipients) ? doc.recipients.map(String) : [],
+    nextRunAt: date(doc.nextRunAt),
+    lastRunAt: doc.lastRunAt ? date(doc.lastRunAt) : null,
+    active: Boolean(doc.active),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toGeneratedReport(doc: Doc): GeneratedReport {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    templateId: id(doc.templateId),
+    scheduledReportId: id(doc.scheduledReportId),
+    title: String(doc.title),
+    status: doc.status as GeneratedReport["status"],
+    summary: String(doc.summary),
+    data: record(doc.data),
+    generatedAt: date(doc.generatedAt),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toExecutiveDashboard(doc: Doc): ExecutiveDashboard {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    revenueOverview: record(doc.revenueOverview),
+    salesOverview: record(doc.salesOverview),
+    coachingOverview: record(doc.coachingOverview),
+    knowledgeOverview: record(doc.knowledgeOverview),
+    agentOverview: record(doc.agentOverview),
+    aiPerformanceOverview: record(doc.aiPerformanceOverview),
+    computedAt: date(doc.computedAt),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toKpiMetric(doc: Doc): KpiMetric {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    category: doc.category as KpiMetric["category"],
+    name: String(doc.name),
+    value: Number(doc.value),
+    target: doc.target === null || doc.target === undefined ? null : Number(doc.target),
+    unit: String(doc.unit),
+    trend: doc.trend as KpiMetric["trend"],
+    period: doc.period as KpiMetric["period"],
+    measuredAt: date(doc.measuredAt),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toTrendAnalysis(doc: Doc): TrendAnalysis {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    metric: String(doc.metric),
+    period: doc.period as TrendAnalysis["period"],
+    values: Array.isArray(doc.values) ? doc.values.map((item) => record(item) as { label: string; value: number }) : [],
+    changePercent: Number(doc.changePercent),
+    direction: doc.direction as TrendAnalysis["direction"],
+    insight: String(doc.insight),
+    computedAt: date(doc.computedAt),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toBenchmarkMetric(doc: Doc): BenchmarkMetric {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    scope: doc.scope as BenchmarkMetric["scope"],
+    metric: String(doc.metric),
+    value: Number(doc.value),
+    benchmarkValue: Number(doc.benchmarkValue),
+    percentile: Number(doc.percentile),
+    comparison: doc.comparison as BenchmarkMetric["comparison"],
+    computedAt: date(doc.computedAt),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toBusinessInsight(doc: Doc): BusinessInsight {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    type: doc.type as BusinessInsight["type"],
+    title: String(doc.title),
+    message: String(doc.message),
+    impactScore: Number(doc.impactScore),
+    recommendedActions: Array.isArray(doc.recommendedActions) ? doc.recommendedActions.map(String) : [],
+    metadata: record(doc.metadata),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toExecutiveSummary(doc: Doc): ExecutiveSummary {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    title: String(doc.title),
+    summary: String(doc.summary),
+    highlights: Array.isArray(doc.highlights) ? doc.highlights.map(String) : [],
+    risks: Array.isArray(doc.risks) ? doc.risks.map(String) : [],
+    recommendations: Array.isArray(doc.recommendations) ? doc.recommendations.map(String) : [],
+    sourceSections: Array.isArray(doc.sourceSections) ? doc.sourceSections.map(String) : [],
+    generatedAt: date(doc.generatedAt),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toReportExport(doc: Doc): ReportExport {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    reportId: id(doc.reportId),
+    format: doc.format as ReportExport["format"],
+    status: doc.status as ReportExport["status"],
+    fileName: String(doc.fileName),
+    downloadUrl: doc.downloadUrl === null || doc.downloadUrl === undefined ? null : String(doc.downloadUrl),
+    requestedBy: id(doc.requestedBy),
     createdAt: date(doc.createdAt),
     updatedAt: date(doc.updatedAt),
   };

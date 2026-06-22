@@ -37,6 +37,7 @@ import {
 } from "@/components/ai-monitor/queue-routing-panels";
 import { RuntimeMetrics } from "@/components/ai-monitor/runtime-metrics";
 import { RealtimeRuntimeMetricsPanel, RealtimeRuntimePanel } from "@/components/ai-monitor/realtime-runtime-panels";
+import { ReportingIntelligencePanel } from "@/components/ai-monitor/reporting-panels";
 import { RevenueIntelligencePanel } from "@/components/ai-monitor/revenue-panels";
 import { StateAndQualification } from "@/components/ai-monitor/state-and-qualification";
 import { VoiceResponseMetricsPanel, VoiceResponsesPanel } from "@/components/ai-monitor/voice-response-panels";
@@ -104,6 +105,15 @@ import {
   useRevenueRisks,
   useRevenueUpsell,
   useRevenueWinLoss,
+  useReportingBenchmarks,
+  useReportingDashboard,
+  useReportingExports,
+  useReportingGenerated,
+  useReportingInsights,
+  useReportingKpis,
+  useReportingSummaries,
+  useReportingTemplates,
+  useReportingTrends,
   useRoutingDecisions,
   useRuntimeMetrics,
   useSentimentAnalytics,
@@ -149,6 +159,15 @@ export default function AiMonitorPage() {
   const revenueInsightsQuery = useRevenueInsights(activeOrganizationId);
   const revenueUpsellQuery = useRevenueUpsell(activeOrganizationId);
   const revenueCrossSellQuery = useRevenueCrossSell(activeOrganizationId);
+  const reportingDashboardQuery = useReportingDashboard(activeOrganizationId);
+  const reportingKpisQuery = useReportingKpis(activeOrganizationId);
+  const reportingTrendsQuery = useReportingTrends(activeOrganizationId);
+  const reportingBenchmarksQuery = useReportingBenchmarks(activeOrganizationId);
+  const reportingInsightsQuery = useReportingInsights(activeOrganizationId);
+  const reportingSummariesQuery = useReportingSummaries(activeOrganizationId);
+  const reportingTemplatesQuery = useReportingTemplates(activeOrganizationId);
+  const reportingGeneratedQuery = useReportingGenerated(activeOrganizationId);
+  const reportingExportsQuery = useReportingExports(activeOrganizationId);
   const knowledgeDocumentsQuery = useKnowledgeDocuments(activeOrganizationId);
   const knowledgeSearchesQuery = useKnowledgeSearches(activeOrganizationId);
   const knowledgeCitationsQuery = useKnowledgeCitations(activeOrganizationId);
@@ -307,6 +326,17 @@ export default function AiMonitorPage() {
         risks={revenueRisksQuery.data ?? []}
         upsell={revenueUpsellQuery.data ?? []}
         winLoss={revenueWinLossQuery.data ?? []}
+      />
+      <ReportingIntelligencePanel
+        benchmarks={reportingBenchmarksQuery.data ?? []}
+        dashboard={reportingDashboardQuery.data}
+        exports={reportingExportsQuery.data ?? []}
+        generated={reportingGeneratedQuery.data ?? []}
+        insights={reportingInsightsQuery.data ?? []}
+        kpis={reportingKpisQuery.data ?? []}
+        summaries={reportingSummariesQuery.data ?? []}
+        templates={reportingTemplatesQuery.data ?? []}
+        trends={reportingTrendsQuery.data ?? []}
       />
       <KnowledgeMonitorPanel
         citations={knowledgeCitationsQuery.data ?? []}

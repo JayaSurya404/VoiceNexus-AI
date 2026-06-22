@@ -57,6 +57,16 @@ import type { RevenueForecast } from "../domain/entities/revenue-forecast.js";
 import type { SalesInsight } from "../domain/entities/sales-insight.js";
 import type { UpsellOpportunity } from "../domain/entities/upsell-opportunity.js";
 import type { WinLossAnalysis } from "../domain/entities/win-loss-analysis.js";
+import type { BenchmarkMetric } from "../domain/entities/benchmark-metric.js";
+import type { BusinessInsight } from "../domain/entities/business-insight.js";
+import type { ExecutiveDashboard } from "../domain/entities/executive-dashboard.js";
+import type { ExecutiveSummary } from "../domain/entities/executive-summary.js";
+import type { GeneratedReport } from "../domain/entities/generated-report.js";
+import type { KpiMetric } from "../domain/entities/kpi-metric.js";
+import type { ReportExport } from "../domain/entities/report-export.js";
+import type { ReportTemplate } from "../domain/entities/report-template.js";
+import type { ScheduledReport } from "../domain/entities/scheduled-report.js";
+import type { TrendAnalysis } from "../domain/entities/trend-analysis.js";
 
 export interface AIConversationRepository {
   create(input: Omit<AIConversation, "id" | "createdAt" | "updatedAt">): Promise<AIConversation>;
@@ -463,6 +473,68 @@ export interface RevenueAnalyticsSummary {
   crossSellValue: number;
   topLeadSource: string | null;
   topOwnerId: string | null;
+}
+
+export interface ReportTemplateRepository {
+  create(input: Omit<ReportTemplate, "id" | "createdAt" | "updatedAt">): Promise<ReportTemplate>;
+  update(id: string, organizationId: string, patch: Partial<Omit<ReportTemplate, "id" | "organizationId" | "createdAt" | "updatedAt">>): Promise<ReportTemplate | null>;
+  delete(id: string, organizationId: string): Promise<boolean>;
+  listByOrganization(organizationId: string): Promise<ReportTemplate[]>;
+}
+
+export interface ScheduledReportRepository {
+  create(input: Omit<ScheduledReport, "id" | "createdAt" | "updatedAt">): Promise<ScheduledReport>;
+  update(id: string, organizationId: string, patch: Partial<Omit<ScheduledReport, "id" | "organizationId" | "createdAt" | "updatedAt">>): Promise<ScheduledReport | null>;
+  listByOrganization(organizationId: string): Promise<ScheduledReport[]>;
+}
+
+export interface GeneratedReportRepository {
+  create(input: Omit<GeneratedReport, "id" | "createdAt" | "updatedAt">): Promise<GeneratedReport>;
+  listByOrganization(organizationId: string): Promise<GeneratedReport[]>;
+}
+
+export interface ExecutiveDashboardRepository {
+  upsert(input: Omit<ExecutiveDashboard, "id" | "createdAt" | "updatedAt">): Promise<ExecutiveDashboard>;
+  latest(organizationId: string): Promise<ExecutiveDashboard | null>;
+}
+
+export interface KpiMetricRepository {
+  create(input: Omit<KpiMetric, "id" | "createdAt" | "updatedAt">): Promise<KpiMetric>;
+  listByOrganization(organizationId: string): Promise<KpiMetric[]>;
+}
+
+export interface TrendAnalysisRepository {
+  create(input: Omit<TrendAnalysis, "id" | "createdAt" | "updatedAt">): Promise<TrendAnalysis>;
+  listByOrganization(organizationId: string): Promise<TrendAnalysis[]>;
+}
+
+export interface BenchmarkMetricRepository {
+  create(input: Omit<BenchmarkMetric, "id" | "createdAt" | "updatedAt">): Promise<BenchmarkMetric>;
+  listByOrganization(organizationId: string): Promise<BenchmarkMetric[]>;
+}
+
+export interface BusinessInsightRepository {
+  create(input: Omit<BusinessInsight, "id" | "createdAt" | "updatedAt">): Promise<BusinessInsight>;
+  listByOrganization(organizationId: string): Promise<BusinessInsight[]>;
+}
+
+export interface ExecutiveSummaryRepository {
+  create(input: Omit<ExecutiveSummary, "id" | "createdAt" | "updatedAt">): Promise<ExecutiveSummary>;
+  listByOrganization(organizationId: string): Promise<ExecutiveSummary[]>;
+}
+
+export interface ReportExportRepository {
+  create(input: Omit<ReportExport, "id" | "createdAt" | "updatedAt">): Promise<ReportExport>;
+  listByOrganization(organizationId: string): Promise<ReportExport[]>;
+}
+
+export interface ReportingAnalyticsOverview {
+  templateCount: number;
+  scheduledReportCount: number;
+  generatedReportCount: number;
+  kpiCount: number;
+  insightCount: number;
+  exportCount: number;
 }
 
 export interface CollaborationMetrics {

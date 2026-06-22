@@ -16,6 +16,8 @@ import {
   toAgentAvailabilityDto,
   toActionAuditDto,
   toAgentPerformanceDto,
+  toBenchmarkMetricDto,
+  toBusinessInsightDto,
   toConversationDto,
   toConversationAnalyticsDto,
   toConversationStateDto,
@@ -36,6 +38,10 @@ import {
   toLiveTakeoverDto,
   toMessageDto,
   toOpportunityDto,
+  toExecutiveDashboardDto,
+  toExecutiveSummaryDto,
+  toGeneratedReportDto,
+  toKpiMetricDto,
   toAgentSkillDto,
   toQualificationDto,
   toQueueDto,
@@ -46,11 +52,14 @@ import {
   toRevenueForecastDto,
   toRoutingDecisionDto,
   toRoutingRuleDto,
+  toReportExportDto,
+  toReportTemplateDto,
   toSalesInsightDto,
   toScheduledFollowupDto,
   toSentimentAnalysisDto,
   toSupervisorSessionDto,
   toToolExecutionDto,
+  toTrendAnalysisDto,
   toUpsellOpportunityDto,
   toWhisperMessageDto,
   toWinLossAnalysisDto,
@@ -386,6 +395,69 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       const organizationId = requiredQuery(url, "organizationId");
       await authorize(container, token, organizationId);
       sendJson(response, 200, { data: (await container.services.upsellIntelligence.identifyCrossSell(organizationId)).map(toCrossSellOpportunityDto) });
+      return;
+    }
+
+    if (url.pathname === "/reports/dashboard" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: toExecutiveDashboardDto(await container.services.executiveDashboard.getDashboard(organizationId)) });
+      return;
+    }
+
+    if (url.pathname === "/reports/kpis" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.kpiReporting.refresh(organizationId)).map(toKpiMetricDto) });
+      return;
+    }
+
+    if (url.pathname === "/reports/trends" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.trendAnalysisService.calculate(organizationId)).map(toTrendAnalysisDto) });
+      return;
+    }
+
+    if (url.pathname === "/reports/benchmarks" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.benchmarkService.calculate(organizationId)).map(toBenchmarkMetricDto) });
+      return;
+    }
+
+    if (url.pathname === "/reports/insights" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.businessInsight.generate(organizationId)).map(toBusinessInsightDto) });
+      return;
+    }
+
+    if (url.pathname === "/reports/summaries" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.executiveSummary.generate(organizationId)).map(toExecutiveSummaryDto) });
+      return;
+    }
+
+    if (url.pathname === "/reports/templates" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.reportBuilder.templatesForOrganization(organizationId)).map(toReportTemplateDto) });
+      return;
+    }
+
+    if (url.pathname === "/reports/generated" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.reportBuilder.generatedReports(organizationId)).map(toGeneratedReportDto) });
+      return;
+    }
+
+    if (url.pathname === "/reports/exports" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.reportExport.list(organizationId)).map(toReportExportDto) });
       return;
     }
 

@@ -12,6 +12,8 @@ import { AgentTeamService } from "./application/services/agent-team-service.js";
 import { ActionExecutionService } from "./application/services/action-execution-service.js";
 import { AnalyticsEngineService } from "./application/services/analytics-engine-service.js";
 import { AuditService } from "./application/services/audit-service.js";
+import { BenchmarkService } from "./application/services/benchmark-service.js";
+import { BusinessInsightService } from "./application/services/business-insight-service.js";
 import { CallScoringService } from "./application/services/call-scoring-service.js";
 import { ContextBuilder } from "./application/services/context-builder.js";
 import { ConversationStateService } from "./application/services/conversation-state-service.js";
@@ -29,6 +31,8 @@ import { ChunkingService } from "./application/services/chunking-service.js";
 import { CitationService } from "./application/services/citation-service.js";
 import { DocumentParserService } from "./application/services/document-parser-service.js";
 import { EmbeddingService } from "./application/services/embedding-service.js";
+import { ExecutiveDashboardService } from "./application/services/executive-dashboard-service.js";
+import { ExecutiveSummaryService } from "./application/services/executive-summary-service.js";
 import { KnowledgeIngestionService } from "./application/services/knowledge-ingestion-service.js";
 import { KnowledgeSearchService } from "./application/services/knowledge-search-service.js";
 import { KnowledgeFeedbackService } from "./application/services/knowledge-feedback-service.js";
@@ -36,6 +40,7 @@ import { KnowledgeGapAnalysisService } from "./application/services/knowledge-ga
 import { KnowledgeImprovementService } from "./application/services/knowledge-improvement-service.js";
 import { KnowledgeLearningService } from "./application/services/knowledge-learning-service.js";
 import { KnowledgeSuggestionService } from "./application/services/knowledge-suggestion-service.js";
+import { KpiReportingService } from "./application/services/kpi-reporting-service.js";
 import { LeadQualificationRuntime } from "./application/services/lead-qualification-runtime.js";
 import { LiveTakeoverService } from "./application/services/live-takeover-service.js";
 import { MemoryInjectionService } from "./application/services/memory-injection-service.js";
@@ -49,14 +54,19 @@ import { QualityAssuranceService } from "./application/services/quality-assuranc
 import { QueuePerformanceService } from "./application/services/queue-performance-service.js";
 import { ResponseGenerationService } from "./application/services/response-generation-service.js";
 import { RagRuntimeService } from "./application/services/rag-runtime-service.js";
+import { ReportBuilderService } from "./application/services/report-builder-service.js";
+import { ReportExportService } from "./application/services/report-export-service.js";
+import { ReportingAnalyticsService } from "./application/services/reporting-analytics-service.js";
 import { RevenueAnalyticsService } from "./application/services/revenue-analytics-service.js";
 import { RevenueForecastService } from "./application/services/revenue-forecast-service.js";
 import { RoutingEngineService } from "./application/services/routing-engine-service.js";
 import { SalesInsightService } from "./application/services/sales-insight-service.js";
+import { ScheduledReportService } from "./application/services/scheduled-report-service.js";
 import { ScorecardService } from "./application/services/scorecard-service.js";
 import { SentimentAnalysisService } from "./application/services/sentiment-analysis-service.js";
 import { SupervisorConsoleService } from "./application/services/supervisor-console-service.js";
 import { TimelineActionService } from "./application/services/timeline-action-service.js";
+import { TrendAnalysisService } from "./application/services/trend-analysis-service.js";
 import { UpsellIntelligenceService } from "./application/services/upsell-intelligence-service.js";
 import { WhisperService } from "./application/services/whisper-service.js";
 import { WinLossService } from "./application/services/win-loss-service.js";
@@ -144,6 +154,18 @@ import {
   MongoUpsellOpportunityRepository,
   MongoWinLossAnalysisRepository,
 } from "./infrastructure/database/mongoose/repositories/revenue-repositories.js";
+import {
+  MongoBenchmarkMetricRepository,
+  MongoBusinessInsightRepository,
+  MongoExecutiveDashboardRepository,
+  MongoExecutiveSummaryRepository,
+  MongoGeneratedReportRepository,
+  MongoKpiMetricRepository,
+  MongoReportExportRepository,
+  MongoReportTemplateRepository,
+  MongoScheduledReportRepository,
+  MongoTrendAnalysisRepository,
+} from "./infrastructure/database/mongoose/repositories/reporting-repositories.js";
 import { TranscriptFinalSubscriber } from "./infrastructure/redis/transcript-final-subscriber.js";
 import { OpenAIEmbeddingProvider } from "./providers/openai-embedding-provider.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
@@ -211,6 +233,16 @@ export function createContainer() {
   const salesInsights = new MongoSalesInsightRepository();
   const upsellOpportunities = new MongoUpsellOpportunityRepository();
   const crossSellOpportunities = new MongoCrossSellOpportunityRepository();
+  const reportTemplates = new MongoReportTemplateRepository();
+  const scheduledReports = new MongoScheduledReportRepository();
+  const generatedReports = new MongoGeneratedReportRepository();
+  const executiveDashboards = new MongoExecutiveDashboardRepository();
+  const kpiMetrics = new MongoKpiMetricRepository();
+  const trendAnalyses = new MongoTrendAnalysisRepository();
+  const benchmarkMetrics = new MongoBenchmarkMetricRepository();
+  const businessInsights = new MongoBusinessInsightRepository();
+  const executiveSummaries = new MongoExecutiveSummaryRepository();
+  const reportExports = new MongoReportExportRepository();
   const organizationAccess = new MongoOrganizationAccessRepository();
 
   const provider = new OpenAIProvider({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
@@ -345,6 +377,23 @@ export function createContainer() {
     queuePerformance,
     conversionAnalytics,
   );
+  const reportingAnalytics = new ReportingAnalyticsService(
+    reportTemplates,
+    scheduledReports,
+    generatedReports,
+    kpiMetrics,
+    businessInsights,
+    reportExports,
+  );
+  const executiveDashboard = new ExecutiveDashboardService(executiveDashboards, analyticsEngine, revenueAnalytics);
+  const kpiReporting = new KpiReportingService(kpiMetrics, analyticsEngine, revenueAnalytics);
+  const scheduledReport = new ScheduledReportService(scheduledReports);
+  const reportBuilder = new ReportBuilderService(reportTemplates, generatedReports, reportingAnalytics);
+  const trendAnalysisService = new TrendAnalysisService(trendAnalyses, revenueAnalytics);
+  const benchmarkService = new BenchmarkService(benchmarkMetrics, revenueAnalytics);
+  const businessInsight = new BusinessInsightService(businessInsights, revenueAnalytics);
+  const executiveSummary = new ExecutiveSummaryService(executiveSummaries, revenueAnalytics);
+  const reportExport = new ReportExportService(reportExports);
   const supervisorConsole = new SupervisorConsoleService(
     humanAgents,
     agentAvailability,
@@ -461,6 +510,16 @@ export function createContainer() {
       salesInsights,
       upsellOpportunities,
       crossSellOpportunities,
+      reportTemplates,
+      scheduledReports,
+      generatedReports,
+      executiveDashboards,
+      kpiMetrics,
+      trendAnalyses,
+      benchmarkMetrics,
+      businessInsights,
+      executiveSummaries,
+      reportExports,
       organizationAccess,
     },
     services: {
@@ -477,6 +536,8 @@ export function createContainer() {
       agentManagement,
       analyticsEngine,
       auditService,
+      benchmarkService,
+      businessInsight,
       callScoring,
       contextBuilder,
       conversionAnalytics,
@@ -487,6 +548,8 @@ export function createContainer() {
       documentParser,
       chunking,
       embeddingService,
+      executiveDashboard,
+      executiveSummary,
       followupDecision,
       followupScheduler,
       handoffService,
@@ -498,6 +561,7 @@ export function createContainer() {
       knowledgeSuggestion,
       knowledgeLearning,
       knowledgeImprovement,
+      kpiReporting,
       citationService,
       ragRuntime,
       liveTakeover,
@@ -512,17 +576,22 @@ export function createContainer() {
       qualityAssurance,
       queuePerformance,
       qualificationRuntime,
+      reportBuilder,
+      reportExport,
+      reportingAnalytics,
       responseGeneration,
       revenueAnalytics,
       revenueForecast,
       routingEngine,
       salesInsight,
+      scheduledReport,
       scorecardService,
       sentimentAnalysis,
       supervisorConsole,
       runtime,
       stateService,
       summaryEngine,
+      trendAnalysisService,
       timelineActionService,
       toolRouter,
       upsellIntelligence,
