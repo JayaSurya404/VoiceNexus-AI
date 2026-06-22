@@ -10,6 +10,12 @@ import type { ActionAudit } from "../domain/entities/action-audit.js";
 import type { ScheduledFollowup } from "../domain/entities/scheduled-followup.js";
 import type { WorkflowAction, WorkflowActionType } from "../domain/entities/workflow-action.js";
 import type { WorkflowExecution } from "../domain/entities/workflow-execution.js";
+import type { Agent } from "../domain/entities/agent.js";
+import type { AgentAvailability } from "../domain/entities/agent-availability.js";
+import type { HumanAgentSession } from "../domain/entities/human-agent-session.js";
+import type { LiveTakeover } from "../domain/entities/live-takeover.js";
+import type { SupervisorSession } from "../domain/entities/supervisor-session.js";
+import type { WhisperMessage } from "../domain/entities/whisper-message.js";
 
 export interface AIConversationRepository {
   create(input: Omit<AIConversation, "id" | "createdAt" | "updatedAt">): Promise<AIConversation>;
@@ -96,6 +102,45 @@ export interface ActionAuditRepository {
   listByOrganization(organizationId: string): Promise<ActionAudit[]>;
 }
 
+export interface HumanAgentRepository {
+  create(input: Omit<Agent, "id" | "createdAt" | "updatedAt">): Promise<Agent>;
+  delete(id: string, organizationId: string): Promise<boolean>;
+  findById(id: string): Promise<Agent | null>;
+  listByOrganization(organizationId: string): Promise<Agent[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<Agent, "name" | "email" | "role" | "status" | "activeSessionId" | "skills">>): Promise<Agent | null>;
+}
+
+export interface AgentAvailabilityRepository {
+  listByOrganization(organizationId: string): Promise<AgentAvailability[]>;
+  upsert(input: Omit<AgentAvailability, "id">): Promise<AgentAvailability>;
+}
+
+export interface HumanAgentSessionRepository {
+  create(input: Omit<HumanAgentSession, "id" | "createdAt" | "updatedAt">): Promise<HumanAgentSession>;
+  findById(id: string): Promise<HumanAgentSession | null>;
+  listByOrganization(organizationId: string): Promise<HumanAgentSession[]>;
+  update(id: string, input: Partial<Pick<HumanAgentSession, "status" | "controller" | "leftAt">>): Promise<HumanAgentSession | null>;
+}
+
+export interface LiveTakeoverRepository {
+  create(input: Omit<LiveTakeover, "id" | "createdAt" | "updatedAt">): Promise<LiveTakeover>;
+  findById(id: string): Promise<LiveTakeover | null>;
+  listByOrganization(organizationId: string): Promise<LiveTakeover[]>;
+  update(id: string, input: Partial<Pick<LiveTakeover, "status" | "approvedAt" | "startedAt" | "endedAt" | "returnedToAiAt" | "metadata">>): Promise<LiveTakeover | null>;
+}
+
+export interface WhisperMessageRepository {
+  create(input: Omit<WhisperMessage, "id">): Promise<WhisperMessage>;
+  findById(id: string): Promise<WhisperMessage | null>;
+  listByOrganization(organizationId: string): Promise<WhisperMessage[]>;
+}
+
+export interface SupervisorSessionRepository {
+  create(input: Omit<SupervisorSession, "id" | "createdAt" | "updatedAt">): Promise<SupervisorSession>;
+  listByOrganization(organizationId: string): Promise<SupervisorSession[]>;
+  update(id: string, input: Partial<Pick<SupervisorSession, "status" | "endedAt" | "watchedSessionIds">>): Promise<SupervisorSession | null>;
+}
+
 export interface ExternalActionRepository {
   lookupLead(input: TenantLeadInput): Promise<Record<string, unknown> | null>;
   updateLead(input: TenantLeadInput & { update: Record<string, unknown> }): Promise<Record<string, unknown> | null>;
@@ -160,4 +205,23 @@ export interface PlannedWorkflowAction {
   reasoning: string;
   confidence: number;
   condition?: string;
+}
+
+export interface SupervisorOverview {
+  activeCalls: number;
+  activeAgents: number;
+  activeAiSessions: number;
+  activeTakeovers: number;
+  averageAiConfidence: number;
+  hotQualifications: number;
+  runningWorkflows: number;
+}
+
+export interface AgentAssistSuggestion {
+  sessionId: string;
+  suggestedResponses: string[];
+  objectionHints: string[];
+  memoryInsights: string[];
+  qualificationInsights: string[];
+  recommendedNextActions: string[];
 }

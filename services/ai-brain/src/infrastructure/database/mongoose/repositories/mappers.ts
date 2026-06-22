@@ -10,6 +10,12 @@ import type { ActionAudit } from "../../../../domain/entities/action-audit.js";
 import type { ScheduledFollowup } from "../../../../domain/entities/scheduled-followup.js";
 import type { WorkflowAction } from "../../../../domain/entities/workflow-action.js";
 import type { WorkflowExecution } from "../../../../domain/entities/workflow-execution.js";
+import type { Agent } from "../../../../domain/entities/agent.js";
+import type { AgentAvailability } from "../../../../domain/entities/agent-availability.js";
+import type { HumanAgentSession } from "../../../../domain/entities/human-agent-session.js";
+import type { LiveTakeover } from "../../../../domain/entities/live-takeover.js";
+import type { SupervisorSession } from "../../../../domain/entities/supervisor-session.js";
+import type { WhisperMessage } from "../../../../domain/entities/whisper-message.js";
 
 type Doc = Record<string, unknown> & { _id: { toString(): string } };
 
@@ -242,5 +248,99 @@ export function toActionAudit(doc: Doc): ActionAudit {
     reasoning: String(doc.reasoning),
     confidence: Number(doc.confidence),
     createdAt: date(doc.createdAt),
+  };
+}
+
+export function toHumanAgent(doc: Doc): Agent {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    name: String(doc.name),
+    email: String(doc.email),
+    role: doc.role as Agent["role"],
+    status: doc.status as Agent["status"],
+    activeSessionId: id(doc.activeSessionId),
+    skills: (doc.skills as string[] | undefined) ?? [],
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toAgentAvailability(doc: Doc): AgentAvailability {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    agentId: id(doc.agentId) ?? "",
+    status: doc.status as AgentAvailability["status"],
+    statusReason: doc.statusReason ? String(doc.statusReason) : null,
+    capacity: Number(doc.capacity),
+    activeSessionCount: Number(doc.activeSessionCount),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toHumanAgentSession(doc: Doc): HumanAgentSession {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    agentId: id(doc.agentId) ?? "",
+    aiSessionId: id(doc.aiSessionId),
+    callId: id(doc.callId),
+    leadId: id(doc.leadId),
+    status: doc.status as HumanAgentSession["status"],
+    controller: doc.controller as HumanAgentSession["controller"],
+    joinedAt: date(doc.joinedAt),
+    leftAt: doc.leftAt ? date(doc.leftAt) : null,
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toLiveTakeover(doc: Doc): LiveTakeover {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    sessionId: id(doc.sessionId) ?? "",
+    agentId: id(doc.agentId) ?? "",
+    supervisorId: id(doc.supervisorId),
+    status: doc.status as LiveTakeover["status"],
+    reason: String(doc.reason),
+    requestedAt: date(doc.requestedAt),
+    approvedAt: doc.approvedAt ? date(doc.approvedAt) : null,
+    startedAt: doc.startedAt ? date(doc.startedAt) : null,
+    endedAt: doc.endedAt ? date(doc.endedAt) : null,
+    returnedToAiAt: doc.returnedToAiAt ? date(doc.returnedToAiAt) : null,
+    metadata: (doc.metadata as Record<string, unknown>) ?? {},
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toWhisperMessage(doc: Doc): WhisperMessage {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    sessionId: id(doc.sessionId) ?? "",
+    senderId: id(doc.senderId) ?? "",
+    senderRole: doc.senderRole as WhisperMessage["senderRole"],
+    target: doc.target as WhisperMessage["target"],
+    targetAgentId: id(doc.targetAgentId),
+    content: String(doc.content),
+    private: true,
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toSupervisorSession(doc: Doc): SupervisorSession {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    supervisorId: id(doc.supervisorId) ?? "",
+    status: doc.status as SupervisorSession["status"],
+    startedAt: date(doc.startedAt),
+    endedAt: doc.endedAt ? date(doc.endedAt) : null,
+    watchedSessionIds: ((doc.watchedSessionIds as unknown[] | undefined) ?? []).map((value) => id(value) ?? ""),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
   };
 }

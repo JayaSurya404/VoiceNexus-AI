@@ -5,6 +5,12 @@ import { useEffect, useMemo, useState } from "react";
 import { AgentSessionsTable } from "@/components/ai-monitor/agent-sessions-table";
 import { ConversationFeed } from "@/components/ai-monitor/conversation-feed";
 import { DecisionTimeline } from "@/components/ai-monitor/decision-timeline";
+import {
+  AgentPanel,
+  SupervisorOverviewPanel,
+  TakeoverPanel,
+  WhisperAndAssistPanel,
+} from "@/components/ai-monitor/human-console-panels";
 import { RuntimeMetrics } from "@/components/ai-monitor/runtime-metrics";
 import { RealtimeRuntimeMetricsPanel, RealtimeRuntimePanel } from "@/components/ai-monitor/realtime-runtime-panels";
 import { StateAndQualification } from "@/components/ai-monitor/state-and-qualification";
@@ -23,6 +29,8 @@ import {
   useAgentDecisions,
   useAgentPersonas,
   useAgentSessions,
+  useAgentAssist,
+  useAgentAvailability,
   useAiConversations,
   useAiMessages,
   useAiQualifications,
@@ -30,9 +38,15 @@ import {
   useActionAudits,
   useFollowups,
   useConversationState,
+  useHumanAgents,
+  useHumanConsoleActions,
+  useLiveTakeovers,
   useRuntimeMetrics,
+  useSupervisorOverview,
+  useSupervisorSessions,
   useWorkflowActions,
   useWorkflows,
+  useWhispers,
 } from "@/hooks/use-ai-brain";
 import { useAuthStore } from "@/store/auth-store";
 import {
@@ -60,13 +74,22 @@ export default function AiMonitorPage() {
   const auditsQuery = useActionAudits(activeOrganizationId);
   const voiceResponsesQuery = useVoiceResponses(activeOrganizationId);
   const voiceMetricsQuery = useVoiceResponseMetrics(activeOrganizationId);
+  const humanAgentsQuery = useHumanAgents(activeOrganizationId);
+  const availabilityQuery = useAgentAvailability(activeOrganizationId);
+  const takeoversQuery = useLiveTakeovers(activeOrganizationId);
+  const whispersQuery = useWhispers(activeOrganizationId);
+  const supervisorOverviewQuery = useSupervisorOverview(activeOrganizationId);
+  const supervisorSessionsQuery = useSupervisorSessions(activeOrganizationId);
   const realtimeConversationsQuery = useRealtimeConversations(activeOrganizationId);
   const realtimeMetricsQuery = useRealtimeRuntimeMetrics(activeOrganizationId);
   const realtimeTurnsQuery = useRealtimeTurns(selectedRuntimeConversationId);
   const realtimePlaybackQuery = useRealtimePlayback(selectedRuntimeConversationId);
   const realtimeBargeInsQuery = useRealtimeBargeIns(selectedRuntimeConversationId);
   const takeoverControls = useTakeoverControls(activeOrganizationId);
+  const humanConsoleActions = useHumanConsoleActions(activeOrganizationId);
   const sessions = useMemo(() => sessionsQuery.data ?? [], [sessionsQuery.data]);
+  const humanAgents = useMemo(() => humanAgentsQuery.data ?? [], [humanAgentsQuery.data]);
+  const humanSessions = useMemo(() => supervisorSessionsQuery.data ?? [], [supervisorSessionsQuery.data]);
   const realtimeConversations = useMemo(
     () => realtimeConversationsQuery.data ?? [],
     [realtimeConversationsQuery.data],
@@ -95,6 +118,9 @@ export default function AiMonitorPage() {
   const decisionsQuery = useAgentDecisions(selectedSessionId);
   const messagesQuery = useAiMessages(selectedConversation?.id ?? null);
   const toolsQuery = useAiTools(selectedConversation?.id ?? null);
+  const assistQuery = useAgentAssist(selectedSessionId);
+  const selectedHumanAgent = humanAgents[0] ?? null;
+  const selectedHumanSession = humanSessions.find((session) => session.aiSessionId === selectedSessionId) ?? humanSessions[0] ?? null;
 
   if (!activeOrganizationId) {
     return (
@@ -117,6 +143,7 @@ export default function AiMonitorPage() {
       </section>
 
       <RuntimeMetrics metrics={metricsQuery.data} />
+      <SupervisorOverviewPanel overview={supervisorOverviewQuery.data} />
       <RealtimeRuntimeMetricsPanel metrics={realtimeMetricsQuery.data} />
       <VoiceResponseMetricsPanel metrics={voiceMetricsQuery.data} />
 
@@ -141,6 +168,43 @@ export default function AiMonitorPage() {
       ) : (
         <AgentSessionsTable onSelect={setSelectedSessionId} selectedSessionId={selectedSessionId} sessions={sessions} />
       )}
+
+      <AgentPanel agents={humanAgents} availability={availabilityQuery.data ?? []} />
+      <TakeoverPanel
+        onEnd={(id) => humanConsoleActions.endTakeover.mutate(id)}
+        onStart={(id) => humanConsoleActions.startTakeover.mutate(id)}
+        sessions={humanSessions}
+        takeovers={takeoversQuery.data ?? []}
+      />
+      <WhisperAndAssistPanel
+        assist={assistQuery.data}
+        onWhisperToAgent={(content) => {
+          if (selectedHumanSession && selectedHumanAgent) {
+            humanConsoleActions.createWhisper.mutate({
+              sessionId: selectedHumanSession.id,
+              senderId: selectedHumanAgent.id,
+              senderRole: "SUPERVISOR",
+              target: "AGENT",
+              targetAgentId: selectedHumanAgent.id,
+              content,
+            });
+          }
+        }}
+        onWhisperToAi={(content) => {
+          if (selectedHumanSession && selectedHumanAgent) {
+            humanConsoleActions.createWhisper.mutate({
+              sessionId: selectedHumanSession.id,
+              senderId: selectedHumanAgent.id,
+              senderRole: "SUPERVISOR",
+              target: "AI",
+              content,
+            });
+          }
+        }}
+        selectedAgentId={selectedHumanAgent?.id ?? null}
+        selectedSessionId={selectedHumanSession?.id ?? null}
+        whispers={whispersQuery.data ?? []}
+      />
 
       <StateAndQualification qualification={selectedQualification} state={stateQuery.data} />
       <RealtimeRuntimePanel

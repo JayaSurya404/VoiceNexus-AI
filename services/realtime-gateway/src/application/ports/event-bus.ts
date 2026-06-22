@@ -14,6 +14,13 @@ export const realtimeTopics = [
   "playback.completed",
   "playback.cancelled",
   "agent.takeover",
+  "agent.joined",
+  "agent.left",
+  "takeover.started",
+  "takeover.ended",
+  "whisper.created",
+  "supervisor.joined",
+  "supervisor.left",
 ] as const;
 
 export type RealtimeTopic = (typeof realtimeTopics)[number];

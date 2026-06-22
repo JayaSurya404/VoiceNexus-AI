@@ -210,6 +210,95 @@ export interface ActionAuditDto {
   createdAt: string;
 }
 
+export interface HumanAgentDto {
+  id: string;
+  organizationId: string;
+  name: string;
+  email: string;
+  role: "AGENT" | "SUPERVISOR" | "MANAGER";
+  status: "AVAILABLE" | "BUSY" | "OFFLINE" | "BREAK";
+  activeSessionId: string | null;
+  skills: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentAvailabilityDto {
+  id: string;
+  organizationId: string;
+  agentId: string;
+  status: "AVAILABLE" | "BUSY" | "OFFLINE" | "BREAK";
+  statusReason: string | null;
+  capacity: number;
+  activeSessionCount: number;
+  updatedAt: string;
+}
+
+export interface HumanAgentSessionDto {
+  id: string;
+  organizationId: string;
+  agentId: string;
+  aiSessionId: string | null;
+  callId: string | null;
+  leadId: string | null;
+  status: "JOINED" | "ACTIVE" | "ENDED";
+  controller: "AI" | "HUMAN" | "SUPERVISOR";
+  joinedAt: string;
+  leftAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LiveTakeoverDto {
+  id: string;
+  organizationId: string;
+  sessionId: string;
+  agentId: string;
+  supervisorId: string | null;
+  status: "REQUESTED" | "APPROVED" | "ACTIVE" | "ENDED" | "REJECTED";
+  reason: string;
+  requestedAt: string;
+  approvedAt: string | null;
+  startedAt: string | null;
+  endedAt: string | null;
+  returnedToAiAt: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WhisperMessageDto {
+  id: string;
+  organizationId: string;
+  sessionId: string;
+  senderId: string;
+  senderRole: "SUPERVISOR" | "AGENT";
+  target: "AGENT" | "AI";
+  targetAgentId: string | null;
+  content: string;
+  private: true;
+  createdAt: string;
+}
+
+export interface SupervisorOverviewDto {
+  activeCalls: number;
+  activeAgents: number;
+  activeAiSessions: number;
+  activeTakeovers: number;
+  averageAiConfidence: number;
+  hotQualifications: number;
+  runningWorkflows: number;
+}
+
+export interface AgentAssistSuggestionDto {
+  sessionId: string;
+  suggestedResponses: string[];
+  objectionHints: string[];
+  memoryInsights: string[];
+  qualificationInsights: string[];
+  recommendedNextActions: string[];
+}
+
 export class AiBrainClientError extends Error {
   constructor(
     public readonly status: number,
@@ -274,4 +363,37 @@ export const aiBrainApi = {
     }),
   listAudits: (organizationId: string) =>
     request<ActionAuditDto[]>(`/ai/audits?${query({ organizationId })}`),
+  listHumanAgents: (organizationId: string) => request<HumanAgentDto[]>(`/agents?${query({ organizationId })}`),
+  createHumanAgent: (input: Pick<HumanAgentDto, "organizationId" | "name" | "email" | "role" | "skills">) =>
+    request<HumanAgentDto>("/agents", { method: "POST", body: JSON.stringify(input) }),
+  listAvailability: (organizationId: string) =>
+    request<AgentAvailabilityDto[]>(`/agents/availability?${query({ organizationId })}`),
+  updateAvailability: (
+    agentId: string,
+    input: { organizationId: string; status: HumanAgentDto["status"]; statusReason?: string | null; capacity?: number },
+  ) => request(`/agents/${encodeURIComponent(agentId)}/availability`, { method: "PUT", body: JSON.stringify(input) }),
+  joinAgentSession: (
+    agentId: string,
+    input: { organizationId: string; aiSessionId?: string | null; callId?: string | null; leadId?: string | null },
+  ) => request<HumanAgentSessionDto>(`/agents/${encodeURIComponent(agentId)}/sessions`, { method: "POST", body: JSON.stringify(input) }),
+  listTakeovers: (organizationId: string) => request<LiveTakeoverDto[]>(`/takeovers?${query({ organizationId })}`),
+  createTakeover: (input: { organizationId: string; sessionId: string; agentId: string; supervisorId?: string | null; reason: string }) =>
+    request<LiveTakeoverDto>("/takeovers", { method: "POST", body: JSON.stringify(input) }),
+  startTakeover: (id: string) => request<LiveTakeoverDto>(`/takeovers/${encodeURIComponent(id)}/start`, { method: "POST" }),
+  endTakeover: (id: string) => request<LiveTakeoverDto>(`/takeovers/${encodeURIComponent(id)}/end`, { method: "POST" }),
+  listWhispers: (organizationId: string) => request<WhisperMessageDto[]>(`/whispers?${query({ organizationId })}`),
+  createWhisper: (input: {
+    organizationId: string;
+    sessionId: string;
+    senderId: string;
+    senderRole: "SUPERVISOR" | "AGENT";
+    target: "AGENT" | "AI";
+    targetAgentId?: string | null;
+    content: string;
+  }) => request<WhisperMessageDto>("/whispers", { method: "POST", body: JSON.stringify(input) }),
+  supervisorOverview: (organizationId: string) =>
+    request<SupervisorOverviewDto>(`/supervisor/overview?${query({ organizationId })}`),
+  supervisorSessions: (organizationId: string) =>
+    request<HumanAgentSessionDto[]>(`/supervisor/sessions?${query({ organizationId })}`),
+  agentAssist: (sessionId: string) => request<AgentAssistSuggestionDto | null>(`/assist/${encodeURIComponent(sessionId)}`),
 };

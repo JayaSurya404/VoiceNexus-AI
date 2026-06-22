@@ -1,4 +1,6 @@
 import { AgentPersonaService } from "./application/services/agent-persona-service.js";
+import { AgentAssistService } from "./application/services/agent-assist-service.js";
+import { AgentManagementService } from "./application/services/agent-management-service.js";
 import { AgentRuntimeService } from "./application/services/agent-runtime-service.js";
 import { ActionExecutionService } from "./application/services/action-execution-service.js";
 import { AuditService } from "./application/services/audit-service.js";
@@ -9,13 +11,17 @@ import { CrmActionService } from "./application/services/crm-action-service.js";
 import { FollowupDecisionService } from "./application/services/followup-decision-service.js";
 import { FollowupSchedulerService } from "./application/services/followup-scheduler-service.js";
 import { HumanHandoffService } from "./application/services/human-handoff-service.js";
+import { HumanConsoleEventService } from "./application/services/human-console-event-service.js";
 import { LeadQualificationRuntime } from "./application/services/lead-qualification-runtime.js";
+import { LiveTakeoverService } from "./application/services/live-takeover-service.js";
 import { MemoryInjectionService } from "./application/services/memory-injection-service.js";
 import { MemoryActionService } from "./application/services/memory-action-service.js";
 import { ObjectionHandlerService } from "./application/services/objection-handler-service.js";
 import { PromptEngineService } from "./application/services/prompt-engine-service.js";
 import { ResponseGenerationService } from "./application/services/response-generation-service.js";
+import { SupervisorConsoleService } from "./application/services/supervisor-console-service.js";
 import { TimelineActionService } from "./application/services/timeline-action-service.js";
+import { WhisperService } from "./application/services/whisper-service.js";
 import { WorkflowEngineService } from "./application/services/workflow-engine-service.js";
 import { VoiceResponseRequestService } from "./application/services/voice-response-request-service.js";
 import { env } from "./config/env.js";
@@ -37,6 +43,14 @@ import {
   MongoWorkflowActionRepository,
   MongoWorkflowExecutionRepository,
 } from "./infrastructure/database/mongoose/repositories/workflow-repositories.js";
+import {
+  MongoAgentAvailabilityRepository,
+  MongoHumanAgentRepository,
+  MongoHumanAgentSessionRepository,
+  MongoLiveTakeoverRepository,
+  MongoSupervisorSessionRepository,
+  MongoWhisperMessageRepository,
+} from "./infrastructure/database/mongoose/repositories/human-console-repositories.js";
 import { TranscriptFinalSubscriber } from "./infrastructure/redis/transcript-final-subscriber.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
 import { AccessTokenService } from "./security/access-token-service.js";
@@ -56,6 +70,12 @@ export function createContainer() {
   const followups = new MongoScheduledFollowupRepository();
   const audits = new MongoActionAuditRepository();
   const externalActions = new MongoExternalActionRepository();
+  const humanAgents = new MongoHumanAgentRepository();
+  const agentAvailability = new MongoAgentAvailabilityRepository();
+  const humanAgentSessions = new MongoHumanAgentSessionRepository();
+  const liveTakeovers = new MongoLiveTakeoverRepository();
+  const whispers = new MongoWhisperMessageRepository();
+  const supervisorSessions = new MongoSupervisorSessionRepository();
   const organizationAccess = new MongoOrganizationAccessRepository();
 
   const provider = new OpenAIProvider({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
@@ -69,6 +89,26 @@ export function createContainer() {
   const followupDecision = new FollowupDecisionService();
   const handoffService = new HumanHandoffService();
   const responseGeneration = new ResponseGenerationService(provider);
+  const humanConsoleEvents = new HumanConsoleEventService();
+  const agentManagement = new AgentManagementService(
+    humanAgents,
+    agentAvailability,
+    humanAgentSessions,
+    humanConsoleEvents,
+  );
+  const liveTakeover = new LiveTakeoverService(liveTakeovers, humanAgentSessions, humanConsoleEvents);
+  const whisperService = new WhisperService(whispers, humanConsoleEvents);
+  const supervisorConsole = new SupervisorConsoleService(
+    humanAgents,
+    agentAvailability,
+    humanAgentSessions,
+    sessions,
+    liveTakeovers,
+    decisions,
+    qualifications,
+    workflows,
+  );
+  const agentAssist = new AgentAssistService(sessions, decisions, qualifications, toolExecutions, responseGeneration);
   const summaryEngine = new ConversationSummaryEngine(provider);
   const auditService = new AuditService(audits);
   const crmActionService = new CrmActionService(externalActions);
@@ -104,6 +144,7 @@ export function createContainer() {
     summaryEngine,
     toolRouter,
     workflowEngine,
+    liveTakeover,
     voiceResponseRequests,
   );
   const transcriptFinalSubscriber = new TranscriptFinalSubscriber(runtime);
@@ -124,17 +165,27 @@ export function createContainer() {
       followups,
       audits,
       externalActions,
+      humanAgents,
+      agentAvailability,
+      humanAgentSessions,
+      liveTakeovers,
+      whispers,
+      supervisorSessions,
       organizationAccess,
     },
     services: {
       accessTokenService,
       actionExecution,
+      agentAssist,
+      agentManagement,
       auditService,
       contextBuilder,
       crmActionService,
       followupDecision,
       followupScheduler,
       handoffService,
+      humanConsoleEvents,
+      liveTakeover,
       memoryActionService,
       memoryInjection,
       objectionHandler,
@@ -142,11 +193,13 @@ export function createContainer() {
       promptEngine,
       qualificationRuntime,
       responseGeneration,
+      supervisorConsole,
       runtime,
       stateService,
       summaryEngine,
       timelineActionService,
       toolRouter,
+      whisperService,
       transcriptFinalSubscriber,
       workflowEngine,
       voiceResponseRequests,

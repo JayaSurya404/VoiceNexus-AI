@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { aiBrainApi } from "@/lib/api/ai-brain-api";
 
@@ -18,6 +18,13 @@ export const aiBrainKeys = {
   actions: (organizationId: string) => ["ai", "actions", organizationId] as const,
   followups: (organizationId: string) => ["ai", "followups", organizationId] as const,
   audits: (organizationId: string) => ["ai", "audits", organizationId] as const,
+  humanAgents: (organizationId: string) => ["ai", "human-agents", organizationId] as const,
+  availability: (organizationId: string) => ["ai", "agent-availability", organizationId] as const,
+  takeovers: (organizationId: string) => ["ai", "takeovers", organizationId] as const,
+  whispers: (organizationId: string) => ["ai", "whispers", organizationId] as const,
+  supervisorOverview: (organizationId: string) => ["ai", "supervisor-overview", organizationId] as const,
+  supervisorSessions: (organizationId: string) => ["ai", "supervisor-sessions", organizationId] as const,
+  assist: (sessionId: string) => ["ai", "assist", sessionId] as const,
 };
 
 export function useAiConversations(organizationId: string | null) {
@@ -134,4 +141,119 @@ export function useActionAudits(organizationId: string | null) {
     enabled: Boolean(organizationId),
     refetchInterval: 20_000,
   });
+}
+
+export function useHumanAgents(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.humanAgents(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listHumanAgents(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useAgentAvailability(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.availability(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listAvailability(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useLiveTakeovers(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.takeovers(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listTakeovers(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useWhispers(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.whispers(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listWhispers(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useSupervisorOverview(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.supervisorOverview(organizationId ?? ""),
+    queryFn: () => aiBrainApi.supervisorOverview(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useSupervisorSessions(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.supervisorSessions(organizationId ?? ""),
+    queryFn: () => aiBrainApi.supervisorSessions(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useAgentAssist(sessionId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.assist(sessionId ?? ""),
+    queryFn: () => aiBrainApi.agentAssist(sessionId ?? ""),
+    enabled: Boolean(sessionId),
+    refetchInterval: 20_000,
+  });
+}
+
+export function useHumanConsoleActions(organizationId: string | null) {
+  const queryClient = useQueryClient();
+  const invalidate = async () => {
+    if (!organizationId) return;
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.humanAgents(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.availability(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.takeovers(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.whispers(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.supervisorSessions(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.supervisorOverview(organizationId) }),
+    ]);
+  };
+
+  return {
+    joinSession: useMutation({
+      mutationFn: (input: { agentId: string; aiSessionId?: string | null; callId?: string | null; leadId?: string | null }) =>
+        aiBrainApi.joinAgentSession(input.agentId, {
+          organizationId: organizationId ?? "",
+          aiSessionId: input.aiSessionId,
+          callId: input.callId,
+          leadId: input.leadId,
+        }),
+      onSuccess: invalidate,
+    }),
+    createTakeover: useMutation({
+      mutationFn: (input: { sessionId: string; agentId: string; reason: string }) =>
+        aiBrainApi.createTakeover({ organizationId: organizationId ?? "", ...input }),
+      onSuccess: invalidate,
+    }),
+    startTakeover: useMutation({
+      mutationFn: (id: string) => aiBrainApi.startTakeover(id),
+      onSuccess: invalidate,
+    }),
+    endTakeover: useMutation({
+      mutationFn: (id: string) => aiBrainApi.endTakeover(id),
+      onSuccess: invalidate,
+    }),
+    createWhisper: useMutation({
+      mutationFn: (input: {
+        sessionId: string;
+        senderId: string;
+        senderRole: "SUPERVISOR" | "AGENT";
+        target: "AGENT" | "AI";
+        targetAgentId?: string | null;
+        content: string;
+      }) => aiBrainApi.createWhisper({ organizationId: organizationId ?? "", ...input }),
+      onSuccess: invalidate,
+    }),
+  };
 }

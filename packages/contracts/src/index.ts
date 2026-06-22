@@ -41,7 +41,30 @@ export const callRecordingStatuses = ["PROCESSING", "COMPLETED", "FAILED"] as co
 export const callTransferStatuses = ["REQUESTED", "COMPLETED", "FAILED"] as const;
 export const aiConversationStatuses = ["CONNECTING", "ACTIVE", "ENDED", "FAILED"] as const;
 export const realtimeTranscriptEventTypes = ["PARTIAL", "FINAL"] as const;
-export const realtimeTopics = ["call.lifecycle", "call.audio", "transcript.partial", "transcript.final"] as const;
+export const realtimeTopics = [
+  "call.lifecycle",
+  "call.audio",
+  "transcript.partial",
+  "transcript.final",
+  "voice.response.requested",
+  "voice.response.created",
+  "voice.response.playback",
+  "speech.state.changed",
+  "turn.started",
+  "turn.ended",
+  "bargein.detected",
+  "playback.started",
+  "playback.completed",
+  "playback.cancelled",
+  "agent.takeover",
+  "agent.joined",
+  "agent.left",
+  "takeover.started",
+  "takeover.ended",
+  "whisper.created",
+  "supervisor.joined",
+  "supervisor.left",
+] as const;
 export const timelineEventTypes = [
   "CALL_COMPLETED",
   "LEAD_CREATED",

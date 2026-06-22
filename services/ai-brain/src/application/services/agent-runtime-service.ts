@@ -20,6 +20,7 @@ import { PromptEngineService } from "./prompt-engine-service.js";
 import { ResponseGenerationService } from "./response-generation-service.js";
 import { WorkflowEngineService } from "./workflow-engine-service.js";
 import { VoiceResponseRequestService } from "./voice-response-request-service.js";
+import type { LiveTakeoverService } from "./live-takeover-service.js";
 
 export interface FinalTranscriptEvent {
   organizationId: string;
@@ -48,6 +49,7 @@ export class AgentRuntimeService {
     private readonly summaryEngine: ConversationSummaryEngine,
     private readonly toolRouter: ToolRouter,
     private readonly workflowEngine: WorkflowEngineService,
+    private readonly liveTakeover: LiveTakeoverService,
     private readonly voiceResponseRequests: VoiceResponseRequestService,
   ) {}
 
@@ -247,13 +249,15 @@ export class AgentRuntimeService {
       tokens: response.tokens,
       timestamp: new Date(),
     });
-    await this.voiceResponseRequests.request({
-      organizationId: event.organizationId,
-      callId: event.callSessionId,
-      sessionId: session.id,
-      leadId,
-      responseText: response.content,
-    });
+    if (!(await this.liveTakeover.isAiObserveMode({ organizationId: event.organizationId, aiSessionId: session.id }))) {
+      await this.voiceResponseRequests.request({
+        organizationId: event.organizationId,
+        callId: event.callSessionId,
+        sessionId: session.id,
+        leadId,
+        responseText: response.content,
+      });
+    }
     await this.conversations.update(conversation.id, {
       currentIntent: state.detectedIntent,
       sentiment: state.sentiment,

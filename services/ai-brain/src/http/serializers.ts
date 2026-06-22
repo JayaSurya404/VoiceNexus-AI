@@ -10,6 +10,12 @@ import type { ActionAudit } from "../domain/entities/action-audit.js";
 import type { ScheduledFollowup } from "../domain/entities/scheduled-followup.js";
 import type { WorkflowAction } from "../domain/entities/workflow-action.js";
 import type { WorkflowExecution } from "../domain/entities/workflow-execution.js";
+import type { Agent } from "../domain/entities/agent.js";
+import type { AgentAvailability } from "../domain/entities/agent-availability.js";
+import type { HumanAgentSession } from "../domain/entities/human-agent-session.js";
+import type { LiveTakeover } from "../domain/entities/live-takeover.js";
+import type { SupervisorSession } from "../domain/entities/supervisor-session.js";
+import type { WhisperMessage } from "../domain/entities/whisper-message.js";
 
 export const toConversationDto = (value: AIConversation) => ({ ...value, startedAt: iso(value.startedAt), endedAt: maybeIso(value.endedAt), createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 export const toMessageDto = (value: AIMessage) => ({ ...value, timestamp: iso(value.timestamp) });
@@ -46,6 +52,33 @@ export const toScheduledFollowupDto = (value: ScheduledFollowup) => ({
   completedAt: maybeIso(value.completedAt),
 });
 export const toActionAuditDto = (value: ActionAudit) => ({ ...value, createdAt: iso(value.createdAt) });
+export const toHumanAgentDto = (value: Agent) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toAgentAvailabilityDto = (value: AgentAvailability) => ({ ...value, updatedAt: iso(value.updatedAt) });
+export const toHumanAgentSessionDto = (value: HumanAgentSession) => ({
+  ...value,
+  joinedAt: iso(value.joinedAt),
+  leftAt: maybeIso(value.leftAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toLiveTakeoverDto = (value: LiveTakeover) => ({
+  ...value,
+  requestedAt: iso(value.requestedAt),
+  approvedAt: maybeIso(value.approvedAt),
+  startedAt: maybeIso(value.startedAt),
+  endedAt: maybeIso(value.endedAt),
+  returnedToAiAt: maybeIso(value.returnedToAiAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toWhisperMessageDto = (value: WhisperMessage) => ({ ...value, createdAt: iso(value.createdAt) });
+export const toSupervisorSessionDto = (value: SupervisorSession) => ({
+  ...value,
+  startedAt: iso(value.startedAt),
+  endedAt: maybeIso(value.endedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
 
 function iso(date: Date): string {
   return date.toISOString();

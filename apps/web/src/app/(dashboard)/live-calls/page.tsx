@@ -4,12 +4,19 @@ import { useEffect, useMemo, useState } from "react";
 
 import { ActiveCallsTable } from "@/components/live-calls/active-calls-table";
 import { ConnectionStatusCard } from "@/components/live-calls/connection-status-card";
+import { HumanTakeoverControls } from "@/components/live-calls/human-takeover-controls";
 import { LiveTranscriptPanel } from "@/components/live-calls/live-transcript-panel";
 import { RealtimeEventFeed } from "@/components/live-calls/realtime-event-feed";
 import { RealtimeRuntimeMetricsPanel, RealtimeRuntimePanel } from "@/components/ai-monitor/realtime-runtime-panels";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  useHumanAgents,
+  useHumanConsoleActions,
+  useLiveTakeovers,
+  useSupervisorSessions,
+} from "@/hooks/use-ai-brain";
 import { useActiveCalls, useLiveCallsSocket } from "@/hooks/use-live-calls";
 import {
   useRealtimeBargeIns,
@@ -39,6 +46,10 @@ export default function LiveCallsPage() {
   const realtimePlaybackQuery = useRealtimePlayback(selectedRuntimeConversationId);
   const realtimeBargeInsQuery = useRealtimeBargeIns(selectedRuntimeConversationId);
   const takeoverControls = useTakeoverControls(organizationId ?? null);
+  const humanAgentsQuery = useHumanAgents(organizationId ?? null);
+  const humanSessionsQuery = useSupervisorSessions(organizationId ?? null);
+  const humanTakeoversQuery = useLiveTakeovers(organizationId ?? null);
+  const humanConsoleActions = useHumanConsoleActions(organizationId ?? null);
   const selectedOrganizationName = useMemo(
     () => organizations.find((organization) => organization.id === organizationId)?.name ?? "Current organization",
     [organizationId, organizations],
@@ -87,6 +98,38 @@ export default function LiveCallsPage() {
       </div>
 
       {activeCallsQuery.isLoading ? <Skeleton className="h-72 w-full" /> : <ActiveCallsTable calls={calls} />}
+      <HumanTakeoverControls
+        agents={humanAgentsQuery.data ?? []}
+        calls={calls}
+        onJoin={(agentId, callId) => humanConsoleActions.joinSession.mutate({ agentId, callId })}
+        onRelease={(takeoverId) => humanConsoleActions.endTakeover.mutate(takeoverId)}
+        onTakeover={(sessionId, agentId) =>
+          void humanConsoleActions.createTakeover
+            .mutateAsync({ sessionId, agentId, reason: "Live call takeover requested" })
+            .then((takeover) => humanConsoleActions.startTakeover.mutate(takeover.id))
+        }
+        onWhisperAgent={(sessionId, agentId) =>
+          humanConsoleActions.createWhisper.mutate({
+            sessionId,
+            senderId: agentId,
+            senderRole: "SUPERVISOR",
+            target: "AGENT",
+            targetAgentId: agentId,
+            content: "Stay concise, confirm the customer need, then ask the next discovery question.",
+          })
+        }
+        onWhisperAi={(sessionId, agentId) =>
+          humanConsoleActions.createWhisper.mutate({
+            sessionId,
+            senderId: agentId,
+            senderRole: "SUPERVISOR",
+            target: "AI",
+            content: "Observe silently while the human agent handles the call.",
+          })
+        }
+        sessions={humanSessionsQuery.data ?? []}
+        takeovers={humanTakeoversQuery.data ?? []}
+      />
       <RealtimeRuntimeMetricsPanel metrics={realtimeMetricsQuery.data} />
       <RealtimeRuntimePanel
         bargeIns={realtimeBargeInsQuery.data ?? []}

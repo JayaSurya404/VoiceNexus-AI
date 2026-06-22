@@ -8,13 +8,19 @@ import {
   toAgentDecisionDto,
   toAgentPersonaDto,
   toAgentSessionDto,
+  toAgentAvailabilityDto,
   toActionAuditDto,
   toConversationDto,
   toConversationStateDto,
+  toHumanAgentDto,
+  toHumanAgentSessionDto,
+  toLiveTakeoverDto,
   toMessageDto,
   toQualificationDto,
   toScheduledFollowupDto,
+  toSupervisorSessionDto,
   toToolExecutionDto,
+  toWhisperMessageDto,
   toWorkflowActionDto,
   toWorkflowExecutionDto,
 } from "./serializers.js";
@@ -33,6 +39,46 @@ const personaInputSchema = z.object({
   goals: z.array(z.string()).default([]),
   constraints: z.array(z.string()).default([]),
   isDefault: z.boolean().default(false),
+});
+
+const humanAgentInputSchema = z.object({
+  organizationId: z.string().min(1),
+  name: z.string().min(1),
+  email: z.string().email(),
+  role: z.enum(["AGENT", "SUPERVISOR", "MANAGER"]).default("AGENT"),
+  skills: z.array(z.string()).default([]),
+});
+
+const availabilityInputSchema = z.object({
+  organizationId: z.string().min(1),
+  status: z.enum(["AVAILABLE", "BUSY", "OFFLINE", "BREAK"]),
+  statusReason: z.string().nullable().optional(),
+  capacity: z.number().int().min(1).optional(),
+});
+
+const joinSessionSchema = z.object({
+  organizationId: z.string().min(1),
+  aiSessionId: z.string().nullable().optional(),
+  callId: z.string().nullable().optional(),
+  leadId: z.string().nullable().optional(),
+});
+
+const takeoverInputSchema = z.object({
+  organizationId: z.string().min(1),
+  sessionId: z.string().min(1),
+  agentId: z.string().min(1),
+  supervisorId: z.string().nullable().optional(),
+  reason: z.string().min(1),
+});
+
+const whisperInputSchema = z.object({
+  organizationId: z.string().min(1),
+  sessionId: z.string().min(1),
+  senderId: z.string().min(1),
+  senderRole: z.enum(["SUPERVISOR", "AGENT"]),
+  target: z.enum(["AGENT", "AI"]),
+  targetAgentId: z.string().nullable().optional(),
+  content: z.string().min(1),
 });
 
 export function createAiBrainHttpServer(container: Container) {
@@ -60,6 +106,217 @@ async function handleRequest(container: Container, request: IncomingMessage, res
 
     const token = bearerToken(request);
     if (!token) throw AiBrainError.unauthorized();
+
+    if (url.pathname === "/agents" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.humanAgents.listByOrganization(organizationId)).map(toHumanAgentDto) });
+      return;
+    }
+
+    if (url.pathname === "/agents" && request.method === "POST") {
+      const input = humanAgentInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 201, { data: toHumanAgentDto(await container.services.agentManagement.create(input)) });
+      return;
+    }
+
+    if (url.pathname === "/agents/availability" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.agentAvailability.listByOrganization(organizationId)).map(toAgentAvailabilityDto) });
+      return;
+    }
+
+    const agentAvailabilityMatch = /^\/agents\/([^/]+)\/availability$/.exec(url.pathname);
+    if (agentAvailabilityMatch?.[1] && request.method === "PUT") {
+      const input = availabilityInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      const result = await container.services.agentManagement.setAvailability({
+        organizationId: input.organizationId,
+        agentId: agentAvailabilityMatch[1],
+        status: input.status,
+        statusReason: input.statusReason,
+        capacity: input.capacity,
+      });
+      sendJson(response, 200, {
+        data: {
+          agent: result.agent ? toHumanAgentDto(result.agent) : null,
+          availability: toAgentAvailabilityDto(result.availability),
+        },
+      });
+      return;
+    }
+
+    const agentJoinMatch = /^\/agents\/([^/]+)\/sessions$/.exec(url.pathname);
+    if (agentJoinMatch?.[1] && request.method === "POST") {
+      const input = joinSessionSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 201, {
+        data: toHumanAgentSessionDto(
+          await container.services.agentManagement.joinSession({
+            organizationId: input.organizationId,
+            agentId: agentJoinMatch[1],
+            aiSessionId: input.aiSessionId,
+            callId: input.callId,
+            leadId: input.leadId,
+          }),
+        ),
+      });
+      return;
+    }
+
+    const agentMatch = /^\/agents\/([^/]+)$/.exec(url.pathname);
+    if (agentMatch?.[1] && request.method === "GET") {
+      const agent = await container.repositories.humanAgents.findById(agentMatch[1]);
+      if (!agent) throw AiBrainError.notFound("Agent");
+      await authorize(container, token, agent.organizationId);
+      sendJson(response, 200, { data: toHumanAgentDto(agent) });
+      return;
+    }
+
+    if (agentMatch?.[1] && request.method === "PUT") {
+      const input = humanAgentInputSchema.partial().extend({ organizationId: z.string().min(1) }).parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      const updated = await container.repositories.humanAgents.update(agentMatch[1], input.organizationId, input);
+      if (!updated) throw AiBrainError.notFound("Agent");
+      sendJson(response, 200, { data: toHumanAgentDto(updated) });
+      return;
+    }
+
+    if (agentMatch?.[1] && request.method === "DELETE") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: { deleted: await container.repositories.humanAgents.delete(agentMatch[1], organizationId) } });
+      return;
+    }
+
+    if (url.pathname === "/takeovers" && request.method === "POST") {
+      const input = takeoverInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 201, { data: toLiveTakeoverDto(await container.services.liveTakeover.request(input)) });
+      return;
+    }
+
+    if (url.pathname === "/takeovers" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.liveTakeovers.listByOrganization(organizationId)).map(toLiveTakeoverDto) });
+      return;
+    }
+
+    const takeoverStartMatch = /^\/takeovers\/([^/]+)\/start$/.exec(url.pathname);
+    if (takeoverStartMatch?.[1] && request.method === "POST") {
+      const takeover = await container.repositories.liveTakeovers.findById(takeoverStartMatch[1]);
+      if (!takeover) throw AiBrainError.notFound("Takeover");
+      await authorize(container, token, takeover.organizationId);
+      const approved = takeover.status === "REQUESTED" ? await container.services.liveTakeover.approve(takeover.id) : takeover;
+      const started = await container.services.liveTakeover.start(approved?.id ?? takeover.id);
+      if (!started) throw AiBrainError.notFound("Takeover");
+      sendJson(response, 200, { data: toLiveTakeoverDto(started) });
+      return;
+    }
+
+    const takeoverEndMatch = /^\/takeovers\/([^/]+)\/end$/.exec(url.pathname);
+    if (takeoverEndMatch?.[1] && request.method === "POST") {
+      const takeover = await container.repositories.liveTakeovers.findById(takeoverEndMatch[1]);
+      if (!takeover) throw AiBrainError.notFound("Takeover");
+      await authorize(container, token, takeover.organizationId);
+      const ended = await container.services.liveTakeover.end(takeover.id, true);
+      if (!ended) throw AiBrainError.notFound("Takeover");
+      sendJson(response, 200, { data: toLiveTakeoverDto(ended) });
+      return;
+    }
+
+    const takeoverMatch = /^\/takeovers\/([^/]+)$/.exec(url.pathname);
+    if (takeoverMatch?.[1] && request.method === "GET") {
+      const takeover = await container.repositories.liveTakeovers.findById(takeoverMatch[1]);
+      if (!takeover) throw AiBrainError.notFound("Takeover");
+      await authorize(container, token, takeover.organizationId);
+      sendJson(response, 200, { data: toLiveTakeoverDto(takeover) });
+      return;
+    }
+
+    if (url.pathname === "/whispers" && request.method === "POST") {
+      const input = whisperInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 201, { data: toWhisperMessageDto(await container.services.whisperService.create(input)) });
+      return;
+    }
+
+    if (url.pathname === "/whispers" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.whispers.listByOrganization(organizationId)).map(toWhisperMessageDto) });
+      return;
+    }
+
+    const whisperMatch = /^\/whispers\/([^/]+)$/.exec(url.pathname);
+    if (whisperMatch?.[1] && request.method === "GET") {
+      const whisper = await container.repositories.whispers.findById(whisperMatch[1]);
+      if (!whisper) throw AiBrainError.notFound("Whisper");
+      await authorize(container, token, whisper.organizationId);
+      sendJson(response, 200, { data: toWhisperMessageDto(whisper) });
+      return;
+    }
+
+    if (url.pathname === "/supervisor/overview" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: await container.services.supervisorConsole.overview(organizationId) });
+      return;
+    }
+
+    if (url.pathname === "/supervisor/agents" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.supervisorConsole.activeAgents(organizationId)).map(toHumanAgentDto) });
+      return;
+    }
+
+    if (url.pathname === "/supervisor/sessions" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.humanAgentSessions.listByOrganization(organizationId)).map(toHumanAgentSessionDto) });
+      return;
+    }
+
+    if (url.pathname === "/supervisor/takeovers" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.liveTakeovers.listByOrganization(organizationId)).map(toLiveTakeoverDto) });
+      return;
+    }
+
+    if (url.pathname === "/supervisor/sessions" && request.method === "POST") {
+      const input = z.object({ organizationId: z.string().min(1), supervisorId: z.string().min(1), watchedSessionIds: z.array(z.string()).default([]) }).parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      const session = await container.repositories.supervisorSessions.create({
+        organizationId: input.organizationId,
+        supervisorId: input.supervisorId,
+        status: "ACTIVE",
+        startedAt: new Date(),
+        endedAt: null,
+        watchedSessionIds: input.watchedSessionIds,
+      });
+      await container.services.humanConsoleEvents.publish("supervisor.joined", {
+        organizationId: input.organizationId,
+        sessionId: session.id,
+        payload: { supervisorId: input.supervisorId, watchedSessionIds: input.watchedSessionIds },
+      });
+      sendJson(response, 201, { data: toSupervisorSessionDto(session) });
+      return;
+    }
+
+    const assistMatch = /^\/assist\/([^/]+)$/.exec(url.pathname);
+    if (assistMatch?.[1] && request.method === "GET") {
+      const aiSession = await container.repositories.sessions.findById(assistMatch[1]);
+      if (!aiSession) throw AiBrainError.notFound("AI session");
+      await authorize(container, token, aiSession.organizationId);
+      const suggestion = await container.services.agentAssist.suggest(aiSession.id);
+      sendJson(response, 200, { data: suggestion });
+      return;
+    }
 
     if (url.pathname === "/ai/personas" && request.method === "GET") {
       const organizationId = requiredQuery(url, "organizationId");
