@@ -38,6 +38,11 @@ import type { KnowledgeImprovement } from "../domain/entities/knowledge-improvem
 import type { KnowledgeLearningEvent } from "../domain/entities/knowledge-learning-event.js";
 import type { KnowledgeSearch } from "../domain/entities/knowledge-search.js";
 import type { KnowledgeSuggestion } from "../domain/entities/knowledge-suggestion.js";
+import type { AgentCollaborationDecision } from "../domain/entities/agent-collaboration-decision.js";
+import type { AgentCollaborationSession } from "../domain/entities/agent-collaboration-session.js";
+import type { AgentDelegation } from "../domain/entities/agent-delegation.js";
+import type { AgentTask } from "../domain/entities/agent-task.js";
+import type { AgentTeam } from "../domain/entities/agent-team.js";
 
 export interface AIConversationRepository {
   create(input: Omit<AIConversation, "id" | "createdAt" | "updatedAt">): Promise<AIConversation>;
@@ -295,6 +300,48 @@ export interface KnowledgeLearningEventRepository {
 export interface KnowledgeImprovementRepository {
   create(input: Omit<KnowledgeImprovement, "id" | "createdAt">): Promise<KnowledgeImprovement>;
   listByOrganization(organizationId: string): Promise<KnowledgeImprovement[]>;
+}
+
+export interface AgentTeamRepository {
+  create(input: Omit<AgentTeam, "id" | "createdAt" | "updatedAt">): Promise<AgentTeam>;
+  delete(id: string, organizationId: string): Promise<boolean>;
+  findById(id: string): Promise<AgentTeam | null>;
+  listByOrganization(organizationId: string): Promise<AgentTeam[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<AgentTeam, "name" | "description" | "agents" | "objectives" | "active">>): Promise<AgentTeam | null>;
+}
+
+export interface AgentTaskRepository {
+  create(input: Omit<AgentTask, "id" | "createdAt" | "updatedAt">): Promise<AgentTask>;
+  findById(id: string): Promise<AgentTask | null>;
+  listByOrganization(organizationId: string): Promise<AgentTask[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<AgentTask, "status" | "output" | "confidence">>): Promise<AgentTask | null>;
+}
+
+export interface AgentDelegationRepository {
+  create(input: Omit<AgentDelegation, "id" | "createdAt" | "updatedAt">): Promise<AgentDelegation>;
+  findById(id: string): Promise<AgentDelegation | null>;
+  listByOrganization(organizationId: string): Promise<AgentDelegation[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<AgentDelegation, "status" | "reasoning" | "confidence">>): Promise<AgentDelegation | null>;
+}
+
+export interface AgentCollaborationSessionRepository {
+  create(input: Omit<AgentCollaborationSession, "id" | "createdAt" | "updatedAt">): Promise<AgentCollaborationSession>;
+  findById(id: string): Promise<AgentCollaborationSession | null>;
+  listByOrganization(organizationId: string): Promise<AgentCollaborationSession[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<AgentCollaborationSession, "status" | "finalResponse" | "averageConfidence" | "resolutionQuality" | "completedAt">>): Promise<AgentCollaborationSession | null>;
+}
+
+export interface AgentCollaborationDecisionRepository {
+  create(input: Omit<AgentCollaborationDecision, "id">): Promise<AgentCollaborationDecision>;
+  listByOrganization(organizationId: string): Promise<AgentCollaborationDecision[]>;
+  listBySession(organizationId: string, collaborationSessionId: string): Promise<AgentCollaborationDecision[]>;
+}
+
+export interface CollaborationMetrics {
+  delegationCount: number;
+  collaborationSuccessRate: number;
+  averageConfidence: number;
+  resolutionQuality: number;
 }
 
 export interface RagContextPackage {

@@ -38,6 +38,11 @@ import type { KnowledgeImprovement } from "../../../../domain/entities/knowledge
 import type { KnowledgeLearningEvent } from "../../../../domain/entities/knowledge-learning-event.js";
 import type { KnowledgeSearch } from "../../../../domain/entities/knowledge-search.js";
 import type { KnowledgeSuggestion } from "../../../../domain/entities/knowledge-suggestion.js";
+import type { AgentCollaborationDecision } from "../../../../domain/entities/agent-collaboration-decision.js";
+import type { AgentCollaborationSession } from "../../../../domain/entities/agent-collaboration-session.js";
+import type { AgentDelegation } from "../../../../domain/entities/agent-delegation.js";
+import type { AgentTask } from "../../../../domain/entities/agent-task.js";
+import type { AgentTeam } from "../../../../domain/entities/agent-team.js";
 
 type Doc = Record<string, unknown> & { _id: { toString(): string } };
 
@@ -731,6 +736,91 @@ export function toKnowledgeImprovement(doc: Doc): KnowledgeImprovement {
     openGapCount: Number(doc.openGapCount),
     suggestionCount: Number(doc.suggestionCount),
     computedAt: date(doc.computedAt),
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toAgentTeam(doc: Doc): AgentTeam {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    name: String(doc.name),
+    description: doc.description ? String(doc.description) : null,
+    agents: (doc.agents as AgentTeam["agents"] | undefined) ?? [],
+    objectives: (doc.objectives as string[] | undefined) ?? [],
+    active: Boolean(doc.active),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toAgentTask(doc: Doc): AgentTask {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    collaborationSessionId: id(doc.collaborationSessionId),
+    teamId: id(doc.teamId),
+    assignedAgentId: id(doc.assignedAgentId),
+    assignedAgentType: doc.assignedAgentType as AgentTask["assignedAgentType"],
+    title: String(doc.title),
+    description: String(doc.description),
+    status: doc.status as AgentTask["status"],
+    input: (doc.input as Record<string, unknown>) ?? {},
+    output: (doc.output as Record<string, unknown>) ?? {},
+    confidence: Number(doc.confidence),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toAgentDelegation(doc: Doc): AgentDelegation {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    collaborationSessionId: id(doc.collaborationSessionId),
+    taskId: id(doc.taskId) ?? "",
+    sourceAgentId: id(doc.sourceAgentId),
+    targetAgentId: id(doc.targetAgentId),
+    task: String(doc.task),
+    status: doc.status as AgentDelegation["status"],
+    reasoning: String(doc.reasoning),
+    confidence: Number(doc.confidence),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toAgentCollaborationSession(doc: Doc): AgentCollaborationSession {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    teamId: id(doc.teamId),
+    conversationId: id(doc.conversationId),
+    agentSessionId: id(doc.agentSessionId),
+    primaryAgentId: id(doc.primaryAgentId),
+    status: doc.status as AgentCollaborationSession["status"],
+    customerRequest: String(doc.customerRequest),
+    finalResponse: doc.finalResponse ? String(doc.finalResponse) : null,
+    averageConfidence: Number(doc.averageConfidence),
+    resolutionQuality: Number(doc.resolutionQuality),
+    startedAt: date(doc.startedAt),
+    completedAt: doc.completedAt ? date(doc.completedAt) : null,
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toAgentCollaborationDecision(doc: Doc): AgentCollaborationDecision {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    collaborationSessionId: id(doc.collaborationSessionId) ?? "",
+    decisionType: doc.decisionType as AgentCollaborationDecision["decisionType"],
+    agentId: id(doc.agentId),
+    reasoning: String(doc.reasoning),
+    confidence: Number(doc.confidence),
+    approved: Boolean(doc.approved),
+    metadata: (doc.metadata as Record<string, unknown>) ?? {},
     createdAt: date(doc.createdAt),
   };
 }

@@ -6,8 +6,13 @@ import { env } from "../config/env.js";
 import { AiBrainError } from "../shared/errors.js";
 import {
   toAgentDecisionDto,
+  toAgentCollaborationDecisionDto,
+  toAgentCollaborationSessionDto,
+  toAgentDelegationDto,
   toAgentPersonaDto,
   toAgentSessionDto,
+  toAgentTaskDto,
+  toAgentTeamDto,
   toAgentAvailabilityDto,
   toActionAuditDto,
   toAgentPerformanceDto,
@@ -188,6 +193,20 @@ const knowledgeFeedbackInputSchema = z.object({
   rating: z.number().int().min(1).max(5).nullable().optional(),
   comment: z.string().nullable().optional(),
   createdBy: z.string().nullable().optional(),
+});
+
+const agentTeamInputSchema = z.object({
+  organizationId: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().nullable().optional(),
+  agents: z.array(z.object({
+    agentId: z.string().min(1),
+    type: z.enum(["SalesAgent", "SupportAgent", "TechnicalAgent", "SchedulerAgent", "QAAgent", "SupervisorAgent"]),
+    role: z.string().min(1),
+    active: z.boolean().default(true),
+  })).default([]),
+  objectives: z.array(z.string()).default([]),
+  active: z.boolean().default(true),
 });
 
 const suggestionReviewSchema = z.object({
@@ -484,6 +503,108 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       const organizationId = requiredQuery(url, "organizationId");
       await authorize(container, token, organizationId);
       sendJson(response, 200, { data: (await container.repositories.agentAvailability.listByOrganization(organizationId)).map(toAgentAvailabilityDto) });
+      return;
+    }
+
+    if (url.pathname === "/ai/teams" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.agentTeamService.list(organizationId)).map(toAgentTeamDto) });
+      return;
+    }
+
+    if (url.pathname === "/ai/teams" && request.method === "POST") {
+      const input = agentTeamInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 201, { data: toAgentTeamDto(await container.services.agentTeamService.create({ ...input, description: input.description ?? null })) });
+      return;
+    }
+
+    const aiTeamMatch = /^\/ai\/teams\/([^/]+)$/.exec(url.pathname);
+    if (aiTeamMatch?.[1] && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const team = await container.services.agentTeamService.get(aiTeamMatch[1], organizationId);
+      if (!team) throw AiBrainError.notFound("Agent team");
+      sendJson(response, 200, { data: toAgentTeamDto(team) });
+      return;
+    }
+
+    if (aiTeamMatch?.[1] && request.method === "PUT") {
+      const input = agentTeamInputSchema.partial().extend({ organizationId: z.string().min(1) }).parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      const updated = await container.services.agentTeamService.update(aiTeamMatch[1], input.organizationId, input);
+      if (!updated) throw AiBrainError.notFound("Agent team");
+      sendJson(response, 200, { data: toAgentTeamDto(updated) });
+      return;
+    }
+
+    if (aiTeamMatch?.[1] && request.method === "DELETE") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: { deleted: await container.services.agentTeamService.delete(aiTeamMatch[1], organizationId) } });
+      return;
+    }
+
+    if (url.pathname === "/ai/tasks" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.agentTaskService.list(organizationId)).map(toAgentTaskDto) });
+      return;
+    }
+
+    const aiTaskMatch = /^\/ai\/tasks\/([^/]+)$/.exec(url.pathname);
+    if (aiTaskMatch?.[1] && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const task = await container.services.agentTaskService.get(aiTaskMatch[1], organizationId);
+      if (!task) throw AiBrainError.notFound("Agent task");
+      sendJson(response, 200, { data: toAgentTaskDto(task) });
+      return;
+    }
+
+    if (url.pathname === "/ai/delegations" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.agentDelegationService.list(organizationId)).map(toAgentDelegationDto) });
+      return;
+    }
+
+    const aiDelegationMatch = /^\/ai\/delegations\/([^/]+)$/.exec(url.pathname);
+    if (aiDelegationMatch?.[1] && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const delegation = await container.services.agentDelegationService.get(aiDelegationMatch[1], organizationId);
+      if (!delegation) throw AiBrainError.notFound("Agent delegation");
+      sendJson(response, 200, { data: toAgentDelegationDto(delegation) });
+      return;
+    }
+
+    if (url.pathname === "/ai/collaborations" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: {
+          sessions: (await container.services.agentCollaborationService.list(organizationId)).map(toAgentCollaborationSessionDto),
+          decisions: (await container.repositories.agentCollaborationDecisions.listByOrganization(organizationId)).map(toAgentCollaborationDecisionDto),
+          metrics: await container.services.agentCollaborationService.metrics(organizationId),
+        },
+      });
+      return;
+    }
+
+    const aiCollaborationMatch = /^\/ai\/collaborations\/([^/]+)$/.exec(url.pathname);
+    if (aiCollaborationMatch?.[1] && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const collaboration = await container.services.agentCollaborationService.get(aiCollaborationMatch[1], organizationId);
+      if (!collaboration) throw AiBrainError.notFound("Agent collaboration");
+      sendJson(response, 200, {
+        data: {
+          session: toAgentCollaborationSessionDto(collaboration),
+          decisions: (await container.repositories.agentCollaborationDecisions.listBySession(organizationId, collaboration.id)).map(toAgentCollaborationDecisionDto),
+        },
+      });
       return;
     }
 

@@ -38,6 +38,11 @@ import type { KnowledgeImprovement } from "../domain/entities/knowledge-improvem
 import type { KnowledgeLearningEvent } from "../domain/entities/knowledge-learning-event.js";
 import type { KnowledgeSearch } from "../domain/entities/knowledge-search.js";
 import type { KnowledgeSuggestion } from "../domain/entities/knowledge-suggestion.js";
+import type { AgentCollaborationDecision } from "../domain/entities/agent-collaboration-decision.js";
+import type { AgentCollaborationSession } from "../domain/entities/agent-collaboration-session.js";
+import type { AgentDelegation } from "../domain/entities/agent-delegation.js";
+import type { AgentTask } from "../domain/entities/agent-task.js";
+import type { AgentTeam } from "../domain/entities/agent-team.js";
 
 export const toConversationDto = (value: AIConversation) => ({ ...value, startedAt: iso(value.startedAt), endedAt: maybeIso(value.endedAt), createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 export const toMessageDto = (value: AIMessage) => ({ ...value, timestamp: iso(value.timestamp) });
@@ -155,6 +160,17 @@ export const toKnowledgeImprovementDto = (value: KnowledgeImprovement) => ({
   computedAt: iso(value.computedAt),
   createdAt: iso(value.createdAt),
 });
+export const toAgentTeamDto = (value: AgentTeam) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toAgentTaskDto = (value: AgentTask) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toAgentDelegationDto = (value: AgentDelegation) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toAgentCollaborationSessionDto = (value: AgentCollaborationSession) => ({
+  ...value,
+  startedAt: iso(value.startedAt),
+  completedAt: maybeIso(value.completedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toAgentCollaborationDecisionDto = (value: AgentCollaborationDecision) => ({ ...value, createdAt: iso(value.createdAt) });
 
 function iso(date: Date): string {
   return date.toISOString();

@@ -42,6 +42,10 @@ export const aiBrainKeys = {
   knowledgeSuggestions: (organizationId: string) => ["ai", "knowledge-suggestions", organizationId] as const,
   knowledgeLearningEvents: (organizationId: string) => ["ai", "knowledge-learning-events", organizationId] as const,
   knowledgeImprovements: (organizationId: string) => ["ai", "knowledge-improvements", organizationId] as const,
+  agentTeams: (organizationId: string) => ["ai", "agent-teams", organizationId] as const,
+  agentTasks: (organizationId: string) => ["ai", "agent-tasks", organizationId] as const,
+  agentDelegations: (organizationId: string) => ["ai", "agent-delegations", organizationId] as const,
+  collaborations: (organizationId: string) => ["ai", "collaborations", organizationId] as const,
   takeovers: (organizationId: string) => ["ai", "takeovers", organizationId] as const,
   whispers: (organizationId: string) => ["ai", "whispers", organizationId] as const,
   supervisorOverview: (organizationId: string) => ["ai", "supervisor-overview", organizationId] as const,
@@ -376,6 +380,42 @@ export function useKnowledgeImprovements(organizationId: string | null) {
   return useQuery({
     queryKey: aiBrainKeys.knowledgeImprovements(organizationId ?? ""),
     queryFn: () => aiBrainApi.listKnowledgeImprovements(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useAgentTeams(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.agentTeams(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listAgentTeams(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useCollaborativeAgentTasks(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.agentTasks(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listAgentTasks(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useAgentDelegations(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.agentDelegations(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listAgentDelegations(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useCollaborations(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.collaborations(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listCollaborations(organizationId ?? ""),
     enabled: Boolean(organizationId),
     refetchInterval: 30_000,
   });

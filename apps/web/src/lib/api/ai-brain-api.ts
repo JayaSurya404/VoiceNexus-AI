@@ -576,6 +576,96 @@ export interface KnowledgeImprovementDto {
   createdAt: string;
 }
 
+export type CollaborativeAgentType = "SalesAgent" | "SupportAgent" | "TechnicalAgent" | "SchedulerAgent" | "QAAgent" | "SupervisorAgent";
+
+export interface AgentTeamDto {
+  id: string;
+  organizationId: string;
+  name: string;
+  description: string | null;
+  agents: Array<{ agentId: string; type: CollaborativeAgentType; role: string; active: boolean }>;
+  objectives: string[];
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentTaskDto {
+  id: string;
+  organizationId: string;
+  collaborationSessionId: string | null;
+  teamId: string | null;
+  assignedAgentId: string | null;
+  assignedAgentType: CollaborativeAgentType;
+  title: string;
+  description: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "CANCELLED";
+  input: Record<string, unknown>;
+  output: Record<string, unknown>;
+  confidence: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentDelegationDto {
+  id: string;
+  organizationId: string;
+  collaborationSessionId: string | null;
+  taskId: string;
+  sourceAgentId: string | null;
+  targetAgentId: string | null;
+  task: string;
+  status: "REQUESTED" | "ACCEPTED" | "COMPLETED" | "REJECTED" | "FAILED";
+  reasoning: string;
+  confidence: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentCollaborationSessionDto {
+  id: string;
+  organizationId: string;
+  teamId: string | null;
+  conversationId: string | null;
+  agentSessionId: string | null;
+  primaryAgentId: string | null;
+  status: "ACTIVE" | "REVIEW" | "COMPLETED" | "FAILED";
+  customerRequest: string;
+  finalResponse: string | null;
+  averageConfidence: number;
+  resolutionQuality: number;
+  startedAt: string;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentCollaborationDecisionDto {
+  id: string;
+  organizationId: string;
+  collaborationSessionId: string;
+  decisionType: "DELEGATION" | "SPECIALIST_RESULT" | "SUPERVISOR_REVIEW" | "CONFLICT_RESOLUTION" | "FINAL_APPROVAL";
+  agentId: string | null;
+  reasoning: string;
+  confidence: number;
+  approved: boolean;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface CollaborationMetricsDto {
+  delegationCount: number;
+  collaborationSuccessRate: number;
+  averageConfidence: number;
+  resolutionQuality: number;
+}
+
+export interface CollaborationsDto {
+  sessions: AgentCollaborationSessionDto[];
+  decisions: AgentCollaborationDecisionDto[];
+  metrics: CollaborationMetricsDto;
+}
+
 export interface HumanAgentSessionDto {
   id: string;
   organizationId: string;
@@ -803,6 +893,20 @@ export const aiBrainApi = {
     request<KnowledgeLearningEventDto[]>(`/knowledge/learning-events?${query({ organizationId })}`),
   listKnowledgeImprovements: (organizationId: string) =>
     request<KnowledgeImprovementDto[]>(`/knowledge/improvements?${query({ organizationId })}`),
+  listAgentTeams: (organizationId: string) =>
+    request<AgentTeamDto[]>(`/ai/teams?${query({ organizationId })}`),
+  createAgentTeam: (input: Pick<AgentTeamDto, "organizationId" | "name" | "description" | "agents" | "objectives" | "active">) =>
+    request<AgentTeamDto>("/ai/teams", { method: "POST", body: JSON.stringify(input) }),
+  updateAgentTeam: (id: string, input: Partial<Pick<AgentTeamDto, "organizationId" | "name" | "description" | "agents" | "objectives" | "active">> & { organizationId: string }) =>
+    request<AgentTeamDto>(`/ai/teams/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(input) }),
+  deleteAgentTeam: (id: string, organizationId: string) =>
+    request<{ deleted: boolean }>(`/ai/teams/${encodeURIComponent(id)}?${query({ organizationId })}`, { method: "DELETE" }),
+  listAgentTasks: (organizationId: string) =>
+    request<AgentTaskDto[]>(`/ai/tasks?${query({ organizationId })}`),
+  listAgentDelegations: (organizationId: string) =>
+    request<AgentDelegationDto[]>(`/ai/delegations?${query({ organizationId })}`),
+  listCollaborations: (organizationId: string) =>
+    request<CollaborationsDto>(`/ai/collaborations?${query({ organizationId })}`),
   updateAvailability: (
     agentId: string,
     input: { organizationId: string; status: HumanAgentDto["status"]; statusReason?: string | null; capacity?: number },

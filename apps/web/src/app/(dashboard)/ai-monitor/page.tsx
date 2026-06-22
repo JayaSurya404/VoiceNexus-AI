@@ -12,6 +12,7 @@ import {
   QueueAnalyticsPanel,
   SentimentTrendsPanel,
 } from "@/components/ai-monitor/analytics-panels";
+import { CollaborationMonitorPanel } from "@/components/ai-monitor/collaboration-panels";
 import { ConversationFeed } from "@/components/ai-monitor/conversation-feed";
 import { DecisionTimeline } from "@/components/ai-monitor/decision-timeline";
 import {
@@ -53,7 +54,9 @@ import {
   useAgentSessions,
   useAgentAssist,
   useAgentAvailability,
+  useAgentDelegations,
   useAgentSkills,
+  useAgentTeams,
   useAgentPerformanceAnalytics,
   useAnalyticsOverview,
   useAiConversations,
@@ -62,6 +65,8 @@ import {
   useAiTools,
   useActionAudits,
   useCallOutcomes,
+  useCollaborations,
+  useCollaborativeAgentTasks,
   useConversionAnalytics,
   useFollowups,
   useConversationState,
@@ -137,6 +142,10 @@ export default function AiMonitorPage() {
   const availabilityQuery = useAgentAvailability(activeOrganizationId);
   const queuesQuery = useQueues(activeOrganizationId);
   const agentSkillsQuery = useAgentSkills(activeOrganizationId);
+  const agentTeamsQuery = useAgentTeams(activeOrganizationId);
+  const collaborativeTasksQuery = useCollaborativeAgentTasks(activeOrganizationId);
+  const agentDelegationsQuery = useAgentDelegations(activeOrganizationId);
+  const collaborationsQuery = useCollaborations(activeOrganizationId);
   const queueSessionsQuery = useQueueSessions(activeOrganizationId);
   const routingDecisionsQuery = useRoutingDecisions(activeOrganizationId);
   const queueHealthQuery = useQueueHealth(activeOrganizationId);
@@ -272,6 +281,12 @@ export default function AiMonitorPage() {
         />
       </div>
       <LearningEventsTimeline events={knowledgeLearningEventsQuery.data ?? []} />
+      <CollaborationMonitorPanel
+        collaborations={collaborationsQuery.data}
+        delegations={agentDelegationsQuery.data ?? []}
+        tasks={collaborativeTasksQuery.data ?? []}
+        teams={agentTeamsQuery.data ?? []}
+      />
       <TakeoverPanel
         onEnd={(id) => humanConsoleActions.endTakeover.mutate(id)}
         onStart={(id) => humanConsoleActions.startTakeover.mutate(id)}

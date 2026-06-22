@@ -1,8 +1,13 @@
 import { AgentPersonaService } from "./application/services/agent-persona-service.js";
 import { AgentAssistService } from "./application/services/agent-assist-service.js";
+import { AgentCollaborationService } from "./application/services/agent-collaboration-service.js";
+import { AgentDelegationService } from "./application/services/agent-delegation-service.js";
 import { AgentPerformanceService } from "./application/services/agent-performance-service.js";
 import { AgentManagementService } from "./application/services/agent-management-service.js";
 import { AgentRuntimeService } from "./application/services/agent-runtime-service.js";
+import { AgentSupervisorService } from "./application/services/agent-supervisor-service.js";
+import { AgentTaskService } from "./application/services/agent-task-service.js";
+import { AgentTeamService } from "./application/services/agent-team-service.js";
 import { ActionExecutionService } from "./application/services/action-execution-service.js";
 import { AnalyticsEngineService } from "./application/services/analytics-engine-service.js";
 import { AuditService } from "./application/services/audit-service.js";
@@ -101,6 +106,13 @@ import {
   MongoKnowledgeLearningEventRepository,
   MongoKnowledgeSuggestionRepository,
 } from "./infrastructure/database/mongoose/repositories/knowledge-learning-repositories.js";
+import {
+  MongoAgentCollaborationDecisionRepository,
+  MongoAgentCollaborationSessionRepository,
+  MongoAgentDelegationRepository,
+  MongoAgentTaskRepository,
+  MongoAgentTeamRepository,
+} from "./infrastructure/database/mongoose/repositories/collaboration-repositories.js";
 import { TranscriptFinalSubscriber } from "./infrastructure/redis/transcript-final-subscriber.js";
 import { OpenAIEmbeddingProvider } from "./providers/openai-embedding-provider.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
@@ -149,6 +161,11 @@ export function createContainer() {
   const knowledgeSuggestions = new MongoKnowledgeSuggestionRepository();
   const knowledgeLearningEvents = new MongoKnowledgeLearningEventRepository();
   const knowledgeImprovements = new MongoKnowledgeImprovementRepository();
+  const agentTeams = new MongoAgentTeamRepository();
+  const agentTasks = new MongoAgentTaskRepository();
+  const agentDelegations = new MongoAgentDelegationRepository();
+  const agentCollaborationSessions = new MongoAgentCollaborationSessionRepository();
+  const agentCollaborationDecisions = new MongoAgentCollaborationDecisionRepository();
   const organizationAccess = new MongoOrganizationAccessRepository();
 
   const provider = new OpenAIProvider({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
@@ -194,6 +211,19 @@ export function createContainer() {
     knowledgeSuggestions,
   );
   const ragRuntime = new RagRuntimeService(knowledgeSearch, citationService, knowledgeLearning);
+  const agentTeamService = new AgentTeamService(agentTeams);
+  const agentTaskService = new AgentTaskService(agentTasks);
+  const agentDelegationService = new AgentDelegationService(agentDelegations, agentCollaborationDecisions);
+  const agentSupervisorService = new AgentSupervisorService(agentCollaborationDecisions);
+  const agentCollaborationService = new AgentCollaborationService(
+    agentCollaborationSessions,
+    agentTeams,
+    agentTasks,
+    agentCollaborationDecisions,
+    agentDelegationService,
+    agentSupervisorService,
+    ragRuntime,
+  );
   const humanConsoleEvents = new HumanConsoleEventService();
   const agentManagement = new AgentManagementService(
     humanAgents,
@@ -341,13 +371,23 @@ export function createContainer() {
       knowledgeSuggestions,
       knowledgeLearningEvents,
       knowledgeImprovements,
+      agentTeams,
+      agentTasks,
+      agentDelegations,
+      agentCollaborationSessions,
+      agentCollaborationDecisions,
       organizationAccess,
     },
     services: {
       accessTokenService,
       actionExecution,
       agentAssist,
+      agentCollaborationService,
+      agentDelegationService,
       agentPerformance,
+      agentSupervisorService,
+      agentTaskService,
+      agentTeamService,
       agentManagement,
       analyticsEngine,
       auditService,
