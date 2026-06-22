@@ -43,6 +43,12 @@ import type { AgentCollaborationSession } from "../domain/entities/agent-collabo
 import type { AgentDelegation } from "../domain/entities/agent-delegation.js";
 import type { AgentTask } from "../domain/entities/agent-task.js";
 import type { AgentTeam } from "../domain/entities/agent-team.js";
+import type { AgentCoachingInsight } from "../domain/entities/agent-coaching-insight.js";
+import type { AgentCoachingSession } from "../domain/entities/agent-coaching-session.js";
+import type { AgentRecommendation } from "../domain/entities/agent-recommendation.js";
+import type { ComplianceAlert } from "../domain/entities/compliance-alert.js";
+import type { ConversationScorecard } from "../domain/entities/conversation-scorecard.js";
+import type { NextBestAction } from "../domain/entities/next-best-action.js";
 
 export interface AIConversationRepository {
   create(input: Omit<AIConversation, "id" | "createdAt" | "updatedAt">): Promise<AIConversation>;
@@ -335,6 +341,50 @@ export interface AgentCollaborationDecisionRepository {
   create(input: Omit<AgentCollaborationDecision, "id">): Promise<AgentCollaborationDecision>;
   listByOrganization(organizationId: string): Promise<AgentCollaborationDecision[]>;
   listBySession(organizationId: string, collaborationSessionId: string): Promise<AgentCollaborationDecision[]>;
+}
+
+export interface AgentCoachingSessionRepository {
+  create(input: Omit<AgentCoachingSession, "id" | "createdAt" | "updatedAt">): Promise<AgentCoachingSession>;
+  findById(id: string): Promise<AgentCoachingSession | null>;
+  listByOrganization(organizationId: string): Promise<AgentCoachingSession[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<AgentCoachingSession, "status" | "endedAt">>): Promise<AgentCoachingSession | null>;
+}
+
+export interface AgentCoachingInsightRepository {
+  create(input: Omit<AgentCoachingInsight, "id">): Promise<AgentCoachingInsight>;
+  findById(id: string): Promise<AgentCoachingInsight | null>;
+  listByOrganization(organizationId: string): Promise<AgentCoachingInsight[]>;
+}
+
+export interface AgentRecommendationRepository {
+  create(input: Omit<AgentRecommendation, "id">): Promise<AgentRecommendation>;
+  findById(id: string): Promise<AgentRecommendation | null>;
+  listByOrganization(organizationId: string): Promise<AgentRecommendation[]>;
+}
+
+export interface ComplianceAlertRepository {
+  create(input: Omit<ComplianceAlert, "id">): Promise<ComplianceAlert>;
+  findById(id: string): Promise<ComplianceAlert | null>;
+  listByOrganization(organizationId: string): Promise<ComplianceAlert[]>;
+}
+
+export interface ConversationScorecardRepository {
+  create(input: Omit<ConversationScorecard, "id" | "createdAt" | "updatedAt">): Promise<ConversationScorecard>;
+  findById(id: string): Promise<ConversationScorecard | null>;
+  listByOrganization(organizationId: string): Promise<ConversationScorecard[]>;
+}
+
+export interface NextBestActionRepository {
+  create(input: Omit<NextBestAction, "id">): Promise<NextBestAction>;
+  findById(id: string): Promise<NextBestAction | null>;
+  listByOrganization(organizationId: string): Promise<NextBestAction[]>;
+}
+
+export interface CoachingEffectivenessMetrics {
+  coachingAcceptanceRate: number;
+  recommendationUsage: number;
+  agentImprovementTrend: number;
+  coachingEffectiveness: number;
 }
 
 export interface CollaborationMetrics {

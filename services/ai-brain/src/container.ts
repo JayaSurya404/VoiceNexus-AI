@@ -1,6 +1,7 @@
 import { AgentPersonaService } from "./application/services/agent-persona-service.js";
 import { AgentAssistService } from "./application/services/agent-assist-service.js";
 import { AgentCollaborationService } from "./application/services/agent-collaboration-service.js";
+import { AgentCoachingService } from "./application/services/agent-coaching-service.js";
 import { AgentDelegationService } from "./application/services/agent-delegation-service.js";
 import { AgentPerformanceService } from "./application/services/agent-performance-service.js";
 import { AgentManagementService } from "./application/services/agent-management-service.js";
@@ -16,7 +17,9 @@ import { ContextBuilder } from "./application/services/context-builder.js";
 import { ConversationStateService } from "./application/services/conversation-state-service.js";
 import { ConversationSummaryEngine } from "./application/services/conversation-summary-engine.js";
 import { ConversionAnalyticsService } from "./application/services/conversion-analytics-service.js";
+import { ComplianceMonitorService } from "./application/services/compliance-monitor-service.js";
 import { CrmActionService } from "./application/services/crm-action-service.js";
+import { ConversationAnalysisService } from "./application/services/conversation-analysis-service.js";
 import { FollowupDecisionService } from "./application/services/followup-decision-service.js";
 import { FollowupSchedulerService } from "./application/services/followup-scheduler-service.js";
 import { HumanHandoffService } from "./application/services/human-handoff-service.js";
@@ -36,6 +39,8 @@ import { LeadQualificationRuntime } from "./application/services/lead-qualificat
 import { LiveTakeoverService } from "./application/services/live-takeover-service.js";
 import { MemoryInjectionService } from "./application/services/memory-injection-service.js";
 import { MemoryActionService } from "./application/services/memory-action-service.js";
+import { NextBestActionService } from "./application/services/next-best-action-service.js";
+import { ObjectionCoachingService } from "./application/services/objection-coaching-service.js";
 import { ObjectionHandlerService } from "./application/services/objection-handler-service.js";
 import { PromptEngineService } from "./application/services/prompt-engine-service.js";
 import { QualityAssuranceService } from "./application/services/quality-assurance-service.js";
@@ -43,6 +48,7 @@ import { QueuePerformanceService } from "./application/services/queue-performanc
 import { ResponseGenerationService } from "./application/services/response-generation-service.js";
 import { RagRuntimeService } from "./application/services/rag-runtime-service.js";
 import { RoutingEngineService } from "./application/services/routing-engine-service.js";
+import { ScorecardService } from "./application/services/scorecard-service.js";
 import { SentimentAnalysisService } from "./application/services/sentiment-analysis-service.js";
 import { SupervisorConsoleService } from "./application/services/supervisor-console-service.js";
 import { TimelineActionService } from "./application/services/timeline-action-service.js";
@@ -113,6 +119,14 @@ import {
   MongoAgentTaskRepository,
   MongoAgentTeamRepository,
 } from "./infrastructure/database/mongoose/repositories/collaboration-repositories.js";
+import {
+  MongoAgentCoachingInsightRepository,
+  MongoAgentCoachingSessionRepository,
+  MongoAgentRecommendationRepository,
+  MongoComplianceAlertRepository,
+  MongoConversationScorecardRepository,
+  MongoNextBestActionRepository,
+} from "./infrastructure/database/mongoose/repositories/coaching-repositories.js";
 import { TranscriptFinalSubscriber } from "./infrastructure/redis/transcript-final-subscriber.js";
 import { OpenAIEmbeddingProvider } from "./providers/openai-embedding-provider.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
@@ -166,6 +180,12 @@ export function createContainer() {
   const agentDelegations = new MongoAgentDelegationRepository();
   const agentCollaborationSessions = new MongoAgentCollaborationSessionRepository();
   const agentCollaborationDecisions = new MongoAgentCollaborationDecisionRepository();
+  const agentCoachingSessions = new MongoAgentCoachingSessionRepository();
+  const agentCoachingInsights = new MongoAgentCoachingInsightRepository();
+  const agentRecommendations = new MongoAgentRecommendationRepository();
+  const complianceAlerts = new MongoComplianceAlertRepository();
+  const conversationScorecards = new MongoConversationScorecardRepository();
+  const nextBestActions = new MongoNextBestActionRepository();
   const organizationAccess = new MongoOrganizationAccessRepository();
 
   const provider = new OpenAIProvider({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
@@ -223,6 +243,20 @@ export function createContainer() {
     agentDelegationService,
     agentSupervisorService,
     ragRuntime,
+  );
+  const conversationAnalysis = new ConversationAnalysisService();
+  const objectionCoaching = new ObjectionCoachingService();
+  const nextBestActionService = new NextBestActionService(nextBestActions, agentRecommendations);
+  const complianceMonitor = new ComplianceMonitorService(complianceAlerts);
+  const scorecardService = new ScorecardService(conversationScorecards);
+  const agentCoachingService = new AgentCoachingService(
+    agentCoachingSessions,
+    agentCoachingInsights,
+    conversationAnalysis,
+    objectionCoaching,
+    nextBestActionService,
+    complianceMonitor,
+    scorecardService,
   );
   const humanConsoleEvents = new HumanConsoleEventService();
   const agentManagement = new AgentManagementService(
@@ -376,6 +410,12 @@ export function createContainer() {
       agentDelegations,
       agentCollaborationSessions,
       agentCollaborationDecisions,
+      agentCoachingSessions,
+      agentCoachingInsights,
+      agentRecommendations,
+      complianceAlerts,
+      conversationScorecards,
+      nextBestActions,
       organizationAccess,
     },
     services: {
@@ -383,6 +423,7 @@ export function createContainer() {
       actionExecution,
       agentAssist,
       agentCollaborationService,
+      agentCoachingService,
       agentDelegationService,
       agentPerformance,
       agentSupervisorService,
@@ -394,6 +435,8 @@ export function createContainer() {
       callScoring,
       contextBuilder,
       conversionAnalytics,
+      complianceMonitor,
+      conversationAnalysis,
       crmActionService,
       documentParser,
       chunking,
@@ -414,6 +457,8 @@ export function createContainer() {
       liveTakeover,
       memoryActionService,
       memoryInjection,
+      nextBestActionService,
+      objectionCoaching,
       objectionHandler,
       personaService,
       promptEngine,
@@ -422,6 +467,7 @@ export function createContainer() {
       qualificationRuntime,
       responseGeneration,
       routingEngine,
+      scorecardService,
       sentimentAnalysis,
       supervisorConsole,
       runtime,

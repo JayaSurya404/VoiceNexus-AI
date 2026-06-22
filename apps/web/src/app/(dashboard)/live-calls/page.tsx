@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ActiveCallsTable } from "@/components/live-calls/active-calls-table";
+import { CoachingSidebar } from "@/components/live-calls/coaching-sidebar";
 import { ConnectionStatusCard } from "@/components/live-calls/connection-status-card";
 import { HumanTakeoverControls } from "@/components/live-calls/human-takeover-controls";
 import { LiveTranscriptPanel } from "@/components/live-calls/live-transcript-panel";
@@ -12,9 +13,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  useAgentRecommendations,
+  useComplianceAlerts,
+  useConversationScorecards,
   useHumanAgents,
   useHumanConsoleActions,
   useLiveTakeovers,
+  useNextBestActions,
   useQueueSessions,
   useQueues,
   useSupervisorSessions,
@@ -53,6 +58,10 @@ export default function LiveCallsPage() {
   const queueSessionsQuery = useQueueSessions(organizationId ?? null);
   const humanSessionsQuery = useSupervisorSessions(organizationId ?? null);
   const humanTakeoversQuery = useLiveTakeovers(organizationId ?? null);
+  const agentRecommendationsQuery = useAgentRecommendations(organizationId ?? null);
+  const complianceAlertsQuery = useComplianceAlerts(organizationId ?? null);
+  const conversationScorecardsQuery = useConversationScorecards(organizationId ?? null);
+  const nextBestActionsQuery = useNextBestActions(organizationId ?? null);
   const humanConsoleActions = useHumanConsoleActions(organizationId ?? null);
   const selectedOrganizationName = useMemo(
     () => organizations.find((organization) => organization.id === organizationId)?.name ?? "Current organization",
@@ -142,6 +151,12 @@ export default function LiveCallsPage() {
         }
         sessions={humanSessionsQuery.data ?? []}
         takeovers={humanTakeoversQuery.data ?? []}
+      />
+      <CoachingSidebar
+        alerts={complianceAlertsQuery.data ?? []}
+        nextBestActions={nextBestActionsQuery.data ?? []}
+        recommendations={agentRecommendationsQuery.data ?? []}
+        scorecards={conversationScorecardsQuery.data ?? []}
       />
       <RealtimeRuntimeMetricsPanel metrics={realtimeMetricsQuery.data} />
       <RealtimeRuntimePanel

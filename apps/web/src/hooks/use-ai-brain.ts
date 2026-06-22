@@ -46,6 +46,13 @@ export const aiBrainKeys = {
   agentTasks: (organizationId: string) => ["ai", "agent-tasks", organizationId] as const,
   agentDelegations: (organizationId: string) => ["ai", "agent-delegations", organizationId] as const,
   collaborations: (organizationId: string) => ["ai", "collaborations", organizationId] as const,
+  coachingSessions: (organizationId: string) => ["ai", "coaching-sessions", organizationId] as const,
+  coachingInsights: (organizationId: string) => ["ai", "coaching-insights", organizationId] as const,
+  coachingMetrics: (organizationId: string) => ["ai", "coaching-metrics", organizationId] as const,
+  agentRecommendations: (organizationId: string) => ["ai", "agent-recommendations", organizationId] as const,
+  complianceAlerts: (organizationId: string) => ["ai", "compliance-alerts", organizationId] as const,
+  conversationScorecards: (organizationId: string) => ["ai", "conversation-scorecards", organizationId] as const,
+  nextBestActions: (organizationId: string) => ["ai", "next-best-actions", organizationId] as const,
   takeovers: (organizationId: string) => ["ai", "takeovers", organizationId] as const,
   whispers: (organizationId: string) => ["ai", "whispers", organizationId] as const,
   supervisorOverview: (organizationId: string) => ["ai", "supervisor-overview", organizationId] as const,
@@ -418,6 +425,69 @@ export function useCollaborations(organizationId: string | null) {
     queryFn: () => aiBrainApi.listCollaborations(organizationId ?? ""),
     enabled: Boolean(organizationId),
     refetchInterval: 30_000,
+  });
+}
+
+export function useCoachingSessions(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.coachingSessions(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listCoachingSessions(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useCoachingInsights(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.coachingInsights(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listCoachingInsights(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useCoachingMetrics(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.coachingMetrics(organizationId ?? ""),
+    queryFn: () => aiBrainApi.coachingMetrics(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useAgentRecommendations(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.agentRecommendations(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listAgentRecommendations(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useComplianceAlerts(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.complianceAlerts(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listComplianceAlerts(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useConversationScorecards(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.conversationScorecards(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listConversationScorecards(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 20_000,
+  });
+}
+
+export function useNextBestActions(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.nextBestActions(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listNextBestActions(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
   });
 }
 

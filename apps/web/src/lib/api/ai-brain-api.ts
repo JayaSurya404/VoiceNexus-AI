@@ -666,6 +666,102 @@ export interface CollaborationsDto {
   metrics: CollaborationMetricsDto;
 }
 
+export interface AgentCoachingSessionDto {
+  id: string;
+  organizationId: string;
+  agentId: string;
+  humanSessionId: string | null;
+  aiSessionId: string | null;
+  callId: string | null;
+  conversationId: string | null;
+  status: "ACTIVE" | "COMPLETED" | "ESCALATED";
+  startedAt: string;
+  endedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentCoachingInsightDto {
+  id: string;
+  organizationId: string;
+  coachingSessionId: string;
+  agentId: string;
+  conversationId: string | null;
+  type: "OBJECTION_HANDLING" | "DISCOVERY_QUESTION" | "CLOSING_SUGGESTION" | "FOLLOW_UP" | "ESCALATION";
+  message: string;
+  reasoning: string;
+  confidence: number;
+  accepted: boolean | null;
+  createdAt: string;
+}
+
+export interface AgentRecommendationDto {
+  id: string;
+  organizationId: string;
+  coachingSessionId: string;
+  agentId: string;
+  conversationId: string | null;
+  type: "ASK_QUESTION" | "SCHEDULE_MEETING" | "SEND_FOLLOW_UP" | "ESCALATE" | "TRANSFER" | "CLOSE_OPPORTUNITY";
+  title: string;
+  description: string;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  used: boolean;
+  confidence: number;
+  createdAt: string;
+}
+
+export interface ComplianceAlertDto {
+  id: string;
+  organizationId: string;
+  coachingSessionId: string;
+  agentId: string;
+  conversationId: string | null;
+  type: "MISSING_DISCLOSURE" | "SCRIPT_VIOLATION" | "COMPLIANCE_RISK" | "ESCALATION_REQUIRED";
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  message: string;
+  resolved: boolean;
+  createdAt: string;
+}
+
+export interface ConversationScorecardDto {
+  id: string;
+  organizationId: string;
+  coachingSessionId: string;
+  agentId: string;
+  conversationId: string | null;
+  discoveryQuality: number;
+  qualificationQuality: number;
+  objectionHandlingQuality: number;
+  complianceScore: number;
+  closingEffectiveness: number;
+  overallScore: number;
+  reasoning: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NextBestActionDto {
+  id: string;
+  organizationId: string;
+  coachingSessionId: string;
+  agentId: string;
+  conversationId: string | null;
+  actionType: AgentRecommendationDto["type"];
+  label: string;
+  rationale: string;
+  priority: AgentRecommendationDto["priority"];
+  completed: boolean;
+  confidence: number;
+  createdAt: string;
+}
+
+export interface CoachingEffectivenessMetricsDto {
+  coachingAcceptanceRate: number;
+  recommendationUsage: number;
+  agentImprovementTrend: number;
+  coachingEffectiveness: number;
+}
+
 export interface HumanAgentSessionDto {
   id: string;
   organizationId: string;
@@ -907,6 +1003,20 @@ export const aiBrainApi = {
     request<AgentDelegationDto[]>(`/ai/delegations?${query({ organizationId })}`),
   listCollaborations: (organizationId: string) =>
     request<CollaborationsDto>(`/ai/collaborations?${query({ organizationId })}`),
+  listCoachingSessions: (organizationId: string) =>
+    request<AgentCoachingSessionDto[]>(`/ai/coaching/sessions?${query({ organizationId })}`),
+  listCoachingInsights: (organizationId: string) =>
+    request<AgentCoachingInsightDto[]>(`/ai/coaching/insights?${query({ organizationId })}`),
+  coachingMetrics: (organizationId: string) =>
+    request<CoachingEffectivenessMetricsDto>(`/ai/coaching/metrics?${query({ organizationId })}`),
+  listAgentRecommendations: (organizationId: string) =>
+    request<AgentRecommendationDto[]>(`/ai/recommendations?${query({ organizationId })}`),
+  listComplianceAlerts: (organizationId: string) =>
+    request<ComplianceAlertDto[]>(`/ai/compliance-alerts?${query({ organizationId })}`),
+  listConversationScorecards: (organizationId: string) =>
+    request<ConversationScorecardDto[]>(`/ai/scorecards?${query({ organizationId })}`),
+  listNextBestActions: (organizationId: string) =>
+    request<NextBestActionDto[]>(`/ai/next-best-actions?${query({ organizationId })}`),
   updateAvailability: (
     agentId: string,
     input: { organizationId: string; status: HumanAgentDto["status"]; statusReason?: string | null; capacity?: number },

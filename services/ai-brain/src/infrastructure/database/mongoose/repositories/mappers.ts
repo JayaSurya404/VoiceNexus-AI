@@ -43,6 +43,12 @@ import type { AgentCollaborationSession } from "../../../../domain/entities/agen
 import type { AgentDelegation } from "../../../../domain/entities/agent-delegation.js";
 import type { AgentTask } from "../../../../domain/entities/agent-task.js";
 import type { AgentTeam } from "../../../../domain/entities/agent-team.js";
+import type { AgentCoachingInsight } from "../../../../domain/entities/agent-coaching-insight.js";
+import type { AgentCoachingSession } from "../../../../domain/entities/agent-coaching-session.js";
+import type { AgentRecommendation } from "../../../../domain/entities/agent-recommendation.js";
+import type { ComplianceAlert } from "../../../../domain/entities/compliance-alert.js";
+import type { ConversationScorecard } from "../../../../domain/entities/conversation-scorecard.js";
+import type { NextBestAction } from "../../../../domain/entities/next-best-action.js";
 
 type Doc = Record<string, unknown> & { _id: { toString(): string } };
 
@@ -821,6 +827,107 @@ export function toAgentCollaborationDecision(doc: Doc): AgentCollaborationDecisi
     confidence: Number(doc.confidence),
     approved: Boolean(doc.approved),
     metadata: (doc.metadata as Record<string, unknown>) ?? {},
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toAgentCoachingSession(doc: Doc): AgentCoachingSession {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    agentId: id(doc.agentId),
+    humanSessionId: id(doc.humanSessionId),
+    aiSessionId: id(doc.aiSessionId),
+    callId: id(doc.callId),
+    conversationId: id(doc.conversationId),
+    status: doc.status as AgentCoachingSession["status"],
+    startedAt: date(doc.startedAt),
+    endedAt: doc.endedAt ? date(doc.endedAt) : null,
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toAgentCoachingInsight(doc: Doc): AgentCoachingInsight {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    coachingSessionId: id(doc.coachingSessionId),
+    agentId: id(doc.agentId),
+    conversationId: id(doc.conversationId),
+    type: doc.type as AgentCoachingInsight["type"],
+    message: String(doc.message),
+    reasoning: String(doc.reasoning),
+    confidence: Number(doc.confidence),
+    accepted: doc.accepted === null || doc.accepted === undefined ? null : Boolean(doc.accepted),
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toAgentRecommendation(doc: Doc): AgentRecommendation {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    coachingSessionId: id(doc.coachingSessionId),
+    agentId: id(doc.agentId),
+    conversationId: id(doc.conversationId),
+    type: doc.type as AgentRecommendation["type"],
+    title: String(doc.title),
+    description: String(doc.description),
+    priority: doc.priority as AgentRecommendation["priority"],
+    used: Boolean(doc.used),
+    confidence: Number(doc.confidence),
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toComplianceAlert(doc: Doc): ComplianceAlert {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    coachingSessionId: id(doc.coachingSessionId),
+    agentId: id(doc.agentId),
+    conversationId: id(doc.conversationId),
+    type: doc.type as ComplianceAlert["type"],
+    severity: doc.severity as ComplianceAlert["severity"],
+    message: String(doc.message),
+    resolved: Boolean(doc.resolved),
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toConversationScorecard(doc: Doc): ConversationScorecard {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    coachingSessionId: id(doc.coachingSessionId),
+    agentId: id(doc.agentId),
+    conversationId: id(doc.conversationId),
+    discoveryQuality: Number(doc.discoveryQuality),
+    qualificationQuality: Number(doc.qualificationQuality),
+    objectionHandlingQuality: Number(doc.objectionHandlingQuality),
+    complianceScore: Number(doc.complianceScore),
+    closingEffectiveness: Number(doc.closingEffectiveness),
+    overallScore: Number(doc.overallScore),
+    reasoning: String(doc.reasoning),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toNextBestAction(doc: Doc): NextBestAction {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    coachingSessionId: id(doc.coachingSessionId),
+    agentId: id(doc.agentId),
+    conversationId: id(doc.conversationId),
+    actionType: doc.actionType as NextBestAction["actionType"],
+    label: String(doc.label),
+    rationale: String(doc.rationale),
+    priority: doc.priority as NextBestAction["priority"],
+    completed: Boolean(doc.completed),
+    confidence: Number(doc.confidence),
     createdAt: date(doc.createdAt),
   };
 }

@@ -50,6 +50,15 @@ import {
   toWorkflowActionDto,
   toWorkflowExecutionDto,
 } from "./serializers.js";
+import {
+  serializeAgentCoachingInsight,
+  serializeAgentCoachingSession,
+  serializeAgentRecommendation,
+  serializeCoachingEffectivenessMetrics,
+  serializeComplianceAlert,
+  serializeConversationScorecard,
+  serializeNextBestAction,
+} from "./coaching-serializers.js";
 import type { AgentDecision } from "../domain/entities/agent-decision.js";
 import type { AgentSession } from "../domain/entities/agent-session.js";
 import type { LeadQualification } from "../domain/entities/lead-qualification.js";
@@ -605,6 +614,129 @@ async function handleRequest(container: Container, request: IncomingMessage, res
           decisions: (await container.repositories.agentCollaborationDecisions.listBySession(organizationId, collaboration.id)).map(toAgentCollaborationDecisionDto),
         },
       });
+      return;
+    }
+
+    if (url.pathname === "/ai/coaching/sessions" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: (await container.services.agentCoachingService.listSessions(organizationId)).map(serializeAgentCoachingSession),
+      });
+      return;
+    }
+
+    const coachingSessionMatch = /^\/ai\/coaching\/sessions\/([^/]+)$/.exec(url.pathname);
+    if (coachingSessionMatch?.[1] && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const session = await container.services.agentCoachingService.getSession(organizationId, coachingSessionMatch[1]);
+      if (!session) throw AiBrainError.notFound("Agent coaching session");
+      sendJson(response, 200, { data: serializeAgentCoachingSession(session) });
+      return;
+    }
+
+    if (url.pathname === "/ai/coaching/insights" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: (await container.services.agentCoachingService.listInsights(organizationId)).map(serializeAgentCoachingInsight),
+      });
+      return;
+    }
+
+    const coachingInsightMatch = /^\/ai\/coaching\/insights\/([^/]+)$/.exec(url.pathname);
+    if (coachingInsightMatch?.[1] && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const insight = await container.services.agentCoachingService.getInsight(organizationId, coachingInsightMatch[1]);
+      if (!insight) throw AiBrainError.notFound("Agent coaching insight");
+      sendJson(response, 200, { data: serializeAgentCoachingInsight(insight) });
+      return;
+    }
+
+    if (url.pathname === "/ai/coaching/metrics" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: serializeCoachingEffectivenessMetrics(await container.services.agentCoachingService.getEffectivenessMetrics(organizationId)),
+      });
+      return;
+    }
+
+    if (url.pathname === "/ai/recommendations" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: (await container.services.nextBestActionService.listRecommendations(organizationId)).map(serializeAgentRecommendation),
+      });
+      return;
+    }
+
+    const recommendationMatch = /^\/ai\/recommendations\/([^/]+)$/.exec(url.pathname);
+    if (recommendationMatch?.[1] && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const recommendation = await container.services.nextBestActionService.getRecommendation(organizationId, recommendationMatch[1]);
+      if (!recommendation) throw AiBrainError.notFound("Agent recommendation");
+      sendJson(response, 200, { data: serializeAgentRecommendation(recommendation) });
+      return;
+    }
+
+    if (url.pathname === "/ai/compliance-alerts" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: (await container.services.complianceMonitor.list(organizationId)).map(serializeComplianceAlert),
+      });
+      return;
+    }
+
+    const complianceAlertMatch = /^\/ai\/compliance-alerts\/([^/]+)$/.exec(url.pathname);
+    if (complianceAlertMatch?.[1] && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const alert = await container.services.complianceMonitor.get(organizationId, complianceAlertMatch[1]);
+      if (!alert) throw AiBrainError.notFound("Compliance alert");
+      sendJson(response, 200, { data: serializeComplianceAlert(alert) });
+      return;
+    }
+
+    if (url.pathname === "/ai/scorecards" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: (await container.services.scorecardService.list(organizationId)).map(serializeConversationScorecard),
+      });
+      return;
+    }
+
+    const scorecardMatch = /^\/ai\/scorecards\/([^/]+)$/.exec(url.pathname);
+    if (scorecardMatch?.[1] && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const scorecard = await container.services.scorecardService.get(organizationId, scorecardMatch[1]);
+      if (!scorecard) throw AiBrainError.notFound("Conversation scorecard");
+      sendJson(response, 200, { data: serializeConversationScorecard(scorecard) });
+      return;
+    }
+
+    if (url.pathname === "/ai/next-best-actions" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, {
+        data: (await container.services.nextBestActionService.listActions(organizationId)).map(serializeNextBestAction),
+      });
+      return;
+    }
+
+    const nextBestActionMatch = /^\/ai\/next-best-actions\/([^/]+)$/.exec(url.pathname);
+    if (nextBestActionMatch?.[1] && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const action = await container.services.nextBestActionService.getAction(organizationId, nextBestActionMatch[1]);
+      if (!action) throw AiBrainError.notFound("Next best action");
+      sendJson(response, 200, { data: serializeNextBestAction(action) });
       return;
     }
 

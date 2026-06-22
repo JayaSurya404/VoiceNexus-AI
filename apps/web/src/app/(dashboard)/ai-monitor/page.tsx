@@ -12,6 +12,7 @@ import {
   QueueAnalyticsPanel,
   SentimentTrendsPanel,
 } from "@/components/ai-monitor/analytics-panels";
+import { CoachingMonitorPanel } from "@/components/ai-monitor/coaching-panels";
 import { CollaborationMonitorPanel } from "@/components/ai-monitor/collaboration-panels";
 import { ConversationFeed } from "@/components/ai-monitor/conversation-feed";
 import { DecisionTimeline } from "@/components/ai-monitor/decision-timeline";
@@ -65,12 +66,18 @@ import {
   useAiTools,
   useActionAudits,
   useCallOutcomes,
+  useAgentRecommendations,
   useCollaborations,
   useCollaborativeAgentTasks,
+  useCoachingInsights,
+  useCoachingMetrics,
+  useCoachingSessions,
+  useComplianceAlerts,
   useConversionAnalytics,
   useFollowups,
   useConversationState,
   useConversationAnalytics,
+  useConversationScorecards,
   useHumanAgents,
   useHumanConsoleActions,
   useKnowledgeCitations,
@@ -82,6 +89,7 @@ import {
   useKnowledgeSuggestions,
   useKnowledgeActions,
   useLiveTakeovers,
+  useNextBestActions,
   useQueueHealth,
   useQueueAnalytics,
   useQueueSessions,
@@ -146,6 +154,13 @@ export default function AiMonitorPage() {
   const collaborativeTasksQuery = useCollaborativeAgentTasks(activeOrganizationId);
   const agentDelegationsQuery = useAgentDelegations(activeOrganizationId);
   const collaborationsQuery = useCollaborations(activeOrganizationId);
+  const coachingSessionsQuery = useCoachingSessions(activeOrganizationId);
+  const coachingInsightsQuery = useCoachingInsights(activeOrganizationId);
+  const coachingMetricsQuery = useCoachingMetrics(activeOrganizationId);
+  const agentRecommendationsQuery = useAgentRecommendations(activeOrganizationId);
+  const complianceAlertsQuery = useComplianceAlerts(activeOrganizationId);
+  const conversationScorecardsQuery = useConversationScorecards(activeOrganizationId);
+  const nextBestActionsQuery = useNextBestActions(activeOrganizationId);
   const queueSessionsQuery = useQueueSessions(activeOrganizationId);
   const routingDecisionsQuery = useRoutingDecisions(activeOrganizationId);
   const queueHealthQuery = useQueueHealth(activeOrganizationId);
@@ -286,6 +301,15 @@ export default function AiMonitorPage() {
         delegations={agentDelegationsQuery.data ?? []}
         tasks={collaborativeTasksQuery.data ?? []}
         teams={agentTeamsQuery.data ?? []}
+      />
+      <CoachingMonitorPanel
+        alerts={complianceAlertsQuery.data ?? []}
+        insights={coachingInsightsQuery.data ?? []}
+        metrics={coachingMetricsQuery.data}
+        nextBestActions={nextBestActionsQuery.data ?? []}
+        recommendations={agentRecommendationsQuery.data ?? []}
+        scorecards={conversationScorecardsQuery.data ?? []}
+        sessions={coachingSessionsQuery.data ?? []}
       />
       <TakeoverPanel
         onEnd={(id) => humanConsoleActions.endTakeover.mutate(id)}
