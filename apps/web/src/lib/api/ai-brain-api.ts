@@ -234,6 +234,88 @@ export interface AgentAvailabilityDto {
   updatedAt: string;
 }
 
+export interface QueueDto {
+  id: string;
+  organizationId: string;
+  name: string;
+  priority: number;
+  maxWaitingTime: number;
+  overflowQueueId: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QueueMemberDto {
+  id: string;
+  organizationId: string;
+  queueId: string;
+  agentId: string;
+  role: "AGENT" | "SUPERVISOR";
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentSkillDto {
+  id: string;
+  organizationId: string;
+  agentId: string;
+  skill: string;
+  level: number;
+  certified: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QueueSessionDto {
+  id: string;
+  organizationId: string;
+  queueId: string;
+  callId: string | null;
+  aiSessionId: string | null;
+  leadId: string | null;
+  assignedAgentId: string | null;
+  priority: number;
+  status: "WAITING" | "ASSIGNED" | "TRANSFERRED" | "COMPLETED" | "ABANDONED";
+  source: "AI" | "AGENT" | "QUEUE" | "MANUAL";
+  routingReason: string | null;
+  escalationPath: string[];
+  enteredAt: string;
+  assignedAt: string | null;
+  completedAt: string | null;
+  abandonedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RoutingDecisionDto {
+  id: string;
+  organizationId: string;
+  queueSessionId: string | null;
+  queueId: string | null;
+  agentId: string | null;
+  escalationQueueId: string | null;
+  status: "COMPLETED" | "FAILED";
+  reason: string;
+  confidence: number;
+  inputs: Record<string, unknown>;
+  decisionPath: string[];
+  createdAt: string;
+}
+
+export interface QueueHealthDto {
+  queueId: string;
+  queueName: string;
+  waiting: number;
+  assigned: number;
+  averageWaitTime: number;
+  longestWaitTime: number;
+  activeAgents: number;
+  priority: number;
+}
+
 export interface HumanAgentSessionDto {
   id: string;
   organizationId: string;
@@ -286,7 +368,9 @@ export interface SupervisorOverviewDto {
   activeAiSessions: number;
   activeTakeovers: number;
   averageAiConfidence: number;
+  averageWaitTime: number;
   hotQualifications: number;
+  queuedSessions: number;
   runningWorkflows: number;
 }
 
@@ -368,6 +452,18 @@ export const aiBrainApi = {
     request<HumanAgentDto>("/agents", { method: "POST", body: JSON.stringify(input) }),
   listAvailability: (organizationId: string) =>
     request<AgentAvailabilityDto[]>(`/agents/availability?${query({ organizationId })}`),
+  listQueues: (organizationId: string, agentId?: string) =>
+    request<QueueDto[]>(`/queues?${query({ organizationId, agentId })}`),
+  listQueueMembers: (organizationId: string, queueId?: string, agentId?: string) =>
+    request<QueueMemberDto[]>(`/queues/members?${query({ organizationId, queueId, agentId })}`),
+  listAgentSkills: (organizationId: string, agentId?: string) =>
+    request<AgentSkillDto[]>(`/skills?${query({ organizationId, agentId })}`),
+  listQueueSessions: (organizationId: string, queueId?: string, agentId?: string) =>
+    request<QueueSessionDto[]>(`/queue-sessions?${query({ organizationId, queueId, agentId })}`),
+  listRoutingDecisions: (organizationId: string) =>
+    request<RoutingDecisionDto[]>(`/routing/decisions?${query({ organizationId })}`),
+  queueHealth: (organizationId: string) =>
+    request<QueueHealthDto[]>(`/supervisor/queue-health?${query({ organizationId })}`),
   updateAvailability: (
     agentId: string,
     input: { organizationId: string; status: HumanAgentDto["status"]; statusReason?: string | null; capacity?: number },

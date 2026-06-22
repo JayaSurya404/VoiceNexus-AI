@@ -16,6 +16,12 @@ import type { HumanAgentSession } from "../domain/entities/human-agent-session.j
 import type { LiveTakeover } from "../domain/entities/live-takeover.js";
 import type { SupervisorSession } from "../domain/entities/supervisor-session.js";
 import type { WhisperMessage } from "../domain/entities/whisper-message.js";
+import type { AgentSkill } from "../domain/entities/agent-skill.js";
+import type { Queue } from "../domain/entities/queue.js";
+import type { QueueMember } from "../domain/entities/queue-member.js";
+import type { QueueSession } from "../domain/entities/queue-session.js";
+import type { RoutingDecision } from "../domain/entities/routing-decision.js";
+import type { RoutingRule } from "../domain/entities/routing-rule.js";
 
 export const toConversationDto = (value: AIConversation) => ({ ...value, startedAt: iso(value.startedAt), endedAt: maybeIso(value.endedAt), createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 export const toMessageDto = (value: AIMessage) => ({ ...value, timestamp: iso(value.timestamp) });
@@ -79,6 +85,20 @@ export const toSupervisorSessionDto = (value: SupervisorSession) => ({
   createdAt: iso(value.createdAt),
   updatedAt: iso(value.updatedAt),
 });
+export const toQueueDto = (value: Queue) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toQueueMemberDto = (value: QueueMember) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toRoutingRuleDto = (value: RoutingRule) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toRoutingDecisionDto = (value: RoutingDecision) => ({ ...value, createdAt: iso(value.createdAt) });
+export const toQueueSessionDto = (value: QueueSession) => ({
+  ...value,
+  enteredAt: iso(value.enteredAt),
+  assignedAt: maybeIso(value.assignedAt),
+  completedAt: maybeIso(value.completedAt),
+  abandonedAt: maybeIso(value.abandonedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toAgentSkillDto = (value: AgentSkill) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 
 function iso(date: Date): string {
   return date.toISOString();

@@ -5,6 +5,13 @@ import { getRedisPublisher } from "../../infrastructure/redis/redis-client.js";
 export type HumanConsoleTopic =
   | "agent.joined"
   | "agent.left"
+  | "queue.created"
+  | "queue.updated"
+  | "queue.session.created"
+  | "queue.session.assigned"
+  | "routing.completed"
+  | "routing.failed"
+  | "escalation.started"
   | "takeover.started"
   | "takeover.ended"
   | "whisper.created"

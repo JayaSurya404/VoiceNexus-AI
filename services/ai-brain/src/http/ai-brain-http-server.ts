@@ -16,7 +16,13 @@ import {
   toHumanAgentSessionDto,
   toLiveTakeoverDto,
   toMessageDto,
+  toAgentSkillDto,
   toQualificationDto,
+  toQueueDto,
+  toQueueMemberDto,
+  toQueueSessionDto,
+  toRoutingDecisionDto,
+  toRoutingRuleDto,
   toScheduledFollowupDto,
   toSupervisorSessionDto,
   toToolExecutionDto,
@@ -79,6 +85,58 @@ const whisperInputSchema = z.object({
   target: z.enum(["AGENT", "AI"]),
   targetAgentId: z.string().nullable().optional(),
   content: z.string().min(1),
+});
+
+const queueInputSchema = z.object({
+  organizationId: z.string().min(1),
+  name: z.string().min(1),
+  priority: z.number().int().min(0).default(0),
+  maxWaitingTime: z.number().int().min(0).default(300),
+  overflowQueueId: z.string().nullable().optional(),
+  active: z.boolean().default(true),
+});
+
+const queueMemberInputSchema = z.object({
+  organizationId: z.string().min(1),
+  queueId: z.string().min(1),
+  agentId: z.string().min(1),
+  role: z.enum(["AGENT", "SUPERVISOR"]).default("AGENT"),
+  active: z.boolean().default(true),
+});
+
+const routingRuleInputSchema = z.object({
+  organizationId: z.string().min(1),
+  name: z.string().min(1),
+  priority: z.number().int().min(0).default(0),
+  requiredSkills: z.array(z.string()).default([]),
+  conditions: z.record(z.unknown()).default({}),
+  targetQueueId: z.string().nullable().optional(),
+  escalationQueueId: z.string().nullable().optional(),
+  action: z.enum(["ASSIGN_QUEUE", "ESCALATE_QUEUE", "ESCALATE_SUPERVISOR"]).default("ASSIGN_QUEUE"),
+  active: z.boolean().default(true),
+});
+
+const agentSkillInputSchema = z.object({
+  organizationId: z.string().min(1),
+  agentId: z.string().min(1),
+  skill: z.string().min(1),
+  level: z.number().int().min(1).max(5).default(1),
+  certified: z.boolean().default(false),
+  active: z.boolean().default(true),
+});
+
+const routingAssignInputSchema = z.object({
+  organizationId: z.string().min(1),
+  queueSessionId: z.string().nullable().optional(),
+  queueId: z.string().nullable().optional(),
+  callId: z.string().nullable().optional(),
+  aiSessionId: z.string().nullable().optional(),
+  leadId: z.string().nullable().optional(),
+  source: z.enum(["AI", "AGENT", "QUEUE", "MANUAL"]).optional(),
+  requiredSkills: z.array(z.string()).default([]),
+  priority: z.number().int().min(0).optional(),
+  reason: z.string().nullable().optional(),
+  metadata: z.record(z.unknown()).default({}),
 });
 
 export function createAiBrainHttpServer(container: Container) {
@@ -288,6 +346,13 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       return;
     }
 
+    if (url.pathname === "/supervisor/queue-health" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: await container.services.routingEngine.queueHealth(organizationId) });
+      return;
+    }
+
     if (url.pathname === "/supervisor/sessions" && request.method === "POST") {
       const input = z.object({ organizationId: z.string().min(1), supervisorId: z.string().min(1), watchedSessionIds: z.array(z.string()).default([]) }).parse(await readJson(request));
       await authorize(container, token, input.organizationId);
@@ -305,6 +370,181 @@ async function handleRequest(container: Container, request: IncomingMessage, res
         payload: { supervisorId: input.supervisorId, watchedSessionIds: input.watchedSessionIds },
       });
       sendJson(response, 201, { data: toSupervisorSessionDto(session) });
+      return;
+    }
+
+    if (url.pathname === "/queues" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      const agentId = url.searchParams.get("agentId");
+      await authorize(container, token, organizationId);
+      if (agentId) {
+        const memberships = (await container.repositories.queueMembers.listByAgent(organizationId, agentId)).filter((member) => member.active);
+        const memberQueueIds = new Set(memberships.map((member) => member.queueId));
+        const queues = (await container.services.routingEngine.ensureDefaultQueues(organizationId)).filter((queue) => memberQueueIds.has(queue.id));
+        sendJson(response, 200, { data: queues.map(toQueueDto) });
+        return;
+      }
+      sendJson(response, 200, { data: (await container.services.routingEngine.ensureDefaultQueues(organizationId)).map(toQueueDto) });
+      return;
+    }
+
+    if (url.pathname === "/queues" && request.method === "POST") {
+      const input = queueInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 201, { data: toQueueDto(await container.services.routingEngine.createQueue({ ...input, overflowQueueId: input.overflowQueueId ?? null })) });
+      return;
+    }
+
+    if (url.pathname === "/queues/members" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      const queueId = url.searchParams.get("queueId");
+      const agentId = url.searchParams.get("agentId");
+      await authorize(container, token, organizationId);
+      const members = agentId
+        ? await container.repositories.queueMembers.listByAgent(organizationId, agentId)
+        : queueId
+          ? await container.repositories.queueMembers.listByQueue(organizationId, queueId)
+          : await container.repositories.queueMembers.listByOrganization(organizationId);
+      sendJson(response, 200, { data: members.map(toQueueMemberDto) });
+      return;
+    }
+
+    if (url.pathname === "/queues/members" && request.method === "POST") {
+      const input = queueMemberInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 201, { data: toQueueMemberDto(await container.repositories.queueMembers.create(input)) });
+      return;
+    }
+
+    if (url.pathname === "/routing/rules" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.routingRules.listByOrganization(organizationId)).map(toRoutingRuleDto) });
+      return;
+    }
+
+    if (url.pathname === "/routing/rules" && request.method === "POST") {
+      const input = routingRuleInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 201, {
+        data: toRoutingRuleDto(
+          await container.repositories.routingRules.create({
+            ...input,
+            targetQueueId: input.targetQueueId ?? null,
+            escalationQueueId: input.escalationQueueId ?? null,
+          }),
+        ),
+      });
+      return;
+    }
+
+    const routingRuleMatch = /^\/routing\/rules\/([^/]+)$/.exec(url.pathname);
+    if (routingRuleMatch?.[1] && request.method === "PUT") {
+      const input = routingRuleInputSchema.partial().extend({ organizationId: z.string().min(1) }).parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      const updated = await container.repositories.routingRules.update(routingRuleMatch[1], input.organizationId, input);
+      if (!updated) throw AiBrainError.notFound("Routing rule");
+      sendJson(response, 200, { data: toRoutingRuleDto(updated) });
+      return;
+    }
+
+    const queueMatch = /^\/queues\/([^/]+)$/.exec(url.pathname);
+    if (queueMatch?.[1] && request.method === "GET") {
+      const queue = await container.repositories.queues.findById(queueMatch[1]);
+      if (!queue) throw AiBrainError.notFound("Queue");
+      await authorize(container, token, queue.organizationId);
+      sendJson(response, 200, { data: toQueueDto(queue) });
+      return;
+    }
+
+    if (queueMatch?.[1] && request.method === "PUT") {
+      const input = queueInputSchema.partial().extend({ organizationId: z.string().min(1) }).parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      const updated = await container.services.routingEngine.updateQueue(queueMatch[1], input.organizationId, input);
+      if (!updated) throw AiBrainError.notFound("Queue");
+      sendJson(response, 200, { data: toQueueDto(updated) });
+      return;
+    }
+
+    if (queueMatch?.[1] && request.method === "DELETE") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: { deleted: await container.repositories.queues.delete(queueMatch[1], organizationId) } });
+      return;
+    }
+
+    if (url.pathname === "/skills" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      const agentId = url.searchParams.get("agentId");
+      await authorize(container, token, organizationId);
+      const skills = agentId
+        ? await container.repositories.agentSkills.listByAgent(organizationId, agentId)
+        : await container.repositories.agentSkills.listByOrganization(organizationId);
+      sendJson(response, 200, { data: skills.map(toAgentSkillDto) });
+      return;
+    }
+
+    if (url.pathname === "/skills" && request.method === "POST") {
+      const input = agentSkillInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 201, { data: toAgentSkillDto(await container.repositories.agentSkills.create(input)) });
+      return;
+    }
+
+    const skillMatch = /^\/skills\/([^/]+)$/.exec(url.pathname);
+    if (skillMatch?.[1] && request.method === "PUT") {
+      const input = agentSkillInputSchema.partial().extend({ organizationId: z.string().min(1) }).parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      const updated = await container.repositories.agentSkills.update(skillMatch[1], input.organizationId, input);
+      if (!updated) throw AiBrainError.notFound("Agent skill");
+      sendJson(response, 200, { data: toAgentSkillDto(updated) });
+      return;
+    }
+
+    if (url.pathname === "/routing/assign" && request.method === "POST") {
+      const input = routingAssignInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      const result = await container.services.routingEngine.assign({ ...input, reason: input.reason ?? undefined });
+      sendJson(response, 200, {
+        data: {
+          queueSession: result.queueSession ? toQueueSessionDto(result.queueSession) : null,
+          queue: result.queue ? toQueueDto(result.queue) : null,
+          agent: result.agent ? toHumanAgentDto(result.agent) : null,
+          decision: toRoutingDecisionDto(result.decision),
+          escalationPath: result.escalationPath.map(toQueueDto),
+        },
+      });
+      return;
+    }
+
+    if (url.pathname === "/routing/decisions" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      const limit = Number(url.searchParams.get("limit") ?? 100);
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.routingDecisions.listByOrganization(organizationId, limit)).map(toRoutingDecisionDto) });
+      return;
+    }
+
+    if (url.pathname === "/queue-sessions" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      const queueId = url.searchParams.get("queueId");
+      const agentId = url.searchParams.get("agentId");
+      await authorize(container, token, organizationId);
+      const sessions = agentId
+        ? await container.repositories.queueSessions.listByAgent(organizationId, agentId)
+        : queueId
+          ? await container.repositories.queueSessions.listByQueue(organizationId, queueId)
+          : await container.repositories.queueSessions.listByOrganization(organizationId);
+      sendJson(response, 200, { data: sessions.map(toQueueSessionDto) });
+      return;
+    }
+
+    const queueSessionMatch = /^\/queue-sessions\/([^/]+)$/.exec(url.pathname);
+    if (queueSessionMatch?.[1] && request.method === "GET") {
+      const session = await container.repositories.queueSessions.findById(queueSessionMatch[1]);
+      if (!session) throw AiBrainError.notFound("Queue session");
+      await authorize(container, token, session.organizationId);
+      sendJson(response, 200, { data: toQueueSessionDto(session) });
       return;
     }
 

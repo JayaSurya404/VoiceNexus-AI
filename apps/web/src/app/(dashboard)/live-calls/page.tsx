@@ -15,6 +15,8 @@ import {
   useHumanAgents,
   useHumanConsoleActions,
   useLiveTakeovers,
+  useQueueSessions,
+  useQueues,
   useSupervisorSessions,
 } from "@/hooks/use-ai-brain";
 import { useActiveCalls, useLiveCallsSocket } from "@/hooks/use-live-calls";
@@ -47,6 +49,8 @@ export default function LiveCallsPage() {
   const realtimeBargeInsQuery = useRealtimeBargeIns(selectedRuntimeConversationId);
   const takeoverControls = useTakeoverControls(organizationId ?? null);
   const humanAgentsQuery = useHumanAgents(organizationId ?? null);
+  const queuesQuery = useQueues(organizationId ?? null);
+  const queueSessionsQuery = useQueueSessions(organizationId ?? null);
   const humanSessionsQuery = useSupervisorSessions(organizationId ?? null);
   const humanTakeoversQuery = useLiveTakeovers(organizationId ?? null);
   const humanConsoleActions = useHumanConsoleActions(organizationId ?? null);
@@ -97,7 +101,16 @@ export default function LiveCallsPage() {
         </Card>
       </div>
 
-      {activeCallsQuery.isLoading ? <Skeleton className="h-72 w-full" /> : <ActiveCallsTable calls={calls} />}
+      {activeCallsQuery.isLoading ? (
+        <Skeleton className="h-72 w-full" />
+      ) : (
+        <ActiveCallsTable
+          agents={humanAgentsQuery.data ?? []}
+          calls={calls}
+          queueSessions={queueSessionsQuery.data ?? []}
+          queues={queuesQuery.data ?? []}
+        />
+      )}
       <HumanTakeoverControls
         agents={humanAgentsQuery.data ?? []}
         calls={calls}

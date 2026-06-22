@@ -16,6 +16,12 @@ import type { HumanAgentSession } from "../../../../domain/entities/human-agent-
 import type { LiveTakeover } from "../../../../domain/entities/live-takeover.js";
 import type { SupervisorSession } from "../../../../domain/entities/supervisor-session.js";
 import type { WhisperMessage } from "../../../../domain/entities/whisper-message.js";
+import type { AgentSkill } from "../../../../domain/entities/agent-skill.js";
+import type { Queue } from "../../../../domain/entities/queue.js";
+import type { QueueMember } from "../../../../domain/entities/queue-member.js";
+import type { QueueSession } from "../../../../domain/entities/queue-session.js";
+import type { RoutingDecision } from "../../../../domain/entities/routing-decision.js";
+import type { RoutingRule } from "../../../../domain/entities/routing-rule.js";
 
 type Doc = Record<string, unknown> & { _id: { toString(): string } };
 
@@ -340,6 +346,104 @@ export function toSupervisorSession(doc: Doc): SupervisorSession {
     startedAt: date(doc.startedAt),
     endedAt: doc.endedAt ? date(doc.endedAt) : null,
     watchedSessionIds: ((doc.watchedSessionIds as unknown[] | undefined) ?? []).map((value) => id(value) ?? ""),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toQueue(doc: Doc): Queue {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    name: String(doc.name),
+    priority: Number(doc.priority),
+    maxWaitingTime: Number(doc.maxWaitingTime),
+    overflowQueueId: id(doc.overflowQueueId),
+    active: Boolean(doc.active),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toQueueMember(doc: Doc): QueueMember {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    queueId: id(doc.queueId) ?? "",
+    agentId: id(doc.agentId) ?? "",
+    role: doc.role as QueueMember["role"],
+    active: Boolean(doc.active),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toRoutingRule(doc: Doc): RoutingRule {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    name: String(doc.name),
+    priority: Number(doc.priority),
+    requiredSkills: (doc.requiredSkills as string[] | undefined) ?? [],
+    conditions: (doc.conditions as Record<string, unknown>) ?? {},
+    targetQueueId: id(doc.targetQueueId),
+    escalationQueueId: id(doc.escalationQueueId),
+    action: doc.action as RoutingRule["action"],
+    active: Boolean(doc.active),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toRoutingDecision(doc: Doc): RoutingDecision {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    queueSessionId: id(doc.queueSessionId),
+    queueId: id(doc.queueId),
+    agentId: id(doc.agentId),
+    escalationQueueId: id(doc.escalationQueueId),
+    status: doc.status as RoutingDecision["status"],
+    reason: String(doc.reason),
+    confidence: Number(doc.confidence),
+    inputs: (doc.inputs as Record<string, unknown>) ?? {},
+    decisionPath: (doc.decisionPath as string[] | undefined) ?? [],
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toQueueSession(doc: Doc): QueueSession {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    queueId: id(doc.queueId) ?? "",
+    callId: id(doc.callId),
+    aiSessionId: id(doc.aiSessionId),
+    leadId: id(doc.leadId),
+    assignedAgentId: id(doc.assignedAgentId),
+    priority: Number(doc.priority),
+    status: doc.status as QueueSession["status"],
+    source: doc.source as QueueSession["source"],
+    routingReason: doc.routingReason ? String(doc.routingReason) : null,
+    escalationPath: ((doc.escalationPath as unknown[] | undefined) ?? []).map((value) => id(value) ?? ""),
+    enteredAt: date(doc.enteredAt),
+    assignedAt: doc.assignedAt ? date(doc.assignedAt) : null,
+    completedAt: doc.completedAt ? date(doc.completedAt) : null,
+    abandonedAt: doc.abandonedAt ? date(doc.abandonedAt) : null,
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toAgentSkill(doc: Doc): AgentSkill {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    agentId: id(doc.agentId) ?? "",
+    skill: String(doc.skill).toUpperCase(),
+    level: Number(doc.level),
+    certified: Boolean(doc.certified),
+    active: Boolean(doc.active),
     createdAt: date(doc.createdAt),
     updatedAt: date(doc.updatedAt),
   };

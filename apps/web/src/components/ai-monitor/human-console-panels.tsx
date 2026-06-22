@@ -16,6 +16,8 @@ export function SupervisorOverviewPanel({ overview }: Readonly<{ overview: Super
     <section className="grid gap-4 md:grid-cols-4">
       <Metric label="Active calls" value={overview?.activeCalls ?? 0} />
       <Metric label="Active agents" value={overview?.activeAgents ?? 0} />
+      <Metric label="Queued sessions" value={overview?.queuedSessions ?? 0} />
+      <Metric label="Avg wait" value={`${Math.round(overview?.averageWaitTime ?? 0)}s`} />
       <Metric label="Active takeovers" value={overview?.activeTakeovers ?? 0} />
       <Metric label="AI confidence" value={`${Math.round((overview?.averageAiConfidence ?? 0) * 100)}%`} />
     </section>

@@ -11,6 +11,12 @@ import {
   TakeoverPanel,
   WhisperAndAssistPanel,
 } from "@/components/ai-monitor/human-console-panels";
+import {
+  AgentWorkloadPanel,
+  EscalationTimelinePanel,
+  QueueDashboardPanel,
+  RoutingDecisionPanel,
+} from "@/components/ai-monitor/queue-routing-panels";
 import { RuntimeMetrics } from "@/components/ai-monitor/runtime-metrics";
 import { RealtimeRuntimeMetricsPanel, RealtimeRuntimePanel } from "@/components/ai-monitor/realtime-runtime-panels";
 import { StateAndQualification } from "@/components/ai-monitor/state-and-qualification";
@@ -31,6 +37,7 @@ import {
   useAgentSessions,
   useAgentAssist,
   useAgentAvailability,
+  useAgentSkills,
   useAiConversations,
   useAiMessages,
   useAiQualifications,
@@ -41,6 +48,10 @@ import {
   useHumanAgents,
   useHumanConsoleActions,
   useLiveTakeovers,
+  useQueueHealth,
+  useQueueSessions,
+  useQueues,
+  useRoutingDecisions,
   useRuntimeMetrics,
   useSupervisorOverview,
   useSupervisorSessions,
@@ -76,6 +87,11 @@ export default function AiMonitorPage() {
   const voiceMetricsQuery = useVoiceResponseMetrics(activeOrganizationId);
   const humanAgentsQuery = useHumanAgents(activeOrganizationId);
   const availabilityQuery = useAgentAvailability(activeOrganizationId);
+  const queuesQuery = useQueues(activeOrganizationId);
+  const agentSkillsQuery = useAgentSkills(activeOrganizationId);
+  const queueSessionsQuery = useQueueSessions(activeOrganizationId);
+  const routingDecisionsQuery = useRoutingDecisions(activeOrganizationId);
+  const queueHealthQuery = useQueueHealth(activeOrganizationId);
   const takeoversQuery = useLiveTakeovers(activeOrganizationId);
   const whispersQuery = useWhispers(activeOrganizationId);
   const supervisorOverviewQuery = useSupervisorOverview(activeOrganizationId);
@@ -144,6 +160,7 @@ export default function AiMonitorPage() {
 
       <RuntimeMetrics metrics={metricsQuery.data} />
       <SupervisorOverviewPanel overview={supervisorOverviewQuery.data} />
+      <QueueDashboardPanel health={queueHealthQuery.data ?? []} queues={queuesQuery.data ?? []} />
       <RealtimeRuntimeMetricsPanel metrics={realtimeMetricsQuery.data} />
       <VoiceResponseMetricsPanel metrics={voiceMetricsQuery.data} />
 
@@ -170,6 +187,15 @@ export default function AiMonitorPage() {
       )}
 
       <AgentPanel agents={humanAgents} availability={availabilityQuery.data ?? []} />
+      <AgentWorkloadPanel
+        agents={humanAgents}
+        availability={availabilityQuery.data ?? []}
+        skills={agentSkillsQuery.data ?? []}
+      />
+      <div className="grid gap-6 xl:grid-cols-2">
+        <RoutingDecisionPanel decisions={routingDecisionsQuery.data ?? []} />
+        <EscalationTimelinePanel queues={queuesQuery.data ?? []} sessions={queueSessionsQuery.data ?? []} />
+      </div>
       <TakeoverPanel
         onEnd={(id) => humanConsoleActions.endTakeover.mutate(id)}
         onStart={(id) => humanConsoleActions.startTakeover.mutate(id)}

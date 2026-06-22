@@ -19,6 +19,7 @@ import { MemoryActionService } from "./application/services/memory-action-servic
 import { ObjectionHandlerService } from "./application/services/objection-handler-service.js";
 import { PromptEngineService } from "./application/services/prompt-engine-service.js";
 import { ResponseGenerationService } from "./application/services/response-generation-service.js";
+import { RoutingEngineService } from "./application/services/routing-engine-service.js";
 import { SupervisorConsoleService } from "./application/services/supervisor-console-service.js";
 import { TimelineActionService } from "./application/services/timeline-action-service.js";
 import { WhisperService } from "./application/services/whisper-service.js";
@@ -51,6 +52,14 @@ import {
   MongoSupervisorSessionRepository,
   MongoWhisperMessageRepository,
 } from "./infrastructure/database/mongoose/repositories/human-console-repositories.js";
+import {
+  MongoAgentSkillRepository,
+  MongoQueueMemberRepository,
+  MongoQueueRepository,
+  MongoQueueSessionRepository,
+  MongoRoutingDecisionRepository,
+  MongoRoutingRuleRepository,
+} from "./infrastructure/database/mongoose/repositories/routing-repositories.js";
 import { TranscriptFinalSubscriber } from "./infrastructure/redis/transcript-final-subscriber.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
 import { AccessTokenService } from "./security/access-token-service.js";
@@ -76,6 +85,12 @@ export function createContainer() {
   const liveTakeovers = new MongoLiveTakeoverRepository();
   const whispers = new MongoWhisperMessageRepository();
   const supervisorSessions = new MongoSupervisorSessionRepository();
+  const queues = new MongoQueueRepository();
+  const queueMembers = new MongoQueueMemberRepository();
+  const routingRules = new MongoRoutingRuleRepository();
+  const routingDecisions = new MongoRoutingDecisionRepository();
+  const queueSessions = new MongoQueueSessionRepository();
+  const agentSkills = new MongoAgentSkillRepository();
   const organizationAccess = new MongoOrganizationAccessRepository();
 
   const provider = new OpenAIProvider({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
@@ -98,6 +113,17 @@ export function createContainer() {
   );
   const liveTakeover = new LiveTakeoverService(liveTakeovers, humanAgentSessions, humanConsoleEvents);
   const whisperService = new WhisperService(whispers, humanConsoleEvents);
+  const routingEngine = new RoutingEngineService(
+    queues,
+    queueMembers,
+    routingRules,
+    routingDecisions,
+    queueSessions,
+    agentSkills,
+    humanAgents,
+    agentAvailability,
+    humanConsoleEvents,
+  );
   const supervisorConsole = new SupervisorConsoleService(
     humanAgents,
     agentAvailability,
@@ -107,6 +133,7 @@ export function createContainer() {
     decisions,
     qualifications,
     workflows,
+    routingEngine,
   );
   const agentAssist = new AgentAssistService(sessions, decisions, qualifications, toolExecutions, responseGeneration);
   const summaryEngine = new ConversationSummaryEngine(provider);
@@ -171,6 +198,12 @@ export function createContainer() {
       liveTakeovers,
       whispers,
       supervisorSessions,
+      queues,
+      queueMembers,
+      routingRules,
+      routingDecisions,
+      queueSessions,
+      agentSkills,
       organizationAccess,
     },
     services: {
@@ -193,6 +226,7 @@ export function createContainer() {
       promptEngine,
       qualificationRuntime,
       responseGeneration,
+      routingEngine,
       supervisorConsole,
       runtime,
       stateService,

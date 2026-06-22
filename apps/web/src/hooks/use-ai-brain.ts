@@ -20,6 +20,12 @@ export const aiBrainKeys = {
   audits: (organizationId: string) => ["ai", "audits", organizationId] as const,
   humanAgents: (organizationId: string) => ["ai", "human-agents", organizationId] as const,
   availability: (organizationId: string) => ["ai", "agent-availability", organizationId] as const,
+  queues: (organizationId: string) => ["ai", "queues", organizationId] as const,
+  queueMembers: (organizationId: string) => ["ai", "queue-members", organizationId] as const,
+  agentSkills: (organizationId: string) => ["ai", "agent-skills", organizationId] as const,
+  queueSessions: (organizationId: string) => ["ai", "queue-sessions", organizationId] as const,
+  routingDecisions: (organizationId: string) => ["ai", "routing-decisions", organizationId] as const,
+  queueHealth: (organizationId: string) => ["ai", "queue-health", organizationId] as const,
   takeovers: (organizationId: string) => ["ai", "takeovers", organizationId] as const,
   whispers: (organizationId: string) => ["ai", "whispers", organizationId] as const,
   supervisorOverview: (organizationId: string) => ["ai", "supervisor-overview", organizationId] as const,
@@ -161,6 +167,60 @@ export function useAgentAvailability(organizationId: string | null) {
   });
 }
 
+export function useQueues(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.queues(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listQueues(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useQueueMembers(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.queueMembers(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listQueueMembers(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useAgentSkills(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.agentSkills(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listAgentSkills(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 20_000,
+  });
+}
+
+export function useQueueSessions(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.queueSessions(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listQueueSessions(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useRoutingDecisions(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.routingDecisions(organizationId ?? ""),
+    queryFn: () => aiBrainApi.listRoutingDecisions(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useQueueHealth(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.queueHealth(organizationId ?? ""),
+    queryFn: () => aiBrainApi.queueHealth(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 10_000,
+  });
+}
+
 export function useLiveTakeovers(organizationId: string | null) {
   return useQuery({
     queryKey: aiBrainKeys.takeovers(organizationId ?? ""),
@@ -213,6 +273,10 @@ export function useHumanConsoleActions(organizationId: string | null) {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: aiBrainKeys.humanAgents(organizationId) }),
       queryClient.invalidateQueries({ queryKey: aiBrainKeys.availability(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.queues(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.queueSessions(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.routingDecisions(organizationId) }),
+      queryClient.invalidateQueries({ queryKey: aiBrainKeys.queueHealth(organizationId) }),
       queryClient.invalidateQueries({ queryKey: aiBrainKeys.takeovers(organizationId) }),
       queryClient.invalidateQueries({ queryKey: aiBrainKeys.whispers(organizationId) }),
       queryClient.invalidateQueries({ queryKey: aiBrainKeys.supervisorSessions(organizationId) }),

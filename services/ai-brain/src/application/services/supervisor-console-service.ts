@@ -9,6 +9,7 @@ import type {
   SupervisorOverview,
   WorkflowExecutionRepository,
 } from "../ports.js";
+import type { RoutingEngineService } from "./routing-engine-service.js";
 
 export class SupervisorConsoleService {
   constructor(
@@ -20,6 +21,7 @@ export class SupervisorConsoleService {
     private readonly decisions: AgentDecisionRepository,
     private readonly qualifications: LeadQualificationRepository,
     private readonly workflows: WorkflowExecutionRepository,
+    private readonly routingEngine: RoutingEngineService,
   ) {}
 
   async overview(organizationId: string): Promise<SupervisorOverview> {
@@ -31,6 +33,7 @@ export class SupervisorConsoleService {
       qualifications,
       workflows,
       availability,
+      queueHealth,
     ] = await Promise.all([
       this.humanSessions.listByOrganization(organizationId),
       this.aiSessions.listByOrganization(organizationId),
@@ -39,6 +42,7 @@ export class SupervisorConsoleService {
       this.qualifications.listByOrganization(organizationId),
       this.workflows.listByOrganization(organizationId),
       this.availability.listByOrganization(organizationId),
+      this.routingEngine.queueHealth(organizationId),
     ]);
 
     const activeAiSessions = aiSessions.filter(
@@ -69,9 +73,19 @@ export class SupervisorConsoleService {
           ) / aiSessions.length
         : 0,
 
+      averageWaitTime: queueHealth.length
+        ? queueHealth.reduce((total, queue) => total + queue.averageWaitTime, 0) /
+          queueHealth.length
+        : 0,
+
       hotQualifications: qualifications.filter(
         (qualification) => qualification.interestLevel === "HOT",
       ).length,
+
+      queuedSessions: queueHealth.reduce(
+        (total, queue) => total + queue.waiting,
+        0,
+      ),
 
       runningWorkflows: workflows.filter(
         (workflow) =>

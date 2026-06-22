@@ -16,6 +16,12 @@ import type { HumanAgentSession } from "../domain/entities/human-agent-session.j
 import type { LiveTakeover } from "../domain/entities/live-takeover.js";
 import type { SupervisorSession } from "../domain/entities/supervisor-session.js";
 import type { WhisperMessage } from "../domain/entities/whisper-message.js";
+import type { AgentSkill } from "../domain/entities/agent-skill.js";
+import type { Queue } from "../domain/entities/queue.js";
+import type { QueueMember } from "../domain/entities/queue-member.js";
+import type { QueueSession } from "../domain/entities/queue-session.js";
+import type { RoutingDecision } from "../domain/entities/routing-decision.js";
+import type { RoutingRule } from "../domain/entities/routing-rule.js";
 
 export interface AIConversationRepository {
   create(input: Omit<AIConversation, "id" | "createdAt" | "updatedAt">): Promise<AIConversation>;
@@ -141,6 +147,51 @@ export interface SupervisorSessionRepository {
   update(id: string, input: Partial<Pick<SupervisorSession, "status" | "endedAt" | "watchedSessionIds">>): Promise<SupervisorSession | null>;
 }
 
+export interface QueueRepository {
+  create(input: Omit<Queue, "id" | "createdAt" | "updatedAt">): Promise<Queue>;
+  delete(id: string, organizationId: string): Promise<boolean>;
+  findById(id: string): Promise<Queue | null>;
+  findByName(organizationId: string, name: string): Promise<Queue | null>;
+  listByOrganization(organizationId: string): Promise<Queue[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<Queue, "name" | "priority" | "maxWaitingTime" | "overflowQueueId" | "active">>): Promise<Queue | null>;
+}
+
+export interface QueueMemberRepository {
+  create(input: Omit<QueueMember, "id" | "createdAt" | "updatedAt">): Promise<QueueMember>;
+  listByAgent(organizationId: string, agentId: string): Promise<QueueMember[]>;
+  listByOrganization(organizationId: string): Promise<QueueMember[]>;
+  listByQueue(organizationId: string, queueId: string): Promise<QueueMember[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<QueueMember, "role" | "active">>): Promise<QueueMember | null>;
+}
+
+export interface RoutingRuleRepository {
+  create(input: Omit<RoutingRule, "id" | "createdAt" | "updatedAt">): Promise<RoutingRule>;
+  listByOrganization(organizationId: string): Promise<RoutingRule[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<RoutingRule, "name" | "priority" | "requiredSkills" | "conditions" | "targetQueueId" | "escalationQueueId" | "action" | "active">>): Promise<RoutingRule | null>;
+}
+
+export interface RoutingDecisionRepository {
+  create(input: Omit<RoutingDecision, "id">): Promise<RoutingDecision>;
+  listByOrganization(organizationId: string, limit?: number): Promise<RoutingDecision[]>;
+  listByQueueSession(organizationId: string, queueSessionId: string): Promise<RoutingDecision[]>;
+}
+
+export interface QueueSessionRepository {
+  create(input: Omit<QueueSession, "id" | "createdAt" | "updatedAt">): Promise<QueueSession>;
+  findById(id: string): Promise<QueueSession | null>;
+  listByAgent(organizationId: string, agentId: string): Promise<QueueSession[]>;
+  listByOrganization(organizationId: string): Promise<QueueSession[]>;
+  listByQueue(organizationId: string, queueId: string): Promise<QueueSession[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<QueueSession, "queueId" | "assignedAgentId" | "priority" | "status" | "routingReason" | "escalationPath" | "assignedAt" | "completedAt" | "abandonedAt">>): Promise<QueueSession | null>;
+}
+
+export interface AgentSkillRepository {
+  create(input: Omit<AgentSkill, "id" | "createdAt" | "updatedAt">): Promise<AgentSkill>;
+  listByAgent(organizationId: string, agentId: string): Promise<AgentSkill[]>;
+  listByOrganization(organizationId: string): Promise<AgentSkill[]>;
+  update(id: string, organizationId: string, input: Partial<Pick<AgentSkill, "skill" | "level" | "certified" | "active">>): Promise<AgentSkill | null>;
+}
+
 export interface ExternalActionRepository {
   lookupLead(input: TenantLeadInput): Promise<Record<string, unknown> | null>;
   updateLead(input: TenantLeadInput & { update: Record<string, unknown> }): Promise<Record<string, unknown> | null>;
@@ -213,7 +264,9 @@ export interface SupervisorOverview {
   activeAiSessions: number;
   activeTakeovers: number;
   averageAiConfidence: number;
+  averageWaitTime: number;
   hotQualifications: number;
+  queuedSessions: number;
   runningWorkflows: number;
 }
 
@@ -224,4 +277,15 @@ export interface AgentAssistSuggestion {
   memoryInsights: string[];
   qualificationInsights: string[];
   recommendedNextActions: string[];
+}
+
+export interface QueueHealth {
+  queueId: string;
+  queueName: string;
+  waiting: number;
+  assigned: number;
+  averageWaitTime: number;
+  longestWaitTime: number;
+  activeAgents: number;
+  priority: number;
 }
