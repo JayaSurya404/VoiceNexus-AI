@@ -6,6 +6,14 @@ export const realtimeTopics = [
   "voice.response.requested",
   "voice.response.created",
   "voice.response.playback",
+  "speech.state.changed",
+  "turn.started",
+  "turn.ended",
+  "bargein.detected",
+  "playback.started",
+  "playback.completed",
+  "playback.cancelled",
+  "agent.takeover",
 ] as const;
 
 export type RealtimeTopic = (typeof realtimeTopics)[number];

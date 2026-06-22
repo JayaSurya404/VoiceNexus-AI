@@ -4,6 +4,7 @@ import { WebSocketServer, type RawData } from "ws";
 
 import { env } from "../config/env.js";
 import type { createContainer } from "../container.js";
+import type { RealtimeConversation } from "../domain/entities/realtime-conversation.js";
 import { RealtimeError } from "../shared/errors.js";
 
 type Container = ReturnType<typeof createContainer>;
@@ -156,6 +157,96 @@ async function handleHttpRequest(container: Container, request: IncomingMessage,
       return;
     }
 
+    if (request.method === "GET" && url.pathname === "/realtime/conversations") {
+      const organizationId = requiredQuery(url, "organizationId");
+      const token = bearerToken(request);
+      if (!token) throw RealtimeError.unauthorized();
+      await container.services.accessTokenService.ensureOrganizationAccess(token, organizationId);
+      const conversations = await container.services.realtimeConversationService.list(organizationId);
+      sendJson(response, 200, { data: conversations.map(toRealtimeConversationDto) });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/realtime/metrics") {
+      const organizationId = requiredQuery(url, "organizationId");
+      const token = bearerToken(request);
+      if (!token) throw RealtimeError.unauthorized();
+      await container.services.accessTokenService.ensureOrganizationAccess(token, organizationId);
+      sendJson(response, 200, { data: await container.services.latencyMetricsService.metrics(organizationId) });
+      return;
+    }
+
+    const realtimeStateMatch = /^\/realtime\/conversations\/([^/]+)\/state$/.exec(url.pathname);
+    if (request.method === "GET" && realtimeStateMatch?.[1]) {
+      const conversation = await requireRealtimeConversation(container, request, realtimeStateMatch[1]);
+      sendJson(response, 200, {
+        data: {
+          realtimeConversationId: conversation.id,
+          organizationId: conversation.organizationId,
+          callSessionId: conversation.callSessionId,
+          status: conversation.status,
+          speechState: conversation.speechState,
+          currentTurnId: conversation.currentTurnId,
+          activePlaybackSessionId: conversation.activePlaybackSessionId,
+          takeoverActive: conversation.takeoverActive,
+          takeoverBy: conversation.takeoverBy,
+          updatedAt: conversation.updatedAt.toISOString(),
+        },
+      });
+      return;
+    }
+
+    const realtimeTurnsMatch = /^\/realtime\/conversations\/([^/]+)\/turns$/.exec(url.pathname);
+    if (request.method === "GET" && realtimeTurnsMatch?.[1]) {
+      const conversation = await requireRealtimeConversation(container, request, realtimeTurnsMatch[1]);
+      const turns = await container.services.turnManagerService.list(conversation.id);
+      sendJson(response, 200, { data: turns.map(toTurnEventDto) });
+      return;
+    }
+
+    const realtimePlaybackMatch = /^\/realtime\/conversations\/([^/]+)\/playback$/.exec(url.pathname);
+    if (request.method === "GET" && realtimePlaybackMatch?.[1]) {
+      const conversation = await requireRealtimeConversation(container, request, realtimePlaybackMatch[1]);
+      const playbacks = await container.services.playbackSessionService.list(conversation.id);
+      sendJson(response, 200, { data: playbacks.map(toPlaybackSessionDto) });
+      return;
+    }
+
+    const realtimeBargeInsMatch = /^\/realtime\/conversations\/([^/]+)\/bargeins$/.exec(url.pathname);
+    if (request.method === "GET" && realtimeBargeInsMatch?.[1]) {
+      const conversation = await requireRealtimeConversation(container, request, realtimeBargeInsMatch[1]);
+      const bargeIns = await container.services.bargeInService.list(conversation.id);
+      sendJson(response, 200, { data: bargeIns.map(toBargeInEventDto) });
+      return;
+    }
+
+    const realtimeTakeoverMatch = /^\/realtime\/conversations\/([^/]+)\/takeover$/.exec(url.pathname);
+    if (request.method === "POST" && realtimeTakeoverMatch?.[1]) {
+      const conversation = await requireRealtimeConversation(container, request, realtimeTakeoverMatch[1]);
+      const body = await readJsonBody(request);
+      const updated = await container.services.agentTakeoverService.requestTakeover(
+        conversation,
+        typeof body.userId === "string" ? body.userId : null,
+      );
+      sendJson(response, 200, { data: toRealtimeConversationDto(updated) });
+      return;
+    }
+
+    const realtimeReleaseMatch = /^\/realtime\/conversations\/([^/]+)\/release$/.exec(url.pathname);
+    if (request.method === "POST" && realtimeReleaseMatch?.[1]) {
+      const conversation = await requireRealtimeConversation(container, request, realtimeReleaseMatch[1]);
+      const updated = await container.services.agentTakeoverService.releaseTakeover(conversation);
+      sendJson(response, 200, { data: toRealtimeConversationDto(updated) });
+      return;
+    }
+
+    const realtimeConversationMatch = /^\/realtime\/conversations\/([^/]+)$/.exec(url.pathname);
+    if (request.method === "GET" && realtimeConversationMatch?.[1]) {
+      const conversation = await requireRealtimeConversation(container, request, realtimeConversationMatch[1]);
+      sendJson(response, 200, { data: toRealtimeConversationDto(conversation) });
+      return;
+    }
+
     if (request.method === "GET" && url.pathname === "/voice-responses/metrics") {
       const organizationId = requiredQuery(url, "organizationId");
       const token = bearerToken(request);
@@ -239,10 +330,61 @@ function toVoiceResponseDto(value: {
   };
 }
 
+async function requireRealtimeConversation(
+  container: Container,
+  request: IncomingMessage,
+  id: string,
+): Promise<RealtimeConversation> {
+  const token = bearerToken(request);
+  if (!token) throw RealtimeError.unauthorized();
+  const conversation = await container.services.realtimeConversationService.findById(id);
+  if (!conversation) throw RealtimeError.badRequest("NOT_FOUND", "Realtime conversation was not found");
+  await container.services.accessTokenService.ensureOrganizationAccess(token, conversation.organizationId);
+  return conversation;
+}
+
+function toRealtimeConversationDto(value: NonNullable<Awaited<ReturnType<Container["services"]["realtimeConversationService"]["findById"]>>>) {
+  return {
+    ...value,
+    startedAt: value.startedAt.toISOString(),
+    endedAt: value.endedAt?.toISOString() ?? null,
+    createdAt: value.createdAt.toISOString(),
+    updatedAt: value.updatedAt.toISOString(),
+  };
+}
+
+function toTurnEventDto(value: Awaited<ReturnType<Container["services"]["turnManagerService"]["list"]>>[number]) {
+  return {
+    ...value,
+    occurredAt: value.occurredAt.toISOString(),
+    createdAt: value.createdAt.toISOString(),
+  };
+}
+
+function toPlaybackSessionDto(value: Awaited<ReturnType<Container["services"]["playbackSessionService"]["list"]>>[number]) {
+  return {
+    ...value,
+    queuedAt: value.queuedAt.toISOString(),
+    startedAt: value.startedAt?.toISOString() ?? null,
+    completedAt: value.completedAt?.toISOString() ?? null,
+    cancelledAt: value.cancelledAt?.toISOString() ?? null,
+    createdAt: value.createdAt.toISOString(),
+    updatedAt: value.updatedAt.toISOString(),
+  };
+}
+
+function toBargeInEventDto(value: Awaited<ReturnType<Container["services"]["bargeInService"]["list"]>>[number]) {
+  return {
+    ...value,
+    detectedAt: value.detectedAt.toISOString(),
+    createdAt: value.createdAt.toISOString(),
+  };
+}
+
 function applyCors(response: ServerResponse): void {
   response.setHeader("access-control-allow-origin", env.FRONTEND_URL);
   response.setHeader("access-control-allow-credentials", "true");
-  response.setHeader("access-control-allow-methods", "GET,OPTIONS");
+  response.setHeader("access-control-allow-methods", "GET,POST,OPTIONS");
   response.setHeader("access-control-allow-headers", "authorization,content-type");
 }
 
@@ -259,6 +401,33 @@ function bearerToken(request: IncomingMessage): string | null {
 function sendJson(response: ServerResponse, statusCode: number, payload: unknown): void {
   response.writeHead(statusCode, { "content-type": "application/json" });
   response.end(JSON.stringify(payload));
+}
+
+function readJsonBody(request: IncomingMessage): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => {
+      body += chunk;
+      if (body.length > 1024 * 1024) {
+        reject(RealtimeError.badRequest("VALIDATION_ERROR", "Request body is too large"));
+        request.destroy();
+      }
+    });
+    request.on("end", () => {
+      if (!body.trim()) {
+        resolve({});
+        return;
+      }
+      try {
+        const parsed = JSON.parse(body) as unknown;
+        resolve(parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {});
+      } catch {
+        reject(RealtimeError.badRequest("VALIDATION_ERROR", "Invalid JSON body"));
+      }
+    });
+    request.on("error", reject);
+  });
 }
 
 function errorMessage(error: unknown): string {

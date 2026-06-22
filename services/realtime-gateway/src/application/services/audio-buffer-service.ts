@@ -24,4 +24,10 @@ export class AudioBufferService {
   list(callId: string): AudioSegment[] {
     return this.queues.get(callId) ?? [];
   }
+
+  clear(callId: string): number {
+    const current = this.queues.get(callId) ?? [];
+    this.queues.delete(callId);
+    return current.length;
+  }
 }

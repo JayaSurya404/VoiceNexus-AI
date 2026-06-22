@@ -1,8 +1,16 @@
 import type { AiConversationSession } from "../../../../domain/entities/ai-conversation-session.js";
 import type { RealtimeTranscriptEvent } from "../../../../domain/entities/realtime-transcript-event.js";
 import type { VoiceResponse } from "../../../../domain/entities/voice-response.js";
+import type { RealtimeConversation } from "../../../../domain/entities/realtime-conversation.js";
+import type { TurnEvent } from "../../../../domain/entities/turn-event.js";
+import type { BargeInEvent } from "../../../../domain/entities/barge-in-event.js";
+import type { PlaybackSession } from "../../../../domain/entities/playback-session.js";
 import type { AiConversationSessionMongoDocument } from "../models/ai-conversation-session-model.js";
 import type { RealtimeTranscriptEventMongoDocument } from "../models/realtime-transcript-event-model.js";
+import type { RealtimeConversationMongoDocument } from "../models/realtime-conversation-model.js";
+import type { TurnEventMongoDocument } from "../models/turn-event-model.js";
+import type { BargeInEventMongoDocument } from "../models/barge-in-event-model.js";
+import type { PlaybackSessionMongoDocument } from "../models/playback-session-model.js";
 
 function objectIdToString(value: unknown): string {
   if (typeof value === "string") return value;
@@ -69,5 +77,76 @@ export function mapRealtimeTranscriptEvent(document: RealtimeTranscriptEventMong
     sequenceNumber: document.sequenceNumber,
     metadata: document.metadata,
     createdAt: document.createdAt,
+  };
+}
+
+export function mapRealtimeConversation(document: RealtimeConversationMongoDocument): RealtimeConversation {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    callSessionId: document.callSessionId.toHexString(),
+    aiSessionId: document.aiSessionId?.toHexString() ?? null,
+    status: document.status,
+    speechState: document.speechState,
+    currentTurnId: document.currentTurnId?.toHexString() ?? null,
+    activePlaybackSessionId: document.activePlaybackSessionId?.toHexString() ?? null,
+    takeoverActive: document.takeoverActive,
+    takeoverBy: document.takeoverBy?.toHexString() ?? null,
+    startedAt: document.startedAt,
+    endedAt: document.endedAt,
+    metadata: document.metadata,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  };
+}
+
+export function mapTurnEvent(document: TurnEventMongoDocument): TurnEvent {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    realtimeConversationId: document.realtimeConversationId.toHexString(),
+    callSessionId: document.callSessionId.toHexString(),
+    type: document.type,
+    speaker: document.speaker,
+    transcript: document.transcript,
+    latencyMs: document.latencyMs,
+    metadata: document.metadata,
+    occurredAt: document.occurredAt,
+    createdAt: document.createdAt,
+  };
+}
+
+export function mapBargeInEvent(document: BargeInEventMongoDocument): BargeInEvent {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    realtimeConversationId: document.realtimeConversationId.toHexString(),
+    callSessionId: document.callSessionId.toHexString(),
+    playbackSessionId: document.playbackSessionId?.toHexString() ?? null,
+    voiceResponseId: document.voiceResponseId?.toHexString() ?? null,
+    transcriptFragment: document.transcriptFragment,
+    reason: document.reason,
+    detectedAt: document.detectedAt,
+    createdAt: document.createdAt,
+  };
+}
+
+export function mapPlaybackSession(document: PlaybackSessionMongoDocument): PlaybackSession {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    realtimeConversationId: document.realtimeConversationId.toHexString(),
+    callSessionId: document.callSessionId.toHexString(),
+    voiceResponseId: document.voiceResponseId.toHexString(),
+    status: document.status,
+    progressMs: document.progressMs,
+    durationMs: document.durationMs,
+    queuedAt: document.queuedAt,
+    startedAt: document.startedAt,
+    completedAt: document.completedAt,
+    cancelledAt: document.cancelledAt,
+    metadata: document.metadata,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
   };
 }

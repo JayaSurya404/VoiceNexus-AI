@@ -6,6 +6,7 @@ import { AgentSessionsTable } from "@/components/ai-monitor/agent-sessions-table
 import { ConversationFeed } from "@/components/ai-monitor/conversation-feed";
 import { DecisionTimeline } from "@/components/ai-monitor/decision-timeline";
 import { RuntimeMetrics } from "@/components/ai-monitor/runtime-metrics";
+import { RealtimeRuntimeMetricsPanel, RealtimeRuntimePanel } from "@/components/ai-monitor/realtime-runtime-panels";
 import { StateAndQualification } from "@/components/ai-monitor/state-and-qualification";
 import { VoiceResponseMetricsPanel, VoiceResponsesPanel } from "@/components/ai-monitor/voice-response-panels";
 import {
@@ -34,11 +35,20 @@ import {
   useWorkflows,
 } from "@/hooks/use-ai-brain";
 import { useAuthStore } from "@/store/auth-store";
+import {
+  useRealtimeBargeIns,
+  useRealtimeConversations,
+  useRealtimePlayback,
+  useRealtimeRuntimeMetrics,
+  useRealtimeTurns,
+  useTakeoverControls,
+} from "@/hooks/use-realtime-runtime";
 import { useVoiceResponseMetrics, useVoiceResponses } from "@/hooks/use-voice-responses";
 
 export default function AiMonitorPage() {
   const activeOrganizationId = useAuthStore((state) => state.activeOrganizationId);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedRuntimeConversationId, setSelectedRuntimeConversationId] = useState<string | null>(null);
   const sessionsQuery = useAgentSessions(activeOrganizationId);
   const conversationsQuery = useAiConversations(activeOrganizationId);
   const qualificationsQuery = useAiQualifications(activeOrganizationId);
@@ -50,13 +60,29 @@ export default function AiMonitorPage() {
   const auditsQuery = useActionAudits(activeOrganizationId);
   const voiceResponsesQuery = useVoiceResponses(activeOrganizationId);
   const voiceMetricsQuery = useVoiceResponseMetrics(activeOrganizationId);
+  const realtimeConversationsQuery = useRealtimeConversations(activeOrganizationId);
+  const realtimeMetricsQuery = useRealtimeRuntimeMetrics(activeOrganizationId);
+  const realtimeTurnsQuery = useRealtimeTurns(selectedRuntimeConversationId);
+  const realtimePlaybackQuery = useRealtimePlayback(selectedRuntimeConversationId);
+  const realtimeBargeInsQuery = useRealtimeBargeIns(selectedRuntimeConversationId);
+  const takeoverControls = useTakeoverControls(activeOrganizationId);
   const sessions = useMemo(() => sessionsQuery.data ?? [], [sessionsQuery.data]);
+  const realtimeConversations = useMemo(
+    () => realtimeConversationsQuery.data ?? [],
+    [realtimeConversationsQuery.data],
+  );
 
   useEffect(() => {
     if (!selectedSessionId && sessions.length) {
       setSelectedSessionId(sessions[0]?.id ?? null);
     }
   }, [selectedSessionId, sessions]);
+
+  useEffect(() => {
+    if (!selectedRuntimeConversationId && realtimeConversations.length) {
+      setSelectedRuntimeConversationId(realtimeConversations[0]?.id ?? null);
+    }
+  }, [realtimeConversations, selectedRuntimeConversationId]);
 
   const selectedSession = sessions.find((session) => session.id === selectedSessionId);
   const selectedConversation = (conversationsQuery.data ?? []).find(
@@ -91,6 +117,7 @@ export default function AiMonitorPage() {
       </section>
 
       <RuntimeMetrics metrics={metricsQuery.data} />
+      <RealtimeRuntimeMetricsPanel metrics={realtimeMetricsQuery.data} />
       <VoiceResponseMetricsPanel metrics={voiceMetricsQuery.data} />
 
       <Card>
@@ -116,6 +143,16 @@ export default function AiMonitorPage() {
       )}
 
       <StateAndQualification qualification={selectedQualification} state={stateQuery.data} />
+      <RealtimeRuntimePanel
+        bargeIns={realtimeBargeInsQuery.data ?? []}
+        conversations={realtimeConversations}
+        onRelease={(conversationId) => takeoverControls.release.mutate(conversationId)}
+        onSelect={setSelectedRuntimeConversationId}
+        onTakeover={(conversationId) => takeoverControls.takeover.mutate(conversationId)}
+        playback={realtimePlaybackQuery.data ?? []}
+        selectedConversationId={selectedRuntimeConversationId}
+        turns={realtimeTurnsQuery.data ?? []}
+      />
       <VoiceResponsesPanel responses={voiceResponsesQuery.data ?? []} />
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">

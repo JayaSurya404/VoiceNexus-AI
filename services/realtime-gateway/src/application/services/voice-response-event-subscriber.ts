@@ -1,10 +1,12 @@
 import type { EventBus, RealtimeEventEnvelope } from "../ports/event-bus.js";
+import type { AgentTakeoverService } from "./agent-takeover-service.js";
 import type { VoiceResponseService } from "./voice-response-service.js";
 
 export class VoiceResponseEventSubscriber {
   constructor(
     private readonly eventBus: EventBus,
     private readonly voiceResponses: VoiceResponseService,
+    private readonly takeover?: AgentTakeoverService,
   ) {}
 
   async start(): Promise<void> {
@@ -17,6 +19,10 @@ export class VoiceResponseEventSubscriber {
     const callId = typeof payload.callId === "string" ? payload.callId : event.callSessionId;
 
     if (!responseText || !callId) {
+      return;
+    }
+
+    if (this.takeover && (await this.takeover.isTakeoverActive(event.organizationId, callId))) {
       return;
     }
 

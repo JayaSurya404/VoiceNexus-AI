@@ -34,4 +34,17 @@ export class AudioPlaybackService {
     });
     return true;
   }
+
+  clear(callId: string): boolean {
+    const connection = this.connections.get(callId);
+    if (!connection?.streamSid) {
+      return false;
+    }
+
+    connection.send({
+      event: "clear",
+      streamSid: connection.streamSid,
+    });
+    return true;
+  }
 }

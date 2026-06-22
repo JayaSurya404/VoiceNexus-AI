@@ -1,30 +1,55 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ActiveCallsTable } from "@/components/live-calls/active-calls-table";
 import { ConnectionStatusCard } from "@/components/live-calls/connection-status-card";
 import { LiveTranscriptPanel } from "@/components/live-calls/live-transcript-panel";
 import { RealtimeEventFeed } from "@/components/live-calls/realtime-event-feed";
+import { RealtimeRuntimeMetricsPanel, RealtimeRuntimePanel } from "@/components/ai-monitor/realtime-runtime-panels";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActiveCalls, useLiveCallsSocket } from "@/hooks/use-live-calls";
+import {
+  useRealtimeBargeIns,
+  useRealtimeConversations,
+  useRealtimePlayback,
+  useRealtimeRuntimeMetrics,
+  useRealtimeTurns,
+  useTakeoverControls,
+} from "@/hooks/use-realtime-runtime";
 import { useAuthStore } from "@/store/auth-store";
 
 export default function LiveCallsPage() {
   const organizations = useAuthStore((state) => state.organizations);
   const activeOrganizationId = useAuthStore((state) => state.activeOrganizationId);
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>("");
+  const [selectedRuntimeConversationId, setSelectedRuntimeConversationId] = useState<string | null>(null);
   const organizationId = selectedOrganizationId || activeOrganizationId;
   const activeCallsQuery = useActiveCalls(organizationId);
   const liveSocket = useLiveCallsSocket(organizationId);
+  const realtimeConversationsQuery = useRealtimeConversations(organizationId ?? null);
+  const realtimeMetricsQuery = useRealtimeRuntimeMetrics(organizationId ?? null);
+  const realtimeConversations = useMemo(
+    () => realtimeConversationsQuery.data ?? [],
+    [realtimeConversationsQuery.data],
+  );
+  const realtimeTurnsQuery = useRealtimeTurns(selectedRuntimeConversationId);
+  const realtimePlaybackQuery = useRealtimePlayback(selectedRuntimeConversationId);
+  const realtimeBargeInsQuery = useRealtimeBargeIns(selectedRuntimeConversationId);
+  const takeoverControls = useTakeoverControls(organizationId ?? null);
   const selectedOrganizationName = useMemo(
     () => organizations.find((organization) => organization.id === organizationId)?.name ?? "Current organization",
     [organizationId, organizations],
   );
 
   const calls = activeCallsQuery.data ?? [];
+  useEffect(() => {
+    if (!selectedRuntimeConversationId && realtimeConversations.length) {
+      setSelectedRuntimeConversationId(realtimeConversations[0]?.id ?? null);
+    }
+  }, [realtimeConversations, selectedRuntimeConversationId]);
 
   return (
     <div className="space-y-8">
@@ -62,6 +87,17 @@ export default function LiveCallsPage() {
       </div>
 
       {activeCallsQuery.isLoading ? <Skeleton className="h-72 w-full" /> : <ActiveCallsTable calls={calls} />}
+      <RealtimeRuntimeMetricsPanel metrics={realtimeMetricsQuery.data} />
+      <RealtimeRuntimePanel
+        bargeIns={realtimeBargeInsQuery.data ?? []}
+        conversations={realtimeConversations}
+        onRelease={(conversationId) => takeoverControls.release.mutate(conversationId)}
+        onSelect={setSelectedRuntimeConversationId}
+        onTakeover={(conversationId) => takeoverControls.takeover.mutate(conversationId)}
+        playback={realtimePlaybackQuery.data ?? []}
+        selectedConversationId={selectedRuntimeConversationId}
+        turns={realtimeTurnsQuery.data ?? []}
+      />
       <LiveTranscriptPanel partialTranscripts={liveSocket.partialTranscripts} transcripts={liveSocket.transcripts} />
       <RealtimeEventFeed events={liveSocket.events} />
     </div>
