@@ -16,6 +16,7 @@ import { CoachingMonitorPanel } from "@/components/ai-monitor/coaching-panels";
 import { CollaborationMonitorPanel } from "@/components/ai-monitor/collaboration-panels";
 import { ConversationFeed } from "@/components/ai-monitor/conversation-feed";
 import { DecisionTimeline } from "@/components/ai-monitor/decision-timeline";
+import { GovernancePanels } from "@/components/ai-monitor/governance-panels";
 import {
   KnowledgeGapDashboard,
   KnowledgeImprovementPanel,
@@ -70,6 +71,12 @@ import {
   useActionAudits,
   useCallOutcomes,
   useAgentRecommendations,
+  useAdminOverview,
+  useApiKeys,
+  useAuditLogs,
+  useBillingInvoices,
+  useBillingOverview,
+  useBillingPayments,
   useCollaborations,
   useCollaborativeAgentTasks,
   useCoachingInsights,
@@ -93,6 +100,7 @@ import {
   useKnowledgeActions,
   useLiveTakeovers,
   useNextBestActions,
+  useOrganizations,
   useOptimizationActions,
   useOptimizationEvents,
   useOptimizationExperiments,
@@ -102,6 +110,7 @@ import {
   useOptimizationRecommendations,
   useOptimizationResults,
   useOptimizationRules,
+  useFeatureFlags,
   useQueueHealth,
   useQueueAnalytics,
   useQueueSessions,
@@ -115,6 +124,8 @@ import {
   useRevenueRisks,
   useRevenueUpsell,
   useRevenueWinLoss,
+  useSubscriptionPlans,
+  useSubscriptions,
   useReportingBenchmarks,
   useReportingDashboard,
   useReportingExports,
@@ -129,6 +140,7 @@ import {
   useSentimentAnalytics,
   useSupervisorOverview,
   useSupervisorSessions,
+  useUsageRecords,
   useWorkflowActions,
   useWorkflows,
   useWhispers,
@@ -178,6 +190,17 @@ export default function AiMonitorPage() {
   const reportingTemplatesQuery = useReportingTemplates(activeOrganizationId);
   const reportingGeneratedQuery = useReportingGenerated(activeOrganizationId);
   const reportingExportsQuery = useReportingExports(activeOrganizationId);
+  const organizationsQuery = useOrganizations();
+  const subscriptionsQuery = useSubscriptions(activeOrganizationId);
+  const subscriptionPlansQuery = useSubscriptionPlans(activeOrganizationId);
+  const billingOverviewQuery = useBillingOverview(activeOrganizationId);
+  const billingInvoicesQuery = useBillingInvoices(activeOrganizationId);
+  const billingPaymentsQuery = useBillingPayments(activeOrganizationId);
+  const apiKeysQuery = useApiKeys(activeOrganizationId);
+  const auditLogsQuery = useAuditLogs(activeOrganizationId);
+  const featureFlagsQuery = useFeatureFlags(activeOrganizationId);
+  const usageRecordsQuery = useUsageRecords(activeOrganizationId);
+  const adminOverviewQuery = useAdminOverview(activeOrganizationId);
   const optimizationOverviewQuery = useOptimizationOverview(activeOrganizationId);
   const optimizationRulesQuery = useOptimizationRules(activeOrganizationId);
   const optimizationEventsQuery = useOptimizationEvents(activeOrganizationId);
@@ -356,6 +379,19 @@ export default function AiMonitorPage() {
         summaries={reportingSummariesQuery.data ?? []}
         templates={reportingTemplatesQuery.data ?? []}
         trends={reportingTrendsQuery.data ?? []}
+      />
+      <GovernancePanels
+        adminOverview={adminOverviewQuery.data}
+        apiKeys={apiKeysQuery.data ?? []}
+        auditLogs={auditLogsQuery.data ?? []}
+        billing={billingOverviewQuery.data}
+        featureFlags={featureFlagsQuery.data ?? []}
+        invoices={billingInvoicesQuery.data ?? []}
+        organizations={organizationsQuery.data ?? []}
+        payments={billingPaymentsQuery.data ?? []}
+        plans={subscriptionPlansQuery.data ?? []}
+        subscriptions={subscriptionsQuery.data ?? []}
+        usage={usageRecordsQuery.data ?? []}
       />
       <OptimizationPanels
         actions={optimizationActionsQuery.data ?? []}

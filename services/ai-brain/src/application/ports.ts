@@ -545,6 +545,90 @@ export interface ReportingAnalyticsOverview {
   exportCount: number;
 }
 
+export interface OrganizationRepository {
+  create(input: Omit<Organization, "id" | "createdAt" | "updatedAt">): Promise<Organization>;
+  findById(id: string): Promise<Organization | null>;
+  findBySlug(slug: string): Promise<Organization | null>;
+  list(): Promise<Organization[]>;
+  update(id: string, input: Partial<Omit<Organization, "id" | "createdAt" | "updatedAt">>): Promise<Organization | null>;
+}
+
+export interface OrganizationSettingsRepository {
+  findByOrganization(organizationId: string): Promise<OrganizationSettings | null>;
+  upsert(
+    organizationId: string,
+    input: Partial<Omit<OrganizationSettings, "id" | "organizationId" | "createdAt" | "updatedAt">>,
+  ): Promise<OrganizationSettings>;
+}
+
+export interface SubscriptionPlanRepository {
+  create(input: Omit<SubscriptionPlan, "id" | "createdAt" | "updatedAt">): Promise<SubscriptionPlan>;
+  findByTier(tier: SubscriptionPlanTier, organizationId?: string | null): Promise<SubscriptionPlan | null>;
+  list(organizationId?: string | null): Promise<SubscriptionPlan[]>;
+}
+
+export interface SubscriptionRepository {
+  create(input: Omit<Subscription, "id" | "createdAt" | "updatedAt">): Promise<Subscription>;
+  findByOrganization(organizationId: string): Promise<Subscription | null>;
+  listByOrganization(organizationId: string): Promise<Subscription[]>;
+  update(id: string, organizationId: string, input: Partial<Omit<Subscription, "id" | "organizationId" | "createdAt" | "updatedAt">>): Promise<Subscription | null>;
+}
+
+export interface BillingAccountRepository {
+  findByOrganization(organizationId: string): Promise<BillingAccount | null>;
+  upsert(organizationId: string, input: Partial<Omit<BillingAccount, "id" | "organizationId" | "createdAt" | "updatedAt">>): Promise<BillingAccount>;
+}
+
+export interface BillingEventRepository {
+  create(input: Omit<BillingEvent, "id" | "createdAt">): Promise<BillingEvent>;
+  listByOrganization(organizationId: string): Promise<BillingEvent[]>;
+}
+
+export interface InvoiceRepository {
+  create(input: Omit<Invoice, "id" | "createdAt" | "updatedAt">): Promise<Invoice>;
+  listByOrganization(organizationId: string): Promise<Invoice[]>;
+}
+
+export interface PaymentRepository {
+  create(input: Omit<Payment, "id" | "createdAt" | "updatedAt">): Promise<Payment>;
+  listByOrganization(organizationId: string): Promise<Payment[]>;
+}
+
+export interface ApiKeyRepository {
+  create(input: Omit<ApiKey, "id" | "createdAt" | "updatedAt">): Promise<ApiKey>;
+  listByOrganization(organizationId: string): Promise<ApiKey[]>;
+  revoke(id: string, organizationId: string, revokedAt: Date): Promise<ApiKey | null>;
+  touchLastUsed(keyPrefix: string, usedAt: Date): Promise<ApiKey | null>;
+}
+
+export interface AuditLogRepository {
+  create(input: Omit<AuditLog, "id" | "createdAt">): Promise<AuditLog>;
+  listByOrganization(organizationId: string): Promise<AuditLog[]>;
+}
+
+export interface FeatureFlagRepository {
+  listByOrganization(organizationId: string): Promise<FeatureFlag[]>;
+  upsert(organizationId: string, key: GovernanceFeatureFlagKey, input: Partial<Omit<FeatureFlag, "id" | "organizationId" | "key" | "createdAt" | "updatedAt">>): Promise<FeatureFlag>;
+}
+
+export interface UsageRecordRepository {
+  create(input: Omit<UsageRecord, "id" | "createdAt" | "updatedAt">): Promise<UsageRecord>;
+  listByOrganization(organizationId: string): Promise<UsageRecord[]>;
+  sumByMetric(organizationId: string): Promise<Record<UsageRecordMetric, number>>;
+}
+
+export interface TenantAdminOverview {
+  organizationCount: number;
+  activeOrganizationCount: number;
+  suspendedOrganizationCount: number;
+  activeSubscriptionCount: number;
+  monthlyRecurringRevenueCents: number;
+  outstandingBalanceCents: number;
+  apiKeyCount: number;
+  auditLogCount: number;
+  usageTotals: Record<UsageRecordMetric, number>;
+}
+
 export interface OptimizationRuleRepository {
   create(input: Omit<OptimizationRule, "id" | "createdAt" | "updatedAt">): Promise<OptimizationRule>;
   listByOrganization(organizationId: string): Promise<OptimizationRule[]>;
@@ -728,3 +812,15 @@ export interface ConversionAnalytics {
   coldConversionRate: number;
   overallConversionRate: number;
 }
+import type { ApiKey } from "../domain/entities/api-key.js";
+import type { AuditLog } from "../domain/entities/audit-log.js";
+import type { BillingAccount } from "../domain/entities/billing-account.js";
+import type { BillingEvent } from "../domain/entities/billing-event.js";
+import type { FeatureFlag, GovernanceFeatureFlagKey } from "../domain/entities/feature-flag.js";
+import type { Invoice } from "../domain/entities/invoice.js";
+import type { Organization } from "../domain/entities/organization.js";
+import type { OrganizationSettings } from "../domain/entities/organization-settings.js";
+import type { Payment } from "../domain/entities/payment.js";
+import type { Subscription } from "../domain/entities/subscription.js";
+import type { SubscriptionPlan, SubscriptionPlanTier } from "../domain/entities/subscription-plan.js";
+import type { UsageRecord, UsageRecordMetric } from "../domain/entities/usage-record.js";

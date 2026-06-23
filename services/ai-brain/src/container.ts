@@ -1,4 +1,5 @@
 import { AgentPersonaService } from "./application/services/agent-persona-service.js";
+import { ApiKeyService } from "./application/services/api-key-service.js";
 import { AgentAssistService } from "./application/services/agent-assist-service.js";
 import { AgentCollaborationService } from "./application/services/agent-collaboration-service.js";
 import { AgentCoachingService } from "./application/services/agent-coaching-service.js";
@@ -12,8 +13,10 @@ import { AgentTeamService } from "./application/services/agent-team-service.js";
 import { ActionExecutionService } from "./application/services/action-execution-service.js";
 import { AnalyticsEngineService } from "./application/services/analytics-engine-service.js";
 import { AgentAllocationService } from "./application/services/agent-allocation-service.js";
+import { AuditLogService } from "./application/services/audit-log-service.js";
 import { AuditService } from "./application/services/audit-service.js";
 import { BenchmarkService } from "./application/services/benchmark-service.js";
+import { BillingService } from "./application/services/billing-service.js";
 import { BusinessInsightService } from "./application/services/business-insight-service.js";
 import { CallScoringService } from "./application/services/call-scoring-service.js";
 import { ContextBuilder } from "./application/services/context-builder.js";
@@ -34,6 +37,8 @@ import { DocumentParserService } from "./application/services/document-parser-se
 import { EmbeddingService } from "./application/services/embedding-service.js";
 import { ExecutiveDashboardService } from "./application/services/executive-dashboard-service.js";
 import { ExecutiveSummaryService } from "./application/services/executive-summary-service.js";
+import { FeatureFlagService } from "./application/services/feature-flag-service.js";
+import { InvoiceService } from "./application/services/invoice-service.js";
 import { KnowledgeIngestionService } from "./application/services/knowledge-ingestion-service.js";
 import { KnowledgeSearchService } from "./application/services/knowledge-search-service.js";
 import { KnowledgeFeedbackService } from "./application/services/knowledge-feedback-service.js";
@@ -51,12 +56,14 @@ import { NextBestActionService } from "./application/services/next-best-action-s
 import { ObjectionCoachingService } from "./application/services/objection-coaching-service.js";
 import { ObjectionHandlerService } from "./application/services/objection-handler-service.js";
 import { OpportunityIntelligenceService } from "./application/services/opportunity-intelligence-service.js";
+import { OrganizationService } from "./application/services/organization-service.js";
 import { OptimizationActionService } from "./application/services/optimization-action-service.js";
 import { OptimizationEngineService } from "./application/services/optimization-engine-service.js";
 import { OptimizationMonitorService } from "./application/services/optimization-monitor-service.js";
 import { OptimizationRecommendationService } from "./application/services/optimization-recommendation-service.js";
 import { OptimizationRuleService } from "./application/services/optimization-rule-service.js";
 import { PromptEngineService } from "./application/services/prompt-engine-service.js";
+import { PaymentService } from "./application/services/payment-service.js";
 import { QualityAssuranceService } from "./application/services/quality-assurance-service.js";
 import { QueueOptimizationService } from "./application/services/queue-optimization-service.js";
 import { QueuePerformanceService } from "./application/services/queue-performance-service.js";
@@ -74,9 +81,12 @@ import { ScheduledReportService } from "./application/services/scheduled-report-
 import { ScorecardService } from "./application/services/scorecard-service.js";
 import { SentimentAnalysisService } from "./application/services/sentiment-analysis-service.js";
 import { SupervisorConsoleService } from "./application/services/supervisor-console-service.js";
+import { SubscriptionService } from "./application/services/subscription-service.js";
+import { TenantGovernanceService } from "./application/services/tenant-governance-service.js";
 import { TimelineActionService } from "./application/services/timeline-action-service.js";
 import { TrendAnalysisService } from "./application/services/trend-analysis-service.js";
 import { UpsellIntelligenceService } from "./application/services/upsell-intelligence-service.js";
+import { UsageTrackingService } from "./application/services/usage-tracking-service.js";
 import { WhisperService } from "./application/services/whisper-service.js";
 import { WinLossService } from "./application/services/win-loss-service.js";
 import { WorkflowEngineService } from "./application/services/workflow-engine-service.js";
@@ -177,6 +187,20 @@ import {
   MongoTrendAnalysisRepository,
 } from "./infrastructure/database/mongoose/repositories/reporting-repositories.js";
 import {
+  MongoApiKeyRepository,
+  MongoAuditLogRepository,
+  MongoBillingAccountRepository,
+  MongoBillingEventRepository,
+  MongoFeatureFlagRepository,
+  MongoInvoiceRepository,
+  MongoOrganizationRepository,
+  MongoOrganizationSettingsRepository,
+  MongoPaymentRepository,
+  MongoSubscriptionPlanRepository,
+  MongoSubscriptionRepository,
+  MongoUsageRecordRepository,
+} from "./infrastructure/database/mongoose/repositories/governance-repositories.js";
+import {
   MongoOptimizationActionRepository,
   MongoOptimizationEventRepository,
   MongoOptimizationExperimentRepository,
@@ -263,6 +287,18 @@ export function createContainer() {
   const businessInsights = new MongoBusinessInsightRepository();
   const executiveSummaries = new MongoExecutiveSummaryRepository();
   const reportExports = new MongoReportExportRepository();
+  const organizations = new MongoOrganizationRepository();
+  const organizationSettings = new MongoOrganizationSettingsRepository();
+  const subscriptionPlans = new MongoSubscriptionPlanRepository();
+  const subscriptions = new MongoSubscriptionRepository();
+  const billingAccounts = new MongoBillingAccountRepository();
+  const billingEvents = new MongoBillingEventRepository();
+  const invoices = new MongoInvoiceRepository();
+  const payments = new MongoPaymentRepository();
+  const apiKeys = new MongoApiKeyRepository();
+  const auditLogs = new MongoAuditLogRepository();
+  const featureFlags = new MongoFeatureFlagRepository();
+  const usageRecords = new MongoUsageRecordRepository();
   const optimizationRules = new MongoOptimizationRuleRepository();
   const optimizationEvents = new MongoOptimizationEventRepository();
   const optimizationActions = new MongoOptimizationActionRepository();
@@ -422,6 +458,16 @@ export function createContainer() {
   const businessInsight = new BusinessInsightService(businessInsights, revenueAnalytics);
   const executiveSummary = new ExecutiveSummaryService(executiveSummaries, revenueAnalytics);
   const reportExport = new ReportExportService(reportExports);
+  const organization = new OrganizationService(organizations, organizationSettings, featureFlags, auditLogs);
+  const subscription = new SubscriptionService(subscriptions, subscriptionPlans, auditLogs);
+  const billing = new BillingService(billingAccounts, billingEvents, invoices, payments);
+  const invoice = new InvoiceService(invoices);
+  const payment = new PaymentService(payments);
+  const apiKey = new ApiKeyService(apiKeys, auditLogs);
+  const auditLog = new AuditLogService(auditLogs);
+  const featureFlag = new FeatureFlagService(featureFlags, auditLogs);
+  const usageTracking = new UsageTrackingService(usageRecords, auditLogs);
+  const tenantGovernance = new TenantGovernanceService(organizations, subscriptions, billingAccounts, apiKeys, usageRecords);
   const optimizationRule = new OptimizationRuleService(optimizationRules);
   const optimizationMonitor = new OptimizationMonitorService(optimizationMetrics, optimizationEvents, revenueAnalytics);
   const optimizationRecommendation = new OptimizationRecommendationService(optimizationRecommendations, optimizationMetrics);
@@ -568,6 +614,18 @@ export function createContainer() {
       businessInsights,
       executiveSummaries,
       reportExports,
+      organizations,
+      organizationSettings,
+      subscriptionPlans,
+      subscriptions,
+      billingAccounts,
+      billingEvents,
+      invoices,
+      payments,
+      apiKeys,
+      auditLogs,
+      featureFlags,
+      usageRecords,
       optimizationRules,
       optimizationEvents,
       optimizationActions,
@@ -581,6 +639,16 @@ export function createContainer() {
     services: {
       accessTokenService,
       actionExecution,
+      apiKey,
+      auditLog,
+      billing,
+      featureFlag,
+      invoice,
+      organization,
+      payment,
+      subscription,
+      tenantGovernance,
+      usageTracking,
       agentAllocation,
       agentAssist,
       agentCollaborationService,

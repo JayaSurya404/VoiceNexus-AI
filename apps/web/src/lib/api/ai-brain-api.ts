@@ -1344,6 +1344,40 @@ export const aiBrainApi = {
     request<GeneratedReportDto[]>(`/reports/generated?${query({ organizationId })}`),
   reportingExports: (organizationId: string) =>
     request<ReportExportDto[]>(`/reports/exports?${query({ organizationId })}`),
+  organizations: () => request<OrganizationDto[]>("/organizations"),
+  organization: (id: string) => request<OrganizationDto>(`/organizations/${encodeURIComponent(id)}`),
+  createOrganization: (input: { name: string; ownerUserId?: string | null; primaryEmail?: string | null; timezone?: string; metadata?: Record<string, unknown> }) =>
+    request<OrganizationDto>("/organizations", { method: "POST", body: JSON.stringify(input) }),
+  updateOrganization: (id: string, input: Partial<Pick<OrganizationDto, "name" | "primaryEmail" | "timezone" | "metadata">>) =>
+    request<OrganizationDto>(`/organizations/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(input) }),
+  suspendOrganization: (id: string) =>
+    request<OrganizationDto>(`/organizations/${encodeURIComponent(id)}/suspend`, { method: "POST" }),
+  activateOrganization: (id: string) =>
+    request<OrganizationDto>(`/organizations/${encodeURIComponent(id)}/activate`, { method: "POST" }),
+  subscriptions: (organizationId: string) =>
+    request<SubscriptionDto[]>(`/subscriptions?${query({ organizationId })}`),
+  subscriptionPlans: (organizationId?: string | null) =>
+    request<SubscriptionPlanDto[]>(`/subscriptions/plans?${query({ organizationId: organizationId ?? undefined })}`),
+  billingOverview: (organizationId: string) =>
+    request<BillingOverviewDto>(`/billing?${query({ organizationId })}`),
+  billingInvoices: (organizationId: string) =>
+    request<InvoiceDto[]>(`/billing/invoices?${query({ organizationId })}`),
+  billingPayments: (organizationId: string) =>
+    request<PaymentDto[]>(`/billing/payments?${query({ organizationId })}`),
+  apiKeys: (organizationId: string) => request<ApiKeyDto[]>(`/apikeys?${query({ organizationId })}`),
+  createApiKey: (input: { organizationId: string; name: string; type: ApiKeyDto["type"]; scopes?: string[]; expiresAt?: string | null; createdBy?: string | null; metadata?: Record<string, unknown> }) =>
+    request<CreatedApiKeyDto>("/apikeys", { method: "POST", body: JSON.stringify(input) }),
+  revokeApiKey: (id: string, organizationId: string) =>
+    request<ApiKeyDto>(`/apikeys/${encodeURIComponent(id)}/revoke?${query({ organizationId })}`, { method: "POST" }),
+  auditLogs: (organizationId: string) => request<AuditLogDto[]>(`/audit-logs?${query({ organizationId })}`),
+  featureFlags: (organizationId: string) => request<FeatureFlagDto[]>(`/feature-flags?${query({ organizationId })}`),
+  updateFeatureFlag: (input: { organizationId: string; key: FeatureFlagDto["key"]; enabled: boolean; rolloutPercentage?: number }) =>
+    request<FeatureFlagDto>("/feature-flags", { method: "POST", body: JSON.stringify(input) }),
+  usageRecords: (organizationId: string) => request<UsageRecordDto[]>(`/usage?${query({ organizationId })}`),
+  recordUsage: (input: { organizationId: string; metric: UsageRecordDto["metric"]; quantity: number; unit: string; source?: string; occurredAt?: string; metadata?: Record<string, unknown> }) =>
+    request<UsageRecordDto>("/usage", { method: "POST", body: JSON.stringify(input) }),
+  adminOverview: (organizationId?: string | null) =>
+    request<TenantAdminOverviewDto>(`/admin/overview?${query({ organizationId: organizationId ?? undefined })}`),
   optimizationOverview: (organizationId: string) =>
     request<OptimizationOverviewDto>(`/optimization/overview?${query({ organizationId })}`),
   optimizationRules: (organizationId: string) =>
@@ -1482,3 +1516,189 @@ export const aiBrainApi = {
     request<HumanAgentSessionDto[]>(`/supervisor/sessions?${query({ organizationId })}`),
   agentAssist: (sessionId: string) => request<AgentAssistSuggestionDto | null>(`/assist/${encodeURIComponent(sessionId)}`),
 };
+export interface OrganizationDto {
+  id: string;
+  name: string;
+  slug: string;
+  status: "ACTIVE" | "SUSPENDED" | "TRIAL" | "CANCELLED";
+  ownerUserId: string | null;
+  primaryEmail: string | null;
+  timezone: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubscriptionPlanDto {
+  id: string;
+  organizationId: string | null;
+  tier: "FREE" | "STARTER" | "PRO" | "ENTERPRISE";
+  name: string;
+  description: string;
+  monthlyPriceCents: number;
+  limits: Record<string, number>;
+  features: string[];
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubscriptionDto {
+  id: string;
+  organizationId: string;
+  planId: string;
+  tier: SubscriptionPlanDto["tier"];
+  status: "TRIALING" | "ACTIVE" | "PAST_DUE" | "CANCELLED" | "SUSPENDED";
+  seats: number;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  entitlements: Record<string, number>;
+  cancelAtPeriodEnd: boolean;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillingOverviewDto {
+  account: BillingAccountDto | null;
+  balanceCents: number;
+  creditCents: number;
+  invoiceTotalCents: number;
+  paymentTotalCents: number;
+  recentEvents: BillingEventDto[];
+}
+
+export interface BillingAccountDto {
+  id: string;
+  organizationId: string;
+  billingEmail: string;
+  currency: string;
+  balanceCents: number;
+  creditCents: number;
+  paymentProvider: string | null;
+  providerCustomerId: string | null;
+  taxId: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillingEventDto {
+  id: string;
+  organizationId: string;
+  billingAccountId: string | null;
+  type: "INVOICE_CREATED" | "PAYMENT_SUCCEEDED" | "PAYMENT_FAILED" | "CREDIT_APPLIED" | "USAGE_CHARGED" | "BALANCE_UPDATED";
+  amountCents: number;
+  currency: string;
+  description: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface InvoiceDto {
+  id: string;
+  organizationId: string;
+  billingAccountId: string;
+  invoiceNumber: string;
+  status: "DRAFT" | "OPEN" | "PAID" | "VOID" | "UNCOLLECTIBLE";
+  currency: string;
+  subtotalCents: number;
+  taxCents: number;
+  totalCents: number;
+  balanceDueCents: number;
+  issuedAt: string;
+  dueAt: string | null;
+  paidAt: string | null;
+  lineItems: Array<{ label: string; quantity: number; unitAmountCents: number; amountCents: number }>;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentDto {
+  id: string;
+  organizationId: string;
+  billingAccountId: string;
+  invoiceId: string | null;
+  status: "PENDING" | "SUCCEEDED" | "FAILED" | "REFUNDED";
+  amountCents: number;
+  currency: string;
+  provider: string | null;
+  providerPaymentId: string | null;
+  failureReason: string | null;
+  paidAt: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiKeyDto {
+  id: string;
+  organizationId: string;
+  name: string;
+  type: "SECRET" | "PUBLIC";
+  keyPrefix: string;
+  scopes: string[];
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  revokedAt: string | null;
+  createdBy: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatedApiKeyDto {
+  apiKey: ApiKeyDto;
+  secret: string;
+}
+
+export interface AuditLogDto {
+  id: string;
+  organizationId: string;
+  actorId: string | null;
+  actorType: "USER" | "SYSTEM" | "API_KEY" | "SERVICE";
+  action: string;
+  resourceType: string;
+  resourceId: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface FeatureFlagDto {
+  id: string;
+  organizationId: string;
+  key: "ai_calling" | "whatsapp" | "crm" | "memory" | "automation" | "analytics" | "rag" | "optimization";
+  enabled: boolean;
+  rolloutPercentage: number;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UsageRecordDto {
+  id: string;
+  organizationId: string;
+  metric: "calls" | "messages" | "ai_requests" | "tokens" | "storage_gb" | "workflow_executions" | "minutes";
+  quantity: number;
+  unit: string;
+  source: string;
+  occurredAt: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TenantAdminOverviewDto {
+  organizationCount: number;
+  activeOrganizationCount: number;
+  suspendedOrganizationCount: number;
+  activeSubscriptionCount: number;
+  monthlyRecurringRevenueCents: number;
+  outstandingBalanceCents: number;
+  apiKeyCount: number;
+  auditLogCount: number;
+  usageTotals: Record<UsageRecordDto["metric"], number>;
+}

@@ -51,6 +51,17 @@ export const aiBrainKeys = {
   reportingTemplates: (organizationId: string) => ["ai", "reporting-templates", organizationId] as const,
   reportingGenerated: (organizationId: string) => ["ai", "reporting-generated", organizationId] as const,
   reportingExports: (organizationId: string) => ["ai", "reporting-exports", organizationId] as const,
+  organizations: () => ["ai", "organizations"] as const,
+  subscriptions: (organizationId: string) => ["ai", "subscriptions", organizationId] as const,
+  subscriptionPlans: (organizationId: string) => ["ai", "subscription-plans", organizationId] as const,
+  billingOverview: (organizationId: string) => ["ai", "billing-overview", organizationId] as const,
+  billingInvoices: (organizationId: string) => ["ai", "billing-invoices", organizationId] as const,
+  billingPayments: (organizationId: string) => ["ai", "billing-payments", organizationId] as const,
+  apiKeys: (organizationId: string) => ["ai", "api-keys", organizationId] as const,
+  auditLogs: (organizationId: string) => ["ai", "audit-logs", organizationId] as const,
+  featureFlags: (organizationId: string) => ["ai", "feature-flags", organizationId] as const,
+  usageRecords: (organizationId: string) => ["ai", "usage-records", organizationId] as const,
+  adminOverview: (organizationId: string) => ["ai", "admin-overview", organizationId] as const,
   optimizationOverview: (organizationId: string) => ["ai", "optimization-overview", organizationId] as const,
   optimizationRules: (organizationId: string) => ["ai", "optimization-rules", organizationId] as const,
   optimizationEvents: (organizationId: string) => ["ai", "optimization-events", organizationId] as const,
@@ -576,6 +587,101 @@ export function useOptimizationResults(organizationId: string | null) {
     queryKey: aiBrainKeys.optimizationResults(organizationId ?? ""),
     queryFn: () => aiBrainApi.optimizationResults(organizationId ?? ""),
     enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useOrganizations() {
+  return useQuery({
+    queryKey: aiBrainKeys.organizations(),
+    queryFn: () => aiBrainApi.organizations(),
+  });
+}
+
+export function useSubscriptions(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.subscriptions(organizationId ?? ""),
+    queryFn: () => aiBrainApi.subscriptions(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useSubscriptionPlans(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.subscriptionPlans(organizationId ?? ""),
+    queryFn: () => aiBrainApi.subscriptionPlans(organizationId),
+    refetchInterval: 60_000,
+  });
+}
+
+export function useBillingOverview(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.billingOverview(organizationId ?? ""),
+    queryFn: () => aiBrainApi.billingOverview(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useBillingInvoices(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.billingInvoices(organizationId ?? ""),
+    queryFn: () => aiBrainApi.billingInvoices(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useBillingPayments(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.billingPayments(organizationId ?? ""),
+    queryFn: () => aiBrainApi.billingPayments(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useApiKeys(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.apiKeys(organizationId ?? ""),
+    queryFn: () => aiBrainApi.apiKeys(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useAuditLogs(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.auditLogs(organizationId ?? ""),
+    queryFn: () => aiBrainApi.auditLogs(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useFeatureFlags(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.featureFlags(organizationId ?? ""),
+    queryFn: () => aiBrainApi.featureFlags(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useUsageRecords(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.usageRecords(organizationId ?? ""),
+    queryFn: () => aiBrainApi.usageRecords(organizationId ?? ""),
+    enabled: Boolean(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useAdminOverview(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.adminOverview(organizationId ?? ""),
+    queryFn: () => aiBrainApi.adminOverview(organizationId),
     refetchInterval: 30_000,
   });
 }

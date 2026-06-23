@@ -46,6 +46,18 @@ import {
   toOptimizationRecommendationDto,
   toOptimizationResultDto,
   toOptimizationRuleDto,
+  toApiKeyDto,
+  toAuditLogDto,
+  toBillingOverviewDto,
+  toCreatedApiKeyDto,
+  toFeatureFlagDto,
+  toInvoiceDto,
+  toOrganizationDto,
+  toPaymentDto,
+  toSubscriptionDto,
+  toSubscriptionPlanDto,
+  toTenantAdminOverviewDto,
+  toUsageRecordDto,
   toExecutiveDashboardDto,
   toExecutiveSummaryDto,
   toGeneratedReportDto,
@@ -176,6 +188,48 @@ const agentSkillInputSchema = z.object({
   level: z.number().int().min(1).max(5).default(1),
   certified: z.boolean().default(false),
   active: z.boolean().default(true),
+});
+
+const organizationInputSchema = z.object({
+  name: z.string().min(1),
+  ownerUserId: z.string().nullable().optional(),
+  primaryEmail: z.string().email().nullable().optional(),
+  timezone: z.string().default("UTC"),
+  metadata: z.record(z.unknown()).default({}),
+});
+
+const organizationUpdateSchema = z.object({
+  name: z.string().min(1).optional(),
+  primaryEmail: z.string().email().nullable().optional(),
+  timezone: z.string().optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+const apiKeyInputSchema = z.object({
+  organizationId: z.string().min(1),
+  name: z.string().min(1),
+  type: z.enum(["SECRET", "PUBLIC"]),
+  scopes: z.array(z.string()).default([]),
+  expiresAt: z.string().datetime().nullable().optional(),
+  createdBy: z.string().nullable().optional(),
+  metadata: z.record(z.unknown()).default({}),
+});
+
+const featureFlagInputSchema = z.object({
+  organizationId: z.string().min(1),
+  key: z.enum(["ai_calling", "whatsapp", "crm", "memory", "automation", "analytics", "rag", "optimization"]),
+  enabled: z.boolean(),
+  rolloutPercentage: z.number().min(0).max(100).optional(),
+});
+
+const usageInputSchema = z.object({
+  organizationId: z.string().min(1),
+  metric: z.enum(["calls", "messages", "ai_requests", "tokens", "storage_gb", "workflow_executions", "minutes"]),
+  quantity: z.number().min(0),
+  unit: z.string().min(1),
+  source: z.string().default("system"),
+  occurredAt: z.string().datetime().optional(),
+  metadata: z.record(z.unknown()).default({}),
 });
 
 const routingAssignInputSchema = z.object({
@@ -466,6 +520,173 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       const organizationId = requiredQuery(url, "organizationId");
       await authorize(container, token, organizationId);
       sendJson(response, 200, { data: (await container.services.reportExport.list(organizationId)).map(toReportExportDto) });
+      return;
+    }
+
+    if (url.pathname === "/organizations" && request.method === "GET") {
+      sendJson(response, 200, { data: (await container.services.organization.list()).map(toOrganizationDto) });
+      return;
+    }
+
+    if (url.pathname === "/organizations" && request.method === "POST") {
+      const input = organizationInputSchema.parse(await readJson(request));
+      sendJson(response, 201, { data: toOrganizationDto(await container.services.organization.create(input)) });
+      return;
+    }
+
+    const organizationMatch = /^\/organizations\/([^/]+)$/.exec(url.pathname);
+    if (organizationMatch?.[1] && request.method === "GET") {
+      await authorize(container, token, organizationMatch[1]);
+      const organization = await container.services.organization.get(organizationMatch[1]);
+      if (!organization) throw AiBrainError.notFound("Organization");
+      sendJson(response, 200, { data: toOrganizationDto(organization) });
+      return;
+    }
+
+    if (organizationMatch?.[1] && request.method === "PUT") {
+      await authorize(container, token, organizationMatch[1]);
+      const input = organizationUpdateSchema.parse(await readJson(request));
+      const organization = await container.services.organization.update(organizationMatch[1], input);
+      if (!organization) throw AiBrainError.notFound("Organization");
+      sendJson(response, 200, { data: toOrganizationDto(organization) });
+      return;
+    }
+
+    const organizationSuspendMatch = /^\/organizations\/([^/]+)\/suspend$/.exec(url.pathname);
+    if (organizationSuspendMatch?.[1] && request.method === "POST") {
+      await authorize(container, token, organizationSuspendMatch[1]);
+      const organization = await container.services.organization.suspend(organizationSuspendMatch[1]);
+      if (!organization) throw AiBrainError.notFound("Organization");
+      sendJson(response, 200, { data: toOrganizationDto(organization) });
+      return;
+    }
+
+    const organizationActivateMatch = /^\/organizations\/([^/]+)\/activate$/.exec(url.pathname);
+    if (organizationActivateMatch?.[1] && request.method === "POST") {
+      await authorize(container, token, organizationActivateMatch[1]);
+      const organization = await container.services.organization.activate(organizationActivateMatch[1]);
+      if (!organization) throw AiBrainError.notFound("Organization");
+      sendJson(response, 200, { data: toOrganizationDto(organization) });
+      return;
+    }
+
+    if (url.pathname === "/subscriptions" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.subscription.list(organizationId)).map(toSubscriptionDto) });
+      return;
+    }
+
+    if (url.pathname === "/subscriptions/plans" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.subscription.plansList(organizationId)).map(toSubscriptionPlanDto) });
+      return;
+    }
+
+    if (url.pathname === "/billing" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: toBillingOverviewDto(await container.services.billing.overview(organizationId)) });
+      return;
+    }
+
+    if (url.pathname === "/billing/invoices" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.invoice.list(organizationId)).map(toInvoiceDto) });
+      return;
+    }
+
+    if (url.pathname === "/billing/payments" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.payment.list(organizationId)).map(toPaymentDto) });
+      return;
+    }
+
+    if (url.pathname === "/apikeys" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.apiKey.list(organizationId)).map(toApiKeyDto) });
+      return;
+    }
+
+    if (url.pathname === "/apikeys" && request.method === "POST") {
+      const input = apiKeyInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 201, {
+        data: toCreatedApiKeyDto(
+          await container.services.apiKey.create({
+            ...input,
+            expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+            createdBy: input.createdBy ?? null,
+          }),
+        ),
+      });
+      return;
+    }
+
+    const apiKeyRevokeMatch = /^\/apikeys\/([^/]+)\/revoke$/.exec(url.pathname);
+    if (apiKeyRevokeMatch?.[1] && request.method === "POST") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const apiKey = await container.services.apiKey.revoke(apiKeyRevokeMatch[1], organizationId);
+      if (!apiKey) throw AiBrainError.notFound("API key");
+      sendJson(response, 200, { data: toApiKeyDto(apiKey) });
+      return;
+    }
+
+    if (url.pathname === "/audit-logs" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.auditLog.list(organizationId)).map(toAuditLogDto) });
+      return;
+    }
+
+    if (url.pathname === "/feature-flags" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.featureFlag.list(organizationId)).map(toFeatureFlagDto) });
+      return;
+    }
+
+    if (url.pathname === "/feature-flags" && request.method === "POST") {
+      const input = featureFlagInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 200, {
+        data: toFeatureFlagDto(
+          await container.services.featureFlag.update(input.organizationId, input.key, input.enabled, input.rolloutPercentage),
+        ),
+      });
+      return;
+    }
+
+    if (url.pathname === "/usage" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.usageTracking.list(organizationId)).map(toUsageRecordDto) });
+      return;
+    }
+
+    if (url.pathname === "/usage" && request.method === "POST") {
+      const input = usageInputSchema.parse(await readJson(request));
+      await authorize(container, token, input.organizationId);
+      sendJson(response, 201, {
+        data: toUsageRecordDto(
+          await container.services.usageTracking.record({
+            ...input,
+            occurredAt: input.occurredAt ? new Date(input.occurredAt) : undefined,
+          }),
+        ),
+      });
+      return;
+    }
+
+    if (url.pathname === "/admin/overview" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: toTenantAdminOverviewDto(await container.services.tenantGovernance.overview(organizationId)) });
       return;
     }
 

@@ -68,6 +68,21 @@ import type { OptimizationMetric } from "../domain/entities/optimization-metric.
 import type { OptimizationRecommendation } from "../domain/entities/optimization-recommendation.js";
 import type { OptimizationResult } from "../domain/entities/optimization-result.js";
 import type { OptimizationRule } from "../domain/entities/optimization-rule.js";
+import type { ApiKey } from "../domain/entities/api-key.js";
+import type { AuditLog } from "../domain/entities/audit-log.js";
+import type { BillingAccount } from "../domain/entities/billing-account.js";
+import type { BillingEvent } from "../domain/entities/billing-event.js";
+import type { FeatureFlag } from "../domain/entities/feature-flag.js";
+import type { Invoice } from "../domain/entities/invoice.js";
+import type { Organization } from "../domain/entities/organization.js";
+import type { OrganizationSettings } from "../domain/entities/organization-settings.js";
+import type { Payment } from "../domain/entities/payment.js";
+import type { Subscription } from "../domain/entities/subscription.js";
+import type { SubscriptionPlan } from "../domain/entities/subscription-plan.js";
+import type { UsageRecord } from "../domain/entities/usage-record.js";
+import type { BillingOverview } from "../application/services/billing-service.js";
+import type { CreatedApiKey } from "../application/services/api-key-service.js";
+import type { TenantAdminOverview } from "../application/ports.js";
 
 export const toConversationDto = (value: AIConversation) => ({ ...value, startedAt: iso(value.startedAt), endedAt: maybeIso(value.endedAt), createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 export const toMessageDto = (value: AIMessage) => ({ ...value, timestamp: iso(value.timestamp) });
@@ -319,3 +334,203 @@ function iso(date: Date): string {
 function maybeIso(date: Date | null): string | null {
   return date ? iso(date) : null;
 }
+export const toOrganizationDto = (organization: Organization) => ({
+  id: organization.id,
+  name: organization.name,
+  slug: organization.slug,
+  status: organization.status,
+  ownerUserId: organization.ownerUserId,
+  primaryEmail: organization.primaryEmail,
+  timezone: organization.timezone,
+  metadata: organization.metadata,
+  createdAt: organization.createdAt.toISOString(),
+  updatedAt: organization.updatedAt.toISOString(),
+});
+
+export const toOrganizationSettingsDto = (settings: OrganizationSettings) => ({
+  id: settings.id,
+  organizationId: settings.organizationId,
+  defaultLocale: settings.defaultLocale,
+  timezone: settings.timezone,
+  dataRetentionDays: settings.dataRetentionDays,
+  allowedDomains: settings.allowedDomains,
+  security: settings.security,
+  notifications: settings.notifications,
+  metadata: settings.metadata,
+  createdAt: settings.createdAt.toISOString(),
+  updatedAt: settings.updatedAt.toISOString(),
+});
+
+export const toSubscriptionPlanDto = (plan: SubscriptionPlan) => ({
+  id: plan.id,
+  organizationId: plan.organizationId,
+  tier: plan.tier,
+  name: plan.name,
+  description: plan.description,
+  monthlyPriceCents: plan.monthlyPriceCents,
+  limits: plan.limits,
+  features: plan.features,
+  active: plan.active,
+  createdAt: plan.createdAt.toISOString(),
+  updatedAt: plan.updatedAt.toISOString(),
+});
+
+export const toSubscriptionDto = (subscription: Subscription) => ({
+  id: subscription.id,
+  organizationId: subscription.organizationId,
+  planId: subscription.planId,
+  tier: subscription.tier,
+  status: subscription.status,
+  seats: subscription.seats,
+  currentPeriodStart: subscription.currentPeriodStart.toISOString(),
+  currentPeriodEnd: subscription.currentPeriodEnd.toISOString(),
+  entitlements: subscription.entitlements,
+  cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+  metadata: subscription.metadata,
+  createdAt: subscription.createdAt.toISOString(),
+  updatedAt: subscription.updatedAt.toISOString(),
+});
+
+export const toBillingAccountDto = (account: BillingAccount) => ({
+  id: account.id,
+  organizationId: account.organizationId,
+  billingEmail: account.billingEmail,
+  currency: account.currency,
+  balanceCents: account.balanceCents,
+  creditCents: account.creditCents,
+  paymentProvider: account.paymentProvider,
+  providerCustomerId: account.providerCustomerId,
+  taxId: account.taxId,
+  metadata: account.metadata,
+  createdAt: account.createdAt.toISOString(),
+  updatedAt: account.updatedAt.toISOString(),
+});
+
+export const toBillingEventDto = (event: BillingEvent) => ({
+  id: event.id,
+  organizationId: event.organizationId,
+  billingAccountId: event.billingAccountId,
+  type: event.type,
+  amountCents: event.amountCents,
+  currency: event.currency,
+  description: event.description,
+  metadata: event.metadata,
+  createdAt: event.createdAt.toISOString(),
+});
+
+export const toInvoiceDto = (invoice: Invoice) => ({
+  id: invoice.id,
+  organizationId: invoice.organizationId,
+  billingAccountId: invoice.billingAccountId,
+  invoiceNumber: invoice.invoiceNumber,
+  status: invoice.status,
+  currency: invoice.currency,
+  subtotalCents: invoice.subtotalCents,
+  taxCents: invoice.taxCents,
+  totalCents: invoice.totalCents,
+  balanceDueCents: invoice.balanceDueCents,
+  issuedAt: invoice.issuedAt.toISOString(),
+  dueAt: invoice.dueAt?.toISOString() ?? null,
+  paidAt: invoice.paidAt?.toISOString() ?? null,
+  lineItems: invoice.lineItems,
+  metadata: invoice.metadata,
+  createdAt: invoice.createdAt.toISOString(),
+  updatedAt: invoice.updatedAt.toISOString(),
+});
+
+export const toPaymentDto = (payment: Payment) => ({
+  id: payment.id,
+  organizationId: payment.organizationId,
+  billingAccountId: payment.billingAccountId,
+  invoiceId: payment.invoiceId,
+  status: payment.status,
+  amountCents: payment.amountCents,
+  currency: payment.currency,
+  provider: payment.provider,
+  providerPaymentId: payment.providerPaymentId,
+  failureReason: payment.failureReason,
+  paidAt: payment.paidAt?.toISOString() ?? null,
+  metadata: payment.metadata,
+  createdAt: payment.createdAt.toISOString(),
+  updatedAt: payment.updatedAt.toISOString(),
+});
+
+export const toApiKeyDto = (apiKey: ApiKey) => ({
+  id: apiKey.id,
+  organizationId: apiKey.organizationId,
+  name: apiKey.name,
+  type: apiKey.type,
+  keyPrefix: apiKey.keyPrefix,
+  scopes: apiKey.scopes,
+  lastUsedAt: apiKey.lastUsedAt?.toISOString() ?? null,
+  expiresAt: apiKey.expiresAt?.toISOString() ?? null,
+  revokedAt: apiKey.revokedAt?.toISOString() ?? null,
+  createdBy: apiKey.createdBy,
+  metadata: apiKey.metadata,
+  createdAt: apiKey.createdAt.toISOString(),
+  updatedAt: apiKey.updatedAt.toISOString(),
+});
+
+export const toCreatedApiKeyDto = (created: CreatedApiKey) => ({
+  apiKey: toApiKeyDto(created.apiKey),
+  secret: created.secret,
+});
+
+export const toAuditLogDto = (log: AuditLog) => ({
+  id: log.id,
+  organizationId: log.organizationId,
+  actorId: log.actorId,
+  actorType: log.actorType,
+  action: log.action,
+  resourceType: log.resourceType,
+  resourceId: log.resourceId,
+  ipAddress: log.ipAddress,
+  userAgent: log.userAgent,
+  metadata: log.metadata,
+  createdAt: log.createdAt.toISOString(),
+});
+
+export const toFeatureFlagDto = (flag: FeatureFlag) => ({
+  id: flag.id,
+  organizationId: flag.organizationId,
+  key: flag.key,
+  enabled: flag.enabled,
+  rolloutPercentage: flag.rolloutPercentage,
+  metadata: flag.metadata,
+  createdAt: flag.createdAt.toISOString(),
+  updatedAt: flag.updatedAt.toISOString(),
+});
+
+export const toUsageRecordDto = (record: UsageRecord) => ({
+  id: record.id,
+  organizationId: record.organizationId,
+  metric: record.metric,
+  quantity: record.quantity,
+  unit: record.unit,
+  source: record.source,
+  occurredAt: record.occurredAt.toISOString(),
+  metadata: record.metadata,
+  createdAt: record.createdAt.toISOString(),
+  updatedAt: record.updatedAt.toISOString(),
+});
+
+export const toBillingOverviewDto = (overview: BillingOverview) => ({
+  account: overview.account ? toBillingAccountDto(overview.account) : null,
+  balanceCents: overview.balanceCents,
+  creditCents: overview.creditCents,
+  invoiceTotalCents: overview.invoiceTotalCents,
+  paymentTotalCents: overview.paymentTotalCents,
+  recentEvents: overview.recentEvents.map(toBillingEventDto),
+});
+
+export const toTenantAdminOverviewDto = (overview: TenantAdminOverview) => ({
+  organizationCount: overview.organizationCount,
+  activeOrganizationCount: overview.activeOrganizationCount,
+  suspendedOrganizationCount: overview.suspendedOrganizationCount,
+  activeSubscriptionCount: overview.activeSubscriptionCount,
+  monthlyRecurringRevenueCents: overview.monthlyRecurringRevenueCents,
+  outstandingBalanceCents: overview.outstandingBalanceCents,
+  apiKeyCount: overview.apiKeyCount,
+  auditLogCount: overview.auditLogCount,
+  usageTotals: overview.usageTotals,
+});
