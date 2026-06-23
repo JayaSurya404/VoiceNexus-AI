@@ -1248,7 +1248,76 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (payload as ApiResponse<T>).data;
 }
 
+export interface InfrastructureConfigIssueDto {
+  key: string;
+  required: boolean;
+  present: boolean;
+  valid: boolean;
+  message: string;
+}
+
+export interface ProviderStatusDto {
+  provider: string;
+  ready: boolean;
+  defaultModel: string;
+  message?: string;
+}
+
+export interface InfrastructureStatusDto {
+  providers: ProviderStatusDto[];
+  redis: {
+    ready: boolean;
+    configured: boolean;
+    message?: string;
+  };
+  mongo: {
+    ready: boolean;
+    configured: boolean;
+    message?: string;
+  };
+  twilio: {
+    ready: boolean;
+    configured: boolean;
+    message?: string;
+  };
+  environment: {
+    name: string;
+    production: boolean;
+    ready: boolean;
+    issues: InfrastructureConfigIssueDto[];
+  };
+}
+
+export interface EnvironmentReadinessDto {
+  ready: boolean;
+  score: number;
+  environment: string;
+  production: boolean;
+  issues: InfrastructureConfigIssueDto[];
+}
+
+export interface TwilioOutgoingCallDto {
+  queued: boolean;
+  to: string;
+  from: string | null;
+  webhookUrl: string | null;
+}
+
 export const aiBrainApi = {
+  infrastructureStatus: (organizationId: string) =>
+    request<InfrastructureStatusDto>(`/infrastructure/status?${query({ organizationId })}`),
+  providerStatuses: (organizationId: string) =>
+    request<ProviderStatusDto[]>(`/infrastructure/providers?${query({ organizationId })}`),
+  environmentReadiness: (organizationId: string) =>
+    request<EnvironmentReadinessDto>(`/infrastructure/environment?${query({ organizationId })}`),
+  initiateTwilioCall: (
+    organizationId: string,
+    input: { to: string; from?: string; webhookUrl?: string; statusCallbackUrl?: string }
+  ) =>
+    request<TwilioOutgoingCallDto>(`/twilio/calls?${query({ organizationId })}`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    }),
   listConversations: (organizationId: string) =>
     request<AiConversationDto[]>(`/ai/conversations?${query({ organizationId })}`),
   listMessages: (conversationId: string) =>

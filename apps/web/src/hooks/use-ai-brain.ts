@@ -5,6 +5,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { aiBrainApi } from "@/lib/api/ai-brain-api";
 
 export const aiBrainKeys = {
+  infrastructureStatus: (organizationId: string) => ["ai-brain", "infrastructure-status", organizationId] as const,
+  providerStatuses: (organizationId: string) => ["ai-brain", "provider-statuses", organizationId] as const,
+  environmentReadiness: (organizationId: string) => ["ai-brain", "environment-readiness", organizationId] as const,
   conversations: (organizationId: string) => ["ai", "conversations", organizationId] as const,
   messages: (conversationId: string) => ["ai", "messages", conversationId] as const,
   tools: (conversationId: string) => ["ai", "tools", conversationId] as const,

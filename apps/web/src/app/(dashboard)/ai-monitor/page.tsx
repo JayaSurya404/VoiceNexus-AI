@@ -1,5 +1,12 @@
 "use client";
 
+import { InfrastructureStatusPanels } from "@/components/ai-monitor/infrastructure-status-panels";
+import {
+  useEnvironmentReadiness,
+  useInfrastructureStatus,
+  useProviderStatuses
+} from "@/hooks/use-infrastructure-status";
+
 import { useEffect, useMemo, useState } from "react";
 
 import { AgentSessionsTable } from "@/components/ai-monitor/agent-sessions-table";
@@ -190,6 +197,10 @@ import { useVoiceResponseMetrics, useVoiceResponses } from "@/hooks/use-voice-re
 
 export default function AiMonitorPage() {
   const activeOrganizationId = useAuthStore((state) => state.activeOrganizationId);
+  const infrastructureOrganizationId = activeOrganizationId ?? "";
+  const infrastructureStatusQuery = useInfrastructureStatus(infrastructureOrganizationId);
+  const providerStatusesQuery = useProviderStatuses(infrastructureOrganizationId);
+  const environmentReadinessQuery = useEnvironmentReadiness(infrastructureOrganizationId);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedRuntimeConversationId, setSelectedRuntimeConversationId] = useState<string | null>(null);
   const sessionsQuery = useAgentSessions(activeOrganizationId);
@@ -473,6 +484,11 @@ export default function AiMonitorPage() {
         retryPolicies={retryPoliciesQuery.data ?? []}
         systemMetrics={systemMetricsQuery.data}
         traces={observabilityTracesQuery.data ?? []}
+      />
+      <InfrastructureStatusPanels
+        status={infrastructureStatusQuery.data}
+        providers={providerStatusesQuery.data}
+        environment={environmentReadinessQuery.data}
       />
       <DeploymentReadinessPanels
         backups={backupJobsQuery.data ?? []}

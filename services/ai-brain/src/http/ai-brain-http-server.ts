@@ -365,6 +365,13 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       return;
     }
 
+    if (url.pathname === "/twilio/voice/webhook" && request.method === "POST") {
+      const body = await readJson(request);
+      const webhook = container.services.twilioIntegration.parseVoiceWebhook(body);
+      sendJson(response, 200, webhook);
+      return;
+    }
+
     const token = bearerToken(request);
     if (!token) throw AiBrainError.unauthorized();
 
@@ -372,6 +379,46 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       const organizationId = requiredQuery(url, "organizationId");
       await authorize(container, token, organizationId);
       sendJson(response, 200, { data: (await container.repositories.humanAgents.listByOrganization(organizationId)).map(toHumanAgentDto) });
+      return;
+    }
+
+    if (url.pathname === "/infrastructure/status" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, await container.services.infrastructureStatus.status());
+      return;
+    }
+
+    if (url.pathname === "/infrastructure/providers" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, await container.services.providerRegistry.status());
+      return;
+    }
+
+    if (url.pathname === "/infrastructure/environment" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, container.services.infrastructureStatus.environmentReadiness());
+      return;
+    }
+
+    if (url.pathname === "/twilio/calls" && request.method === "POST") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const body = await readJson(request);
+      const to = typeof body.to === "string" ? body.to : "";
+      const from = typeof body.from === "string" ? body.from : undefined;
+      const webhookUrl = typeof body.webhookUrl === "string" ? body.webhookUrl : undefined;
+      sendJson(
+        response,
+        201,
+        container.services.twilioIntegration.initiateOutgoingCall({
+          to,
+          from,
+          webhookUrl
+        })
+      );
       return;
     }
 

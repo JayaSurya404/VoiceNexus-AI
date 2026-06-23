@@ -85,6 +85,8 @@ import { OptimizationRuleService } from "./application/services/optimization-rul
 import { ObservabilityService } from "./application/services/observability-service.js";
 import { PromptEngineService } from "./application/services/prompt-engine-service.js";
 import { PaymentService } from "./application/services/payment-service.js";
+import { InfrastructureStatusService } from "./application/services/infrastructure-status-service.js";
+import { ProviderRegistryService } from "./application/services/provider-registry-service.js";
 import { QualityAssuranceService } from "./application/services/quality-assurance-service.js";
 import { QueueOptimizationService } from "./application/services/queue-optimization-service.js";
 import { QueuePerformanceService } from "./application/services/queue-performance-service.js";
@@ -108,6 +110,7 @@ import { SubscriptionService } from "./application/services/subscription-service
 import { TenantGovernanceService } from "./application/services/tenant-governance-service.js";
 import { TimelineActionService } from "./application/services/timeline-action-service.js";
 import { TrendAnalysisService } from "./application/services/trend-analysis-service.js";
+import { TwilioIntegrationService } from "./application/services/twilio-integration-service.js";
 import { UpsellIntelligenceService } from "./application/services/upsell-intelligence-service.js";
 import { UsageTrackingService } from "./application/services/usage-tracking-service.js";
 import { WhisperService } from "./application/services/whisper-service.js";
@@ -116,6 +119,8 @@ import { WorkflowEngineService } from "./application/services/workflow-engine-se
 import { WorkflowOptimizationService } from "./application/services/workflow-optimization-service.js";
 import { VoiceResponseRequestService } from "./application/services/voice-response-request-service.js";
 import { env } from "./config/env.js";
+import { loadInfrastructureConfig } from "./config/infrastructure-config.js";
+import { RedisConnectionManager } from "./infrastructure/redis/redis-connection-manager.js";
 import {
   MongoAgentDecisionRepository,
   MongoAgentPersonaRepository,
@@ -270,7 +275,10 @@ import {
 } from "./infrastructure/database/mongoose/repositories/optimization-repositories.js";
 import { TranscriptFinalSubscriber } from "./infrastructure/redis/transcript-final-subscriber.js";
 import { OpenAIEmbeddingProvider } from "./providers/openai-embedding-provider.js";
+import { OpenAIChatProvider } from "./providers/openai-chat-provider.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
+import { GeminiProvider } from "./providers/gemini-provider.js";
+import { GroqProvider } from "./providers/groq-provider.js";
 import { AccessTokenService } from "./security/access-token-service.js";
 import { ToolRouter } from "./tools/tool-router.js";
 
@@ -400,6 +408,31 @@ export function createContainer() {
 
   const provider = new OpenAIProvider({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
   const embeddingProvider = new OpenAIEmbeddingProvider({ apiKey: env.OPENAI_API_KEY });
+  const infrastructureConfig = loadInfrastructureConfig();
+  const openaiChatProvider = new OpenAIChatProvider({
+    apiKey: infrastructureConfig.openai.apiKey,
+    defaultModel: infrastructureConfig.openai.chatModel
+  });
+  const groqProvider = new GroqProvider({
+    apiKey: infrastructureConfig.groq.apiKey,
+    defaultModel: infrastructureConfig.groq.chatModel
+  });
+  const geminiProvider = new GeminiProvider({
+    apiKey: infrastructureConfig.gemini.apiKey,
+    defaultModel: infrastructureConfig.gemini.chatModel
+  });
+  const providerRegistry = new ProviderRegistryService([openaiChatProvider, groqProvider, geminiProvider]);
+  const redisConnection = new RedisConnectionManager({
+    url: infrastructureConfig.redis.url,
+    keyPrefix: infrastructureConfig.redis.keyPrefix
+  });
+  const twilioIntegration = new TwilioIntegrationService(infrastructureConfig.twilio);
+  const infrastructureStatus = new InfrastructureStatusService(
+    infrastructureConfig,
+    providerRegistry,
+    redisConnection,
+    twilioIntegration
+  );
   const personaService = new AgentPersonaService(personas);
   const contextBuilder = new ContextBuilder();
   const memoryInjection = new MemoryInjectionService();
@@ -808,6 +841,10 @@ export function createContainer() {
       resilience,
       distributedLock,
       alerting,
+      providerRegistry,
+      redisConnection,
+      twilioIntegration,
+      infrastructureStatus,
       monitoring,
       deploymentCatalog,
       environmentValidation,
