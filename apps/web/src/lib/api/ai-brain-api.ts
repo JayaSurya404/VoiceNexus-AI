@@ -1378,6 +1378,37 @@ export const aiBrainApi = {
     request<UsageRecordDto>("/usage", { method: "POST", body: JSON.stringify(input) }),
   adminOverview: (organizationId?: string | null) =>
     request<TenantAdminOverviewDto>(`/admin/overview?${query({ organizationId: organizationId ?? undefined })}`),
+  health: () => request<HealthStatusDto>("/health"),
+  liveness: () => request<LivenessStatusDto>("/health/live"),
+  readiness: () => request<ReadinessStatusDto>("/health/ready"),
+  monitoringOverview: (organizationId?: string | null) =>
+    request<ProductionOverviewDto>(`/monitoring/overview?${query({ organizationId: organizationId ?? undefined })}`),
+  metrics: (organizationId?: string | null) =>
+    request<MetricDto[]>(`/metrics?${query({ organizationId: organizationId ?? undefined })}`),
+  systemMetrics: (organizationId?: string | null) =>
+    request<MetricSnapshotDto>(`/metrics/system?${query({ organizationId: organizationId ?? undefined })}`),
+  applicationMetrics: (organizationId?: string | null) =>
+    request<MetricSnapshotDto>(`/metrics/application?${query({ organizationId: organizationId ?? undefined })}`),
+  errorEvents: (organizationId?: string | null) =>
+    request<ErrorEventDto[]>(`/errors?${query({ organizationId: organizationId ?? undefined })}`),
+  errorIncidents: (organizationId?: string | null) =>
+    request<ErrorIncidentDto[]>(`/errors/incidents?${query({ organizationId: organizationId ?? undefined })}`),
+  observabilityTraces: (organizationId?: string | null) =>
+    request<TraceDto[]>(`/observability/traces?${query({ organizationId: organizationId ?? undefined })}`),
+  observabilityEvents: (organizationId?: string | null) =>
+    request<EventLogDto[]>(`/observability/events?${query({ organizationId: organizationId ?? undefined })}`),
+  alertRules: (organizationId?: string | null) =>
+    request<AlertRuleDto[]>(`/alerts/rules?${query({ organizationId: organizationId ?? undefined })}`),
+  alertEvents: (organizationId?: string | null) =>
+    request<AlertEventDto[]>(`/alerts/events?${query({ organizationId: organizationId ?? undefined })}`),
+  retryPolicies: (organizationId?: string | null) =>
+    request<RetryPolicyDto[]>(`/resilience/retries?${query({ organizationId: organizationId ?? undefined })}`),
+  circuitBreakers: (organizationId?: string | null) =>
+    request<CircuitBreakerDto[]>(`/resilience/circuit-breakers?${query({ organizationId: organizationId ?? undefined })}`),
+  fallbackStrategies: (organizationId?: string | null) =>
+    request<FallbackStrategyDto[]>(`/resilience/fallbacks?${query({ organizationId: organizationId ?? undefined })}`),
+  distributedLocks: (organizationId?: string | null) =>
+    request<DistributedLockDto[]>(`/locks?${query({ organizationId: organizationId ?? undefined })}`),
   optimizationOverview: (organizationId: string) =>
     request<OptimizationOverviewDto>(`/optimization/overview?${query({ organizationId })}`),
   optimizationRules: (organizationId: string) =>
@@ -1701,4 +1732,211 @@ export interface TenantAdminOverviewDto {
   apiKeyCount: number;
   auditLogCount: number;
   usageTotals: Record<UsageRecordDto["metric"], number>;
+}
+
+export interface HealthCheckDto {
+  id: string;
+  organizationId: string | null;
+  service: string;
+  checkType: "HEALTH" | "LIVENESS" | "READINESS";
+  status: "HEALTHY" | "DEGRADED" | "UNHEALTHY";
+  latencyMs: number;
+  details: Record<string, unknown>;
+  checkedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HealthStatusDto {
+  status: HealthCheckDto["status"];
+  service: string;
+  startupComplete: boolean;
+  checks: HealthCheckDto[];
+  checkedAt: string;
+}
+
+export interface ReadinessStatusDto {
+  status: "READY" | "NOT_READY";
+  checks: HealthCheckDto[];
+  checkedAt: string;
+}
+
+export interface LivenessStatusDto {
+  status: "ALIVE";
+  uptimeSeconds: number;
+  checkedAt: string;
+}
+
+export interface MetricDto {
+  id: string;
+  organizationId: string | null;
+  name: string;
+  kind: "COUNTER" | "GAUGE" | "HISTOGRAM";
+  value: number;
+  unit: string;
+  tags: Record<string, string>;
+  recordedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MetricSnapshotDto {
+  id: string;
+  organizationId: string | null;
+  category: "SYSTEM" | "APPLICATION" | "SERVICE";
+  metrics: Record<string, number>;
+  capturedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TraceDto {
+  id: string;
+  organizationId: string | null;
+  traceId: string;
+  rootSpanId: string | null;
+  name: string;
+  status: "OK" | "ERROR" | "TIMEOUT";
+  startedAt: string;
+  endedAt: string | null;
+  durationMs: number | null;
+  attributes: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EventLogDto {
+  id: string;
+  organizationId: string | null;
+  traceId: string | null;
+  source: "API" | "AI" | "TWILIO" | "WORKFLOW" | "AUTOMATION" | "SYSTEM";
+  eventName: string;
+  severity: "DEBUG" | "INFO" | "WARN" | "ERROR";
+  message: string;
+  metadata: Record<string, unknown>;
+  occurredAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ErrorEventDto {
+  id: string;
+  organizationId: string | null;
+  service: string;
+  fingerprint: string;
+  message: string;
+  stack: string | null;
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  metadata: Record<string, unknown>;
+  occurredAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ErrorIncidentDto {
+  id: string;
+  organizationId: string | null;
+  fingerprint: string;
+  title: string;
+  status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
+  severity: ErrorEventDto["severity"];
+  eventCount: number;
+  firstOccurrenceAt: string;
+  lastOccurrenceAt: string;
+  assigneeId: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RetryPolicyDto {
+  id: string;
+  organizationId: string | null;
+  provider: "OPENAI" | "GROQ" | "GEMINI" | "TWILIO" | "REDIS";
+  maxAttempts: number;
+  backoffMs: number;
+  jitter: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CircuitBreakerDto {
+  id: string;
+  organizationId: string | null;
+  provider: RetryPolicyDto["provider"];
+  state: "CLOSED" | "OPEN" | "HALF_OPEN";
+  failureThreshold: number;
+  failureCount: number;
+  resetAfterSeconds: number;
+  openedAt: string | null;
+  lastFailureAt: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FallbackStrategyDto {
+  id: string;
+  organizationId: string | null;
+  provider: RetryPolicyDto["provider"];
+  strategy: "USE_CACHE" | "USE_BACKUP_PROVIDER" | "DEGRADE_GRACEFULLY" | "QUEUE_FOR_RETRY";
+  enabled: boolean;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DistributedLockDto {
+  id: string;
+  organizationId: string | null;
+  lockKey: string;
+  ownerId: string;
+  purpose: "JOB" | "WORKFLOW" | "AUTOMATION" | "SYSTEM";
+  expiresAt: string;
+  acquiredAt: string;
+  releasedAt: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AlertRuleDto {
+  id: string;
+  organizationId: string | null;
+  name: string;
+  trigger: "SERVICE_DOWN" | "DATABASE_UNAVAILABLE" | "REDIS_UNAVAILABLE" | "HIGH_LATENCY" | "EXCESSIVE_FAILURES";
+  threshold: number;
+  windowSeconds: number;
+  severity: ErrorEventDto["severity"];
+  active: boolean;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AlertEventDto {
+  id: string;
+  organizationId: string | null;
+  ruleId: string | null;
+  trigger: AlertRuleDto["trigger"];
+  title: string;
+  message: string;
+  severity: ErrorEventDto["severity"];
+  status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductionOverviewDto {
+  healthStatus: HealthStatusDto["status"];
+  readinessStatus: ReadinessStatusDto["status"];
+  livenessStatus: LivenessStatusDto["status"];
+  activeAlerts: number;
+  openIncidents: number;
+  circuitBreakersOpen: number;
+  activeLocks: number;
+  latestSystemMetrics: Record<string, number>;
+  latestApplicationMetrics: Record<string, number>;
 }

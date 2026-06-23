@@ -58,6 +58,22 @@ import {
   toSubscriptionPlanDto,
   toTenantAdminOverviewDto,
   toUsageRecordDto,
+  toAlertEventDto,
+  toAlertRuleDto,
+  toCircuitBreakerDto,
+  toDistributedLockDto,
+  toErrorEventDto,
+  toErrorIncidentDto,
+  toEventLogDto,
+  toFallbackStrategyDto,
+  toHealthStatusDto,
+  toLivenessStatusDto,
+  toMetricDto,
+  toMetricSnapshotDto,
+  toProductionOverviewDto,
+  toReadinessStatusDto,
+  toRetryPolicyDto,
+  toTraceDto,
   toExecutiveDashboardDto,
   toExecutiveSummaryDto,
   toGeneratedReportDto,
@@ -320,7 +336,18 @@ async function handleRequest(container: Container, request: IncomingMessage, res
     const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
 
     if (request.method === "GET" && url.pathname === "/health") {
-      sendJson(response, 200, { data: { status: "ok", service: "voicenexus-ai-brain", uptime: process.uptime() } });
+      sendJson(response, 200, { data: toHealthStatusDto(await container.services.healthCheck.health()) });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/health/live") {
+      sendJson(response, 200, { data: toLivenessStatusDto(container.services.healthCheck.liveness()) });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/health/ready") {
+      const readiness = await container.services.healthCheck.readiness();
+      sendJson(response, readiness.status === "READY" ? 200 : 503, { data: toReadinessStatusDto(readiness) });
       return;
     }
 
@@ -687,6 +714,106 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       const organizationId = url.searchParams.get("organizationId");
       if (organizationId) await authorize(container, token, organizationId);
       sendJson(response, 200, { data: toTenantAdminOverviewDto(await container.services.tenantGovernance.overview(organizationId)) });
+      return;
+    }
+
+    if (url.pathname === "/monitoring/overview" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: toProductionOverviewDto(await container.services.monitoring.overview(organizationId)) });
+      return;
+    }
+
+    if (url.pathname === "/metrics" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.metrics.list(organizationId)).map(toMetricDto) });
+      return;
+    }
+
+    if (url.pathname === "/metrics/system" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      const snapshot = await container.services.metrics.collectSystem(organizationId);
+      sendJson(response, 200, { data: toMetricSnapshotDto(snapshot) });
+      return;
+    }
+
+    if (url.pathname === "/metrics/application" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      const snapshot = await container.services.metrics.collectApplication(organizationId);
+      sendJson(response, 200, { data: toMetricSnapshotDto(snapshot) });
+      return;
+    }
+
+    if (url.pathname === "/errors" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.errorTracking.list(organizationId)).map(toErrorEventDto) });
+      return;
+    }
+
+    if (url.pathname === "/errors/incidents" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.errorTracking.incidents(organizationId)).map(toErrorIncidentDto) });
+      return;
+    }
+
+    if (url.pathname === "/observability/traces" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.observability.listTraces(organizationId)).map(toTraceDto) });
+      return;
+    }
+
+    if (url.pathname === "/observability/events" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.observability.listEvents(organizationId)).map(toEventLogDto) });
+      return;
+    }
+
+    if (url.pathname === "/alerts/rules" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.alerting.rules(organizationId)).map(toAlertRuleDto) });
+      return;
+    }
+
+    if (url.pathname === "/alerts/events" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.alerting.events(organizationId)).map(toAlertEventDto) });
+      return;
+    }
+
+    if (url.pathname === "/resilience/retries" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.resilience.retries(organizationId)).map(toRetryPolicyDto) });
+      return;
+    }
+
+    if (url.pathname === "/resilience/circuit-breakers" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.resilience.breakers(organizationId)).map(toCircuitBreakerDto) });
+      return;
+    }
+
+    if (url.pathname === "/resilience/fallbacks" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.resilience.fallbacks(organizationId)).map(toFallbackStrategyDto) });
+      return;
+    }
+
+    if (url.pathname === "/locks" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.distributedLock.list(organizationId)).map(toDistributedLockDto) });
       return;
     }
 

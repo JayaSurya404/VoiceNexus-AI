@@ -83,6 +83,15 @@ import type { UsageRecord } from "../domain/entities/usage-record.js";
 import type { BillingOverview } from "../application/services/billing-service.js";
 import type { CreatedApiKey } from "../application/services/api-key-service.js";
 import type { TenantAdminOverview } from "../application/ports.js";
+import type { AlertEvent, AlertRule } from "../domain/entities/alert.js";
+import type { DistributedLock } from "../domain/entities/distributed-lock.js";
+import type { ErrorEvent, ErrorFingerprint, ErrorIncident } from "../domain/entities/error-event.js";
+import type { HealthCheck } from "../domain/entities/health-check.js";
+import type { Metric, MetricSnapshot } from "../domain/entities/metric.js";
+import type { CircuitBreaker, FallbackStrategy, RetryPolicy } from "../domain/entities/resilience.js";
+import type { EventLog, Span, Trace } from "../domain/entities/trace.js";
+import type { HealthStatus, LivenessStatus, ReadinessStatus } from "../application/services/health-check-service.js";
+import type { ProductionOverview } from "../application/ports.js";
 
 export const toConversationDto = (value: AIConversation) => ({ ...value, startedAt: iso(value.startedAt), endedAt: maybeIso(value.endedAt), createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 export const toMessageDto = (value: AIMessage) => ({ ...value, timestamp: iso(value.timestamp) });
@@ -534,3 +543,133 @@ export const toTenantAdminOverviewDto = (overview: TenantAdminOverview) => ({
   auditLogCount: overview.auditLogCount,
   usageTotals: overview.usageTotals,
 });
+
+export const toHealthCheckDto = (check: HealthCheck) => ({
+  ...check,
+  checkedAt: check.checkedAt.toISOString(),
+  createdAt: check.createdAt.toISOString(),
+  updatedAt: check.updatedAt.toISOString(),
+});
+
+export const toHealthStatusDto = (status: HealthStatus) => ({
+  status: status.status,
+  service: status.service,
+  startupComplete: status.startupComplete,
+  checks: status.checks.map(toHealthCheckDto),
+  checkedAt: status.checkedAt.toISOString(),
+});
+
+export const toReadinessStatusDto = (status: ReadinessStatus) => ({
+  status: status.status,
+  checks: status.checks.map(toHealthCheckDto),
+  checkedAt: status.checkedAt.toISOString(),
+});
+
+export const toLivenessStatusDto = (status: LivenessStatus) => ({
+  status: status.status,
+  uptimeSeconds: status.uptimeSeconds,
+  checkedAt: status.checkedAt.toISOString(),
+});
+
+export const toMetricDto = (metric: Metric) => ({
+  ...metric,
+  recordedAt: metric.recordedAt.toISOString(),
+  createdAt: metric.createdAt.toISOString(),
+  updatedAt: metric.updatedAt.toISOString(),
+});
+
+export const toMetricSnapshotDto = (snapshot: MetricSnapshot) => ({
+  ...snapshot,
+  capturedAt: snapshot.capturedAt.toISOString(),
+  createdAt: snapshot.createdAt.toISOString(),
+  updatedAt: snapshot.updatedAt.toISOString(),
+});
+
+export const toTraceDto = (trace: Trace) => ({
+  ...trace,
+  startedAt: trace.startedAt.toISOString(),
+  endedAt: trace.endedAt?.toISOString() ?? null,
+  createdAt: trace.createdAt.toISOString(),
+  updatedAt: trace.updatedAt.toISOString(),
+});
+
+export const toSpanDto = (span: Span) => ({
+  ...span,
+  startedAt: span.startedAt.toISOString(),
+  endedAt: span.endedAt?.toISOString() ?? null,
+  createdAt: span.createdAt.toISOString(),
+  updatedAt: span.updatedAt.toISOString(),
+});
+
+export const toEventLogDto = (event: EventLog) => ({
+  ...event,
+  occurredAt: event.occurredAt.toISOString(),
+  createdAt: event.createdAt.toISOString(),
+  updatedAt: event.updatedAt.toISOString(),
+});
+
+export const toErrorEventDto = (event: ErrorEvent) => ({
+  ...event,
+  occurredAt: event.occurredAt.toISOString(),
+  createdAt: event.createdAt.toISOString(),
+  updatedAt: event.updatedAt.toISOString(),
+});
+
+export const toErrorFingerprintDto = (fingerprint: ErrorFingerprint) => ({
+  ...fingerprint,
+  firstSeenAt: fingerprint.firstSeenAt.toISOString(),
+  lastSeenAt: fingerprint.lastSeenAt.toISOString(),
+  createdAt: fingerprint.createdAt.toISOString(),
+  updatedAt: fingerprint.updatedAt.toISOString(),
+});
+
+export const toErrorIncidentDto = (incident: ErrorIncident) => ({
+  ...incident,
+  firstOccurrenceAt: incident.firstOccurrenceAt.toISOString(),
+  lastOccurrenceAt: incident.lastOccurrenceAt.toISOString(),
+  createdAt: incident.createdAt.toISOString(),
+  updatedAt: incident.updatedAt.toISOString(),
+});
+
+export const toRetryPolicyDto = (policy: RetryPolicy) => ({
+  ...policy,
+  createdAt: policy.createdAt.toISOString(),
+  updatedAt: policy.updatedAt.toISOString(),
+});
+
+export const toCircuitBreakerDto = (breaker: CircuitBreaker) => ({
+  ...breaker,
+  openedAt: breaker.openedAt?.toISOString() ?? null,
+  lastFailureAt: breaker.lastFailureAt?.toISOString() ?? null,
+  createdAt: breaker.createdAt.toISOString(),
+  updatedAt: breaker.updatedAt.toISOString(),
+});
+
+export const toFallbackStrategyDto = (strategy: FallbackStrategy) => ({
+  ...strategy,
+  createdAt: strategy.createdAt.toISOString(),
+  updatedAt: strategy.updatedAt.toISOString(),
+});
+
+export const toDistributedLockDto = (lock: DistributedLock) => ({
+  ...lock,
+  expiresAt: lock.expiresAt.toISOString(),
+  acquiredAt: lock.acquiredAt.toISOString(),
+  releasedAt: lock.releasedAt?.toISOString() ?? null,
+  createdAt: lock.createdAt.toISOString(),
+  updatedAt: lock.updatedAt.toISOString(),
+});
+
+export const toAlertRuleDto = (rule: AlertRule) => ({
+  ...rule,
+  createdAt: rule.createdAt.toISOString(),
+  updatedAt: rule.updatedAt.toISOString(),
+});
+
+export const toAlertEventDto = (event: AlertEvent) => ({
+  ...event,
+  createdAt: event.createdAt.toISOString(),
+  updatedAt: event.updatedAt.toISOString(),
+});
+
+export const toProductionOverviewDto = (overview: ProductionOverview) => ({ ...overview });

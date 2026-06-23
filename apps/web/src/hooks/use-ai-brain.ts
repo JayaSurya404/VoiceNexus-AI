@@ -62,6 +62,23 @@ export const aiBrainKeys = {
   featureFlags: (organizationId: string) => ["ai", "feature-flags", organizationId] as const,
   usageRecords: (organizationId: string) => ["ai", "usage-records", organizationId] as const,
   adminOverview: (organizationId: string) => ["ai", "admin-overview", organizationId] as const,
+  health: () => ["ai", "health"] as const,
+  liveness: () => ["ai", "liveness"] as const,
+  readiness: () => ["ai", "readiness"] as const,
+  monitoringOverview: (organizationId: string) => ["ai", "monitoring-overview", organizationId] as const,
+  productionMetrics: (organizationId: string) => ["ai", "production-metrics", organizationId] as const,
+  systemMetrics: (organizationId: string) => ["ai", "system-metrics", organizationId] as const,
+  applicationMetrics: (organizationId: string) => ["ai", "application-metrics", organizationId] as const,
+  errorEvents: (organizationId: string) => ["ai", "error-events", organizationId] as const,
+  errorIncidents: (organizationId: string) => ["ai", "error-incidents", organizationId] as const,
+  observabilityTraces: (organizationId: string) => ["ai", "observability-traces", organizationId] as const,
+  observabilityEvents: (organizationId: string) => ["ai", "observability-events", organizationId] as const,
+  alertRules: (organizationId: string) => ["ai", "alert-rules", organizationId] as const,
+  alertEvents: (organizationId: string) => ["ai", "alert-events", organizationId] as const,
+  retryPolicies: (organizationId: string) => ["ai", "retry-policies", organizationId] as const,
+  circuitBreakers: (organizationId: string) => ["ai", "circuit-breakers", organizationId] as const,
+  fallbackStrategies: (organizationId: string) => ["ai", "fallback-strategies", organizationId] as const,
+  distributedLocks: (organizationId: string) => ["ai", "distributed-locks", organizationId] as const,
   optimizationOverview: (organizationId: string) => ["ai", "optimization-overview", organizationId] as const,
   optimizationRules: (organizationId: string) => ["ai", "optimization-rules", organizationId] as const,
   optimizationEvents: (organizationId: string) => ["ai", "optimization-events", organizationId] as const,
@@ -683,6 +700,142 @@ export function useAdminOverview(organizationId: string | null) {
     queryKey: aiBrainKeys.adminOverview(organizationId ?? ""),
     queryFn: () => aiBrainApi.adminOverview(organizationId),
     refetchInterval: 30_000,
+  });
+}
+
+export function useHealthStatus() {
+  return useQuery({
+    queryKey: aiBrainKeys.health(),
+    queryFn: () => aiBrainApi.health(),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useLivenessStatus() {
+  return useQuery({
+    queryKey: aiBrainKeys.liveness(),
+    queryFn: () => aiBrainApi.liveness(),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useReadinessStatus() {
+  return useQuery({
+    queryKey: aiBrainKeys.readiness(),
+    queryFn: () => aiBrainApi.readiness(),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useMonitoringOverview(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.monitoringOverview(organizationId ?? ""),
+    queryFn: () => aiBrainApi.monitoringOverview(organizationId),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useProductionMetrics(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.productionMetrics(organizationId ?? ""),
+    queryFn: () => aiBrainApi.metrics(organizationId),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useSystemMetrics(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.systemMetrics(organizationId ?? ""),
+    queryFn: () => aiBrainApi.systemMetrics(organizationId),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useApplicationMetrics(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.applicationMetrics(organizationId ?? ""),
+    queryFn: () => aiBrainApi.applicationMetrics(organizationId),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useErrorEvents(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.errorEvents(organizationId ?? ""),
+    queryFn: () => aiBrainApi.errorEvents(organizationId),
+    refetchInterval: 20_000,
+  });
+}
+
+export function useErrorIncidents(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.errorIncidents(organizationId ?? ""),
+    queryFn: () => aiBrainApi.errorIncidents(organizationId),
+    refetchInterval: 20_000,
+  });
+}
+
+export function useObservabilityTraces(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.observabilityTraces(organizationId ?? ""),
+    queryFn: () => aiBrainApi.observabilityTraces(organizationId),
+    refetchInterval: 20_000,
+  });
+}
+
+export function useObservabilityEvents(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.observabilityEvents(organizationId ?? ""),
+    queryFn: () => aiBrainApi.observabilityEvents(organizationId),
+    refetchInterval: 20_000,
+  });
+}
+
+export function useAlertRules(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.alertRules(organizationId ?? ""),
+    queryFn: () => aiBrainApi.alertRules(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useAlertEvents(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.alertEvents(organizationId ?? ""),
+    queryFn: () => aiBrainApi.alertEvents(organizationId),
+    refetchInterval: 20_000,
+  });
+}
+
+export function useRetryPolicies(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.retryPolicies(organizationId ?? ""),
+    queryFn: () => aiBrainApi.retryPolicies(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useCircuitBreakers(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.circuitBreakers(organizationId ?? ""),
+    queryFn: () => aiBrainApi.circuitBreakers(organizationId),
+    refetchInterval: 20_000,
+  });
+}
+
+export function useFallbackStrategies(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.fallbackStrategies(organizationId ?? ""),
+    queryFn: () => aiBrainApi.fallbackStrategies(organizationId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useDistributedLocks(organizationId: string | null) {
+  return useQuery({
+    queryKey: aiBrainKeys.distributedLocks(organizationId ?? ""),
+    queryFn: () => aiBrainApi.distributedLocks(organizationId),
+    refetchInterval: 20_000,
   });
 }
 

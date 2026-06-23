@@ -545,6 +545,103 @@ export interface ReportingAnalyticsOverview {
   exportCount: number;
 }
 
+export interface HealthCheckRepository {
+  create(input: Omit<HealthCheck, "id" | "createdAt" | "updatedAt">): Promise<HealthCheck>;
+  latest(organizationId?: string | null): Promise<HealthCheck[]>;
+}
+
+export interface MetricRepository {
+  create(input: Omit<Metric, "id" | "createdAt" | "updatedAt">): Promise<Metric>;
+  list(organizationId?: string | null): Promise<Metric[]>;
+}
+
+export interface MetricSnapshotRepository {
+  create(input: Omit<MetricSnapshot, "id" | "createdAt" | "updatedAt">): Promise<MetricSnapshot>;
+  latest(category?: MetricSnapshot["category"], organizationId?: string | null): Promise<MetricSnapshot[]>;
+}
+
+export interface TraceRepository {
+  create(input: Omit<Trace, "id" | "createdAt" | "updatedAt">): Promise<Trace>;
+  list(organizationId?: string | null): Promise<Trace[]>;
+}
+
+export interface SpanRepository {
+  create(input: Omit<Span, "id" | "createdAt" | "updatedAt">): Promise<Span>;
+  listByTrace(traceId: string, organizationId?: string | null): Promise<Span[]>;
+}
+
+export interface EventLogRepository {
+  create(input: Omit<EventLog, "id" | "createdAt" | "updatedAt">): Promise<EventLog>;
+  list(organizationId?: string | null): Promise<EventLog[]>;
+}
+
+export interface ErrorEventRepository {
+  create(input: Omit<ErrorEvent, "id" | "createdAt" | "updatedAt">): Promise<ErrorEvent>;
+  list(organizationId?: string | null): Promise<ErrorEvent[]>;
+}
+
+export interface ErrorFingerprintRepository {
+  upsert(input: Omit<ErrorFingerprint, "id" | "createdAt" | "updatedAt">): Promise<ErrorFingerprint>;
+  list(organizationId?: string | null): Promise<ErrorFingerprint[]>;
+}
+
+export interface ErrorIncidentRepository {
+  upsert(input: Omit<ErrorIncident, "id" | "createdAt" | "updatedAt">): Promise<ErrorIncident>;
+  list(organizationId?: string | null): Promise<ErrorIncident[]>;
+}
+
+export interface RateLimitRuleRepository {
+  list(organizationId?: string | null): Promise<RateLimitRule[]>;
+  create(input: Omit<RateLimitRule, "id" | "createdAt" | "updatedAt">): Promise<RateLimitRule>;
+}
+
+export interface RateLimitStateRepository {
+  increment(input: Omit<RateLimitState, "id" | "count" | "createdAt" | "updatedAt">): Promise<RateLimitState>;
+}
+
+export interface RetryPolicyRepository {
+  list(organizationId?: string | null): Promise<RetryPolicy[]>;
+  upsert(input: Omit<RetryPolicy, "id" | "createdAt" | "updatedAt">): Promise<RetryPolicy>;
+}
+
+export interface CircuitBreakerRepository {
+  list(organizationId?: string | null): Promise<CircuitBreaker[]>;
+  upsert(input: Omit<CircuitBreaker, "id" | "createdAt" | "updatedAt">): Promise<CircuitBreaker>;
+}
+
+export interface FallbackStrategyRepository {
+  list(organizationId?: string | null): Promise<FallbackStrategy[]>;
+  upsert(input: Omit<FallbackStrategy, "id" | "createdAt" | "updatedAt">): Promise<FallbackStrategy>;
+}
+
+export interface DistributedLockRepository {
+  acquire(input: Omit<DistributedLock, "id" | "releasedAt" | "createdAt" | "updatedAt">): Promise<DistributedLock | null>;
+  release(lockKey: string, ownerId: string): Promise<DistributedLock | null>;
+  list(organizationId?: string | null): Promise<DistributedLock[]>;
+}
+
+export interface AlertRuleRepository {
+  list(organizationId?: string | null): Promise<AlertRule[]>;
+  create(input: Omit<AlertRule, "id" | "createdAt" | "updatedAt">): Promise<AlertRule>;
+}
+
+export interface AlertEventRepository {
+  create(input: Omit<AlertEvent, "id" | "createdAt" | "updatedAt">): Promise<AlertEvent>;
+  list(organizationId?: string | null): Promise<AlertEvent[]>;
+}
+
+export interface ProductionOverview {
+  healthStatus: "HEALTHY" | "DEGRADED" | "UNHEALTHY";
+  readinessStatus: "READY" | "NOT_READY";
+  livenessStatus: "ALIVE";
+  activeAlerts: number;
+  openIncidents: number;
+  circuitBreakersOpen: number;
+  activeLocks: number;
+  latestSystemMetrics: Record<string, number>;
+  latestApplicationMetrics: Record<string, number>;
+}
+
 export interface OrganizationRepository {
   create(input: Omit<Organization, "id" | "createdAt" | "updatedAt">): Promise<Organization>;
   findById(id: string): Promise<Organization | null>;
@@ -824,3 +921,11 @@ import type { Payment } from "../domain/entities/payment.js";
 import type { Subscription } from "../domain/entities/subscription.js";
 import type { SubscriptionPlan, SubscriptionPlanTier } from "../domain/entities/subscription-plan.js";
 import type { UsageRecord, UsageRecordMetric } from "../domain/entities/usage-record.js";
+import type { AlertEvent, AlertRule } from "../domain/entities/alert.js";
+import type { DistributedLock } from "../domain/entities/distributed-lock.js";
+import type { ErrorEvent, ErrorFingerprint, ErrorIncident } from "../domain/entities/error-event.js";
+import type { HealthCheck } from "../domain/entities/health-check.js";
+import type { Metric, MetricSnapshot } from "../domain/entities/metric.js";
+import type { CircuitBreaker, FallbackStrategy, RetryPolicy } from "../domain/entities/resilience.js";
+import type { RateLimitRule, RateLimitState } from "../domain/entities/rate-limit.js";
+import type { EventLog, Span, Trace } from "../domain/entities/trace.js";

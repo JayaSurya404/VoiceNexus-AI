@@ -13,6 +13,7 @@ import { AgentTeamService } from "./application/services/agent-team-service.js";
 import { ActionExecutionService } from "./application/services/action-execution-service.js";
 import { AnalyticsEngineService } from "./application/services/analytics-engine-service.js";
 import { AgentAllocationService } from "./application/services/agent-allocation-service.js";
+import { AlertingService } from "./application/services/alerting-service.js";
 import { AuditLogService } from "./application/services/audit-log-service.js";
 import { AuditService } from "./application/services/audit-service.js";
 import { BenchmarkService } from "./application/services/benchmark-service.js";
@@ -28,13 +29,16 @@ import { CrmActionService } from "./application/services/crm-action-service.js";
 import { ConversationAnalysisService } from "./application/services/conversation-analysis-service.js";
 import { FollowupDecisionService } from "./application/services/followup-decision-service.js";
 import { FollowupSchedulerService } from "./application/services/followup-scheduler-service.js";
+import { HealthCheckService } from "./application/services/health-check-service.js";
 import { HumanHandoffService } from "./application/services/human-handoff-service.js";
 import { HumanConsoleEventService } from "./application/services/human-console-event-service.js";
 import { DealRiskService } from "./application/services/deal-risk-service.js";
 import { ChunkingService } from "./application/services/chunking-service.js";
 import { CitationService } from "./application/services/citation-service.js";
 import { DocumentParserService } from "./application/services/document-parser-service.js";
+import { DistributedLockService } from "./application/services/distributed-lock-service.js";
 import { EmbeddingService } from "./application/services/embedding-service.js";
+import { ErrorTrackingService } from "./application/services/error-tracking-service.js";
 import { ExecutiveDashboardService } from "./application/services/executive-dashboard-service.js";
 import { ExecutiveSummaryService } from "./application/services/executive-summary-service.js";
 import { FeatureFlagService } from "./application/services/feature-flag-service.js";
@@ -52,6 +56,8 @@ import { LeadQualificationRuntime } from "./application/services/lead-qualificat
 import { LiveTakeoverService } from "./application/services/live-takeover-service.js";
 import { MemoryInjectionService } from "./application/services/memory-injection-service.js";
 import { MemoryActionService } from "./application/services/memory-action-service.js";
+import { MetricsService } from "./application/services/metrics-service.js";
+import { MonitoringService } from "./application/services/monitoring-service.js";
 import { NextBestActionService } from "./application/services/next-best-action-service.js";
 import { ObjectionCoachingService } from "./application/services/objection-coaching-service.js";
 import { ObjectionHandlerService } from "./application/services/objection-handler-service.js";
@@ -62,6 +68,7 @@ import { OptimizationEngineService } from "./application/services/optimization-e
 import { OptimizationMonitorService } from "./application/services/optimization-monitor-service.js";
 import { OptimizationRecommendationService } from "./application/services/optimization-recommendation-service.js";
 import { OptimizationRuleService } from "./application/services/optimization-rule-service.js";
+import { ObservabilityService } from "./application/services/observability-service.js";
 import { PromptEngineService } from "./application/services/prompt-engine-service.js";
 import { PaymentService } from "./application/services/payment-service.js";
 import { QualityAssuranceService } from "./application/services/quality-assurance-service.js";
@@ -72,9 +79,11 @@ import { RagRuntimeService } from "./application/services/rag-runtime-service.js
 import { ReportBuilderService } from "./application/services/report-builder-service.js";
 import { ReportExportService } from "./application/services/report-export-service.js";
 import { ReportingAnalyticsService } from "./application/services/reporting-analytics-service.js";
+import { RateLimitService } from "./application/services/rate-limit-service.js";
 import { RevenueAnalyticsService } from "./application/services/revenue-analytics-service.js";
 import { RevenueForecastService } from "./application/services/revenue-forecast-service.js";
 import { RevenueOptimizationService } from "./application/services/revenue-optimization-service.js";
+import { ResilienceService } from "./application/services/resilience-service.js";
 import { RoutingEngineService } from "./application/services/routing-engine-service.js";
 import { SalesInsightService } from "./application/services/sales-insight-service.js";
 import { ScheduledReportService } from "./application/services/scheduled-report-service.js";
@@ -201,6 +210,25 @@ import {
   MongoUsageRecordRepository,
 } from "./infrastructure/database/mongoose/repositories/governance-repositories.js";
 import {
+  MongoAlertEventRepository,
+  MongoAlertRuleRepository,
+  MongoCircuitBreakerRepository,
+  MongoDistributedLockRepository,
+  MongoErrorEventRepository,
+  MongoErrorFingerprintRepository,
+  MongoErrorIncidentRepository,
+  MongoEventLogRepository,
+  MongoFallbackStrategyRepository,
+  MongoHealthCheckRepository,
+  MongoMetricRepository,
+  MongoMetricSnapshotRepository,
+  MongoRateLimitRuleRepository,
+  MongoRateLimitStateRepository,
+  MongoRetryPolicyRepository,
+  MongoSpanRepository,
+  MongoTraceRepository,
+} from "./infrastructure/database/mongoose/repositories/observability-repositories.js";
+import {
   MongoOptimizationActionRepository,
   MongoOptimizationEventRepository,
   MongoOptimizationExperimentRepository,
@@ -299,6 +327,23 @@ export function createContainer() {
   const auditLogs = new MongoAuditLogRepository();
   const featureFlags = new MongoFeatureFlagRepository();
   const usageRecords = new MongoUsageRecordRepository();
+  const healthChecks = new MongoHealthCheckRepository();
+  const productionMetrics = new MongoMetricRepository();
+  const metricSnapshots = new MongoMetricSnapshotRepository();
+  const traces = new MongoTraceRepository();
+  const spans = new MongoSpanRepository();
+  const eventLogs = new MongoEventLogRepository();
+  const errorEvents = new MongoErrorEventRepository();
+  const errorFingerprints = new MongoErrorFingerprintRepository();
+  const errorIncidents = new MongoErrorIncidentRepository();
+  const rateLimitRules = new MongoRateLimitRuleRepository();
+  const rateLimitStates = new MongoRateLimitStateRepository();
+  const retryPolicies = new MongoRetryPolicyRepository();
+  const circuitBreakers = new MongoCircuitBreakerRepository();
+  const fallbackStrategies = new MongoFallbackStrategyRepository();
+  const distributedLocks = new MongoDistributedLockRepository();
+  const alertRules = new MongoAlertRuleRepository();
+  const alertEvents = new MongoAlertEventRepository();
   const optimizationRules = new MongoOptimizationRuleRepository();
   const optimizationEvents = new MongoOptimizationEventRepository();
   const optimizationActions = new MongoOptimizationActionRepository();
@@ -468,6 +513,15 @@ export function createContainer() {
   const featureFlag = new FeatureFlagService(featureFlags, auditLogs);
   const usageTracking = new UsageTrackingService(usageRecords, auditLogs);
   const tenantGovernance = new TenantGovernanceService(organizations, subscriptions, billingAccounts, apiKeys, usageRecords);
+  const healthCheck = new HealthCheckService(healthChecks);
+  const metrics = new MetricsService(productionMetrics, metricSnapshots);
+  const observability = new ObservabilityService(traces, spans, eventLogs);
+  const errorTracking = new ErrorTrackingService(errorEvents, errorFingerprints, errorIncidents);
+  const rateLimit = new RateLimitService(rateLimitRules, rateLimitStates);
+  const resilience = new ResilienceService(retryPolicies, circuitBreakers, fallbackStrategies);
+  const distributedLock = new DistributedLockService(distributedLocks);
+  const alerting = new AlertingService(alertRules, alertEvents);
+  const monitoring = new MonitoringService(healthCheck, metrics, errorTracking, alerting, resilience, distributedLock);
   const optimizationRule = new OptimizationRuleService(optimizationRules);
   const optimizationMonitor = new OptimizationMonitorService(optimizationMetrics, optimizationEvents, revenueAnalytics);
   const optimizationRecommendation = new OptimizationRecommendationService(optimizationRecommendations, optimizationMetrics);
@@ -626,6 +680,23 @@ export function createContainer() {
       auditLogs,
       featureFlags,
       usageRecords,
+      healthChecks,
+      productionMetrics,
+      metricSnapshots,
+      traces,
+      spans,
+      eventLogs,
+      errorEvents,
+      errorFingerprints,
+      errorIncidents,
+      rateLimitRules,
+      rateLimitStates,
+      retryPolicies,
+      circuitBreakers,
+      fallbackStrategies,
+      distributedLocks,
+      alertRules,
+      alertEvents,
       optimizationRules,
       optimizationEvents,
       optimizationActions,
@@ -649,6 +720,15 @@ export function createContainer() {
       subscription,
       tenantGovernance,
       usageTracking,
+      healthCheck,
+      metrics,
+      observability,
+      errorTracking,
+      rateLimit,
+      resilience,
+      distributedLock,
+      alerting,
+      monitoring,
       agentAllocation,
       agentAssist,
       agentCollaborationService,

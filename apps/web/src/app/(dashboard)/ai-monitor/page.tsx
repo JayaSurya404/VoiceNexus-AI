@@ -39,6 +39,7 @@ import {
 import { RuntimeMetrics } from "@/components/ai-monitor/runtime-metrics";
 import { RealtimeRuntimeMetricsPanel, RealtimeRuntimePanel } from "@/components/ai-monitor/realtime-runtime-panels";
 import { OptimizationPanels } from "@/components/ai-monitor/optimization-panels";
+import { ProductionHardeningPanels } from "@/components/ai-monitor/production-hardening-panels";
 import { ReportingIntelligencePanel } from "@/components/ai-monitor/reporting-panels";
 import { RevenueIntelligencePanel } from "@/components/ai-monitor/revenue-panels";
 import { StateAndQualification } from "@/components/ai-monitor/state-and-qualification";
@@ -72,11 +73,15 @@ import {
   useCallOutcomes,
   useAgentRecommendations,
   useAdminOverview,
+  useAlertEvents,
+  useAlertRules,
   useApiKeys,
+  useApplicationMetrics,
   useAuditLogs,
   useBillingInvoices,
   useBillingOverview,
   useBillingPayments,
+  useCircuitBreakers,
   useCollaborations,
   useCollaborativeAgentTasks,
   useCoachingInsights,
@@ -84,12 +89,17 @@ import {
   useCoachingSessions,
   useComplianceAlerts,
   useConversionAnalytics,
+  useDistributedLocks,
+  useErrorEvents,
+  useErrorIncidents,
+  useFallbackStrategies,
   useFollowups,
   useConversationState,
   useConversationAnalytics,
   useConversationScorecards,
   useHumanAgents,
   useHumanConsoleActions,
+  useHealthStatus,
   useKnowledgeCitations,
   useKnowledgeDocuments,
   useKnowledgeGaps,
@@ -99,7 +109,11 @@ import {
   useKnowledgeSuggestions,
   useKnowledgeActions,
   useLiveTakeovers,
+  useLivenessStatus,
+  useMonitoringOverview,
   useNextBestActions,
+  useObservabilityEvents,
+  useObservabilityTraces,
   useOrganizations,
   useOptimizationActions,
   useOptimizationEvents,
@@ -111,6 +125,7 @@ import {
   useOptimizationResults,
   useOptimizationRules,
   useFeatureFlags,
+  useProductionMetrics,
   useQueueHealth,
   useQueueAnalytics,
   useQueueSessions,
@@ -124,8 +139,11 @@ import {
   useRevenueRisks,
   useRevenueUpsell,
   useRevenueWinLoss,
+  useReadinessStatus,
+  useRetryPolicies,
   useSubscriptionPlans,
   useSubscriptions,
+  useSystemMetrics,
   useReportingBenchmarks,
   useReportingDashboard,
   useReportingExports,
@@ -201,6 +219,23 @@ export default function AiMonitorPage() {
   const featureFlagsQuery = useFeatureFlags(activeOrganizationId);
   const usageRecordsQuery = useUsageRecords(activeOrganizationId);
   const adminOverviewQuery = useAdminOverview(activeOrganizationId);
+  const healthStatusQuery = useHealthStatus();
+  const livenessStatusQuery = useLivenessStatus();
+  const readinessStatusQuery = useReadinessStatus();
+  const monitoringOverviewQuery = useMonitoringOverview(activeOrganizationId);
+  const productionMetricsQuery = useProductionMetrics(activeOrganizationId);
+  const systemMetricsQuery = useSystemMetrics(activeOrganizationId);
+  const applicationMetricsQuery = useApplicationMetrics(activeOrganizationId);
+  const errorEventsQuery = useErrorEvents(activeOrganizationId);
+  const errorIncidentsQuery = useErrorIncidents(activeOrganizationId);
+  const observabilityTracesQuery = useObservabilityTraces(activeOrganizationId);
+  const observabilityEventsQuery = useObservabilityEvents(activeOrganizationId);
+  const alertRulesQuery = useAlertRules(activeOrganizationId);
+  const alertEventsQuery = useAlertEvents(activeOrganizationId);
+  const retryPoliciesQuery = useRetryPolicies(activeOrganizationId);
+  const circuitBreakersQuery = useCircuitBreakers(activeOrganizationId);
+  const fallbackStrategiesQuery = useFallbackStrategies(activeOrganizationId);
+  const distributedLocksQuery = useDistributedLocks(activeOrganizationId);
   const optimizationOverviewQuery = useOptimizationOverview(activeOrganizationId);
   const optimizationRulesQuery = useOptimizationRules(activeOrganizationId);
   const optimizationEventsQuery = useOptimizationEvents(activeOrganizationId);
@@ -392,6 +427,25 @@ export default function AiMonitorPage() {
         plans={subscriptionPlansQuery.data ?? []}
         subscriptions={subscriptionsQuery.data ?? []}
         usage={usageRecordsQuery.data ?? []}
+      />
+      <ProductionHardeningPanels
+        alertEvents={alertEventsQuery.data ?? []}
+        alertRules={alertRulesQuery.data ?? []}
+        applicationMetrics={applicationMetricsQuery.data}
+        circuitBreakers={circuitBreakersQuery.data ?? []}
+        distributedLocks={distributedLocksQuery.data ?? []}
+        errorEvents={errorEventsQuery.data ?? []}
+        errorIncidents={errorIncidentsQuery.data ?? []}
+        fallbackStrategies={fallbackStrategiesQuery.data ?? []}
+        health={healthStatusQuery.data}
+        liveness={livenessStatusQuery.data}
+        metrics={productionMetricsQuery.data ?? []}
+        monitoring={monitoringOverviewQuery.data}
+        observabilityEvents={observabilityEventsQuery.data ?? []}
+        readiness={readinessStatusQuery.data}
+        retryPolicies={retryPoliciesQuery.data ?? []}
+        systemMetrics={systemMetricsQuery.data}
+        traces={observabilityTracesQuery.data ?? []}
       />
       <OptimizationPanels
         actions={optimizationActionsQuery.data ?? []}
