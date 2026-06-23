@@ -74,6 +74,20 @@ import {
   toReadinessStatusDto,
   toRetryPolicyDto,
   toTraceDto,
+  toBackupJobDto,
+  toBackupSnapshotDto,
+  toConfigurationIssueDto,
+  toDeploymentEnvironmentDto,
+  toDeploymentEventDto,
+  toDeploymentReadinessOverviewDto,
+  toDisasterRecoveryPlanDto,
+  toEnvironmentValidationDto,
+  toLaunchStatusDto,
+  toRecoveryPlanDto,
+  toReleaseChecklistDto,
+  toReleaseReadinessDto,
+  toSecurityFindingDto,
+  toStartupCheckDto,
   toExecutiveDashboardDto,
   toExecutiveSummaryDto,
   toGeneratedReportDto,
@@ -814,6 +828,103 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       const organizationId = url.searchParams.get("organizationId");
       if (organizationId) await authorize(container, token, organizationId);
       sendJson(response, 200, { data: (await container.services.distributedLock.list(organizationId)).map(toDistributedLockDto) });
+      return;
+    }
+
+    if (url.pathname === "/deployment/environments" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.deploymentCatalog.environmentsList(organizationId)).map(toDeploymentEnvironmentDto) });
+      return;
+    }
+
+    if (url.pathname === "/deployment/validation" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.environmentValidation.validate(organizationId)).map(toEnvironmentValidationDto) });
+      return;
+    }
+
+    if (url.pathname === "/deployment/startup" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.startupValidation.run(organizationId)).map(toStartupCheckDto) });
+      return;
+    }
+
+    if (url.pathname === "/deployment/configuration" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      const created = await container.services.configurationManagement.evaluate(organizationId);
+      const existing = await container.services.configurationManagement.list(organizationId);
+      sendJson(response, 200, { data: [...created, ...existing].map(toConfigurationIssueDto) });
+      return;
+    }
+
+    if (url.pathname === "/security/review" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      const created = await container.services.securityReview.review(organizationId);
+      const existing = await container.services.securityReview.list(organizationId);
+      sendJson(response, 200, { data: [...created, ...existing].map(toSecurityFindingDto) });
+      return;
+    }
+
+    if (url.pathname === "/backup/jobs" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.backupManagement.jobsList(organizationId)).map(toBackupJobDto) });
+      return;
+    }
+
+    if (url.pathname === "/backup/snapshots" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.backupManagement.snapshotsList(organizationId)).map(toBackupSnapshotDto) });
+      return;
+    }
+
+    if (url.pathname === "/recovery/plans" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.recoveryPlanning.list(organizationId)).map(toRecoveryPlanDto) });
+      return;
+    }
+
+    if (url.pathname === "/recovery/status" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.disasterRecovery.list(organizationId)).map(toDisasterRecoveryPlanDto) });
+      return;
+    }
+
+    if (url.pathname === "/release/checklist" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.releaseChecklist.list(organizationId)).map(toReleaseChecklistDto) });
+      return;
+    }
+
+    if (url.pathname === "/release/readiness" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      const readiness = await container.services.releaseReadiness.evaluate(organizationId);
+      const overview = await container.services.releaseReadiness.overview(organizationId);
+      sendJson(response, 200, { data: { readiness: toReleaseReadinessDto(readiness), overview: toDeploymentReadinessOverviewDto(overview) } });
+      return;
+    }
+
+    if (url.pathname === "/deployment/events" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.deploymentEvent.list(organizationId)).map(toDeploymentEventDto) });
+      return;
+    }
+
+    if (url.pathname === "/launch/status" && request.method === "GET") {
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: toLaunchStatusDto(await container.services.launchStatus.get(organizationId)) });
       return;
     }
 

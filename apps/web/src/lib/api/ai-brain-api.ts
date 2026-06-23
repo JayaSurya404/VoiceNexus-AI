@@ -1409,6 +1409,32 @@ export const aiBrainApi = {
     request<FallbackStrategyDto[]>(`/resilience/fallbacks?${query({ organizationId: organizationId ?? undefined })}`),
   distributedLocks: (organizationId?: string | null) =>
     request<DistributedLockDto[]>(`/locks?${query({ organizationId: organizationId ?? undefined })}`),
+  deploymentEnvironments: (organizationId?: string | null) =>
+    request<DeploymentEnvironmentDto[]>(`/deployment/environments?${query({ organizationId: organizationId ?? undefined })}`),
+  deploymentValidation: (organizationId?: string | null) =>
+    request<EnvironmentValidationDto[]>(`/deployment/validation?${query({ organizationId: organizationId ?? undefined })}`),
+  deploymentStartup: (organizationId?: string | null) =>
+    request<StartupCheckDto[]>(`/deployment/startup?${query({ organizationId: organizationId ?? undefined })}`),
+  deploymentConfiguration: (organizationId?: string | null) =>
+    request<ConfigurationIssueDto[]>(`/deployment/configuration?${query({ organizationId: organizationId ?? undefined })}`),
+  securityReview: (organizationId?: string | null) =>
+    request<SecurityFindingDto[]>(`/security/review?${query({ organizationId: organizationId ?? undefined })}`),
+  backupJobs: (organizationId?: string | null) =>
+    request<BackupJobDto[]>(`/backup/jobs?${query({ organizationId: organizationId ?? undefined })}`),
+  backupSnapshots: (organizationId?: string | null) =>
+    request<BackupSnapshotDto[]>(`/backup/snapshots?${query({ organizationId: organizationId ?? undefined })}`),
+  recoveryPlans: (organizationId?: string | null) =>
+    request<RecoveryPlanDto[]>(`/recovery/plans?${query({ organizationId: organizationId ?? undefined })}`),
+  recoveryStatus: (organizationId?: string | null) =>
+    request<DisasterRecoveryPlanDto[]>(`/recovery/status?${query({ organizationId: organizationId ?? undefined })}`),
+  releaseChecklist: (organizationId?: string | null) =>
+    request<ReleaseChecklistDto[]>(`/release/checklist?${query({ organizationId: organizationId ?? undefined })}`),
+  releaseReadiness: (organizationId?: string | null) =>
+    request<{ readiness: ReleaseReadinessDto; overview: DeploymentReadinessOverviewDto }>(`/release/readiness?${query({ organizationId: organizationId ?? undefined })}`),
+  deploymentEvents: (organizationId?: string | null) =>
+    request<DeploymentEventDto[]>(`/deployment/events?${query({ organizationId: organizationId ?? undefined })}`),
+  launchStatus: (organizationId?: string | null) =>
+    request<LaunchStatusDto>(`/launch/status?${query({ organizationId: organizationId ?? undefined })}`),
   optimizationOverview: (organizationId: string) =>
     request<OptimizationOverviewDto>(`/optimization/overview?${query({ organizationId })}`),
   optimizationRules: (organizationId: string) =>
@@ -1939,4 +1965,190 @@ export interface ProductionOverviewDto {
   activeLocks: number;
   latestSystemMetrics: Record<string, number>;
   latestApplicationMetrics: Record<string, number>;
+}
+
+export interface DeploymentEnvironmentDto {
+  id: string;
+  organizationId: string | null;
+  name: string;
+  type: "DEVELOPMENT" | "STAGING" | "PRODUCTION";
+  region: string;
+  active: boolean;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EnvironmentValidationDto {
+  id: string;
+  organizationId: string | null;
+  environmentId: string | null;
+  key: string;
+  valid: boolean;
+  severity: ErrorEventDto["severity"];
+  message: string;
+  checkedAt: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StartupCheckDto {
+  id: string;
+  organizationId: string | null;
+  service: "AI_BRAIN" | "REALTIME_GATEWAY" | "AUTOMATION_WORKER" | "WEB" | "API";
+  status: "PASS" | "WARN" | "FAIL";
+  latencyMs: number;
+  message: string;
+  checkedAt: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConfigurationIssueDto {
+  id: string;
+  organizationId: string | null;
+  key: string;
+  issueType: "MISSING" | "INVALID" | "UNSAFE" | "DEPRECATED";
+  severity: ErrorEventDto["severity"];
+  message: string;
+  resolved: boolean;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SecurityFindingDto {
+  id: string;
+  organizationId: string | null;
+  category: "SECRET" | "AUTH" | "NETWORK" | "WEBHOOK" | "CONFIGURATION";
+  severity: ErrorEventDto["severity"];
+  title: string;
+  description: string;
+  resolved: boolean;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BackupJobDto {
+  id: string;
+  organizationId: string | null;
+  name: string;
+  schedule: string;
+  target: "MONGODB" | "REDIS" | "FILES";
+  enabled: boolean;
+  lastRunAt: string | null;
+  nextRunAt: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BackupSnapshotDto {
+  id: string;
+  organizationId: string | null;
+  jobId: string | null;
+  target: BackupJobDto["target"];
+  status: "PENDING" | "COMPLETED" | "FAILED";
+  sizeBytes: number;
+  location: string | null;
+  capturedAt: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecoveryPlanDto {
+  id: string;
+  organizationId: string | null;
+  name: string;
+  objective: string;
+  rtoMinutes: number;
+  rpoMinutes: number;
+  status: "DRAFT" | "READY" | "TESTING" | "FAILED";
+  steps: string[];
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DisasterRecoveryPlanDto {
+  id: string;
+  organizationId: string | null;
+  name: string;
+  failoverRegion: string;
+  failoverReady: boolean;
+  recoveryReady: boolean;
+  continuityStatus: "READY" | "PARTIAL" | "NOT_READY";
+  lastTestedAt: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReleaseChecklistDto {
+  id: string;
+  organizationId: string | null;
+  name: string;
+  required: boolean;
+  completed: boolean;
+  owner: string | null;
+  dueAt: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReleaseReadinessDto {
+  id: string;
+  organizationId: string | null;
+  readinessScore: number;
+  status: "READY" | "BLOCKED" | "AT_RISK";
+  blockers: string[];
+  recommendation: "GO" | "NO_GO" | "GO_WITH_CAUTION";
+  evaluatedAt: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DeploymentReadinessOverviewDto {
+  readinessScore: number;
+  recommendation: ReleaseReadinessDto["recommendation"];
+  blockerCount: number;
+  validationFailureCount: number;
+  securityFindingCount: number;
+  pendingChecklistCount: number;
+  backupReady: boolean;
+  recoveryReady: boolean;
+  launchState: "PLANNING" | "VALIDATING" | "READY" | "LAUNCHED" | "PAUSED" | "BLOCKED";
+}
+
+export interface DeploymentEventDto {
+  id: string;
+  organizationId: string | null;
+  environmentId: string | null;
+  eventType: "DEPLOYMENT" | "ROLLBACK" | "STARTUP_FAILURE" | "INCIDENT";
+  service: StartupCheckDto["service"];
+  status: "PENDING" | "IN_PROGRESS" | "SUCCEEDED" | "FAILED" | "ROLLED_BACK";
+  message: string;
+  occurredAt: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LaunchStatusDto {
+  id: string;
+  organizationId: string | null;
+  state: DeploymentReadinessOverviewDto["launchState"];
+  goNoGo: "GO" | "NO_GO" | "PENDING";
+  finalReadinessScore: number;
+  message: string;
+  updatedBy: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
 }

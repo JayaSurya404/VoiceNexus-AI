@@ -79,6 +79,19 @@ export const aiBrainKeys = {
   circuitBreakers: (organizationId: string) => ["ai", "circuit-breakers", organizationId] as const,
   fallbackStrategies: (organizationId: string) => ["ai", "fallback-strategies", organizationId] as const,
   distributedLocks: (organizationId: string) => ["ai", "distributed-locks", organizationId] as const,
+  deploymentEnvironments: (organizationId: string) => ["ai", "deployment-environments", organizationId] as const,
+  deploymentValidation: (organizationId: string) => ["ai", "deployment-validation", organizationId] as const,
+  deploymentStartup: (organizationId: string) => ["ai", "deployment-startup", organizationId] as const,
+  deploymentConfiguration: (organizationId: string) => ["ai", "deployment-configuration", organizationId] as const,
+  securityReview: (organizationId: string) => ["ai", "security-review", organizationId] as const,
+  backupJobs: (organizationId: string) => ["ai", "backup-jobs", organizationId] as const,
+  backupSnapshots: (organizationId: string) => ["ai", "backup-snapshots", organizationId] as const,
+  recoveryPlans: (organizationId: string) => ["ai", "recovery-plans", organizationId] as const,
+  recoveryStatus: (organizationId: string) => ["ai", "recovery-status", organizationId] as const,
+  releaseChecklist: (organizationId: string) => ["ai", "release-checklist", organizationId] as const,
+  releaseReadiness: (organizationId: string) => ["ai", "release-readiness", organizationId] as const,
+  deploymentEvents: (organizationId: string) => ["ai", "deployment-events", organizationId] as const,
+  launchStatus: (organizationId: string) => ["ai", "launch-status", organizationId] as const,
   optimizationOverview: (organizationId: string) => ["ai", "optimization-overview", organizationId] as const,
   optimizationRules: (organizationId: string) => ["ai", "optimization-rules", organizationId] as const,
   optimizationEvents: (organizationId: string) => ["ai", "optimization-events", organizationId] as const,
@@ -837,6 +850,58 @@ export function useDistributedLocks(organizationId: string | null) {
     queryFn: () => aiBrainApi.distributedLocks(organizationId),
     refetchInterval: 20_000,
   });
+}
+
+export function useDeploymentEnvironments(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.deploymentEnvironments(organizationId ?? ""), queryFn: () => aiBrainApi.deploymentEnvironments(organizationId), refetchInterval: 60_000 });
+}
+
+export function useDeploymentValidation(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.deploymentValidation(organizationId ?? ""), queryFn: () => aiBrainApi.deploymentValidation(organizationId), refetchInterval: 60_000 });
+}
+
+export function useDeploymentStartup(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.deploymentStartup(organizationId ?? ""), queryFn: () => aiBrainApi.deploymentStartup(organizationId), refetchInterval: 60_000 });
+}
+
+export function useDeploymentConfiguration(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.deploymentConfiguration(organizationId ?? ""), queryFn: () => aiBrainApi.deploymentConfiguration(organizationId), refetchInterval: 60_000 });
+}
+
+export function useSecurityReview(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.securityReview(organizationId ?? ""), queryFn: () => aiBrainApi.securityReview(organizationId), refetchInterval: 60_000 });
+}
+
+export function useBackupJobs(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.backupJobs(organizationId ?? ""), queryFn: () => aiBrainApi.backupJobs(organizationId), refetchInterval: 60_000 });
+}
+
+export function useBackupSnapshots(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.backupSnapshots(organizationId ?? ""), queryFn: () => aiBrainApi.backupSnapshots(organizationId), refetchInterval: 60_000 });
+}
+
+export function useRecoveryPlans(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.recoveryPlans(organizationId ?? ""), queryFn: () => aiBrainApi.recoveryPlans(organizationId), refetchInterval: 60_000 });
+}
+
+export function useRecoveryStatus(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.recoveryStatus(organizationId ?? ""), queryFn: () => aiBrainApi.recoveryStatus(organizationId), refetchInterval: 60_000 });
+}
+
+export function useReleaseChecklist(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.releaseChecklist(organizationId ?? ""), queryFn: () => aiBrainApi.releaseChecklist(organizationId), refetchInterval: 60_000 });
+}
+
+export function useReleaseReadiness(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.releaseReadiness(organizationId ?? ""), queryFn: () => aiBrainApi.releaseReadiness(organizationId), refetchInterval: 60_000 });
+}
+
+export function useDeploymentEvents(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.deploymentEvents(organizationId ?? ""), queryFn: () => aiBrainApi.deploymentEvents(organizationId), refetchInterval: 60_000 });
+}
+
+export function useLaunchStatus(organizationId: string | null) {
+  return useQuery({ queryKey: aiBrainKeys.launchStatus(organizationId ?? ""), queryFn: () => aiBrainApi.launchStatus(organizationId), refetchInterval: 60_000 });
 }
 
 export function useKnowledgeDocuments(organizationId: string | null) {

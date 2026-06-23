@@ -92,6 +92,23 @@ import type { CircuitBreaker, FallbackStrategy, RetryPolicy } from "../domain/en
 import type { EventLog, Span, Trace } from "../domain/entities/trace.js";
 import type { HealthStatus, LivenessStatus, ReadinessStatus } from "../application/services/health-check-service.js";
 import type { ProductionOverview } from "../application/ports.js";
+import type {
+  BackupJob,
+  BackupSnapshot,
+  ConfigurationIssue,
+  DeploymentEnvironment,
+  DeploymentEvent,
+  DeploymentTarget,
+  DisasterRecoveryPlan,
+  EnvironmentValidation,
+  LaunchStatus,
+  RecoveryPlan,
+  ReleaseChecklist,
+  ReleaseReadiness,
+  SecurityFinding,
+  StartupCheck,
+} from "../domain/entities/deployment-readiness.js";
+import type { DeploymentReadinessOverview } from "../application/ports.js";
 
 export const toConversationDto = (value: AIConversation) => ({ ...value, startedAt: iso(value.startedAt), endedAt: maybeIso(value.endedAt), createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 export const toMessageDto = (value: AIMessage) => ({ ...value, timestamp: iso(value.timestamp) });
@@ -673,3 +690,60 @@ export const toAlertEventDto = (event: AlertEvent) => ({
 });
 
 export const toProductionOverviewDto = (overview: ProductionOverview) => ({ ...overview });
+
+export const toDeploymentEnvironmentDto = (value: DeploymentEnvironment) => ({ ...value, createdAt: value.createdAt.toISOString(), updatedAt: value.updatedAt.toISOString() });
+export const toDeploymentTargetDto = (value: DeploymentTarget) => ({ ...value, createdAt: value.createdAt.toISOString(), updatedAt: value.updatedAt.toISOString() });
+export const toEnvironmentValidationDto = (value: EnvironmentValidation) => ({
+  ...value,
+  checkedAt: value.checkedAt.toISOString(),
+  createdAt: value.createdAt.toISOString(),
+  updatedAt: value.updatedAt.toISOString(),
+});
+export const toStartupCheckDto = (value: StartupCheck) => ({
+  ...value,
+  checkedAt: value.checkedAt.toISOString(),
+  createdAt: value.createdAt.toISOString(),
+  updatedAt: value.updatedAt.toISOString(),
+});
+export const toConfigurationIssueDto = (value: ConfigurationIssue) => ({ ...value, createdAt: value.createdAt.toISOString(), updatedAt: value.updatedAt.toISOString() });
+export const toSecurityFindingDto = (value: SecurityFinding) => ({ ...value, createdAt: value.createdAt.toISOString(), updatedAt: value.updatedAt.toISOString() });
+export const toBackupJobDto = (value: BackupJob) => ({
+  ...value,
+  lastRunAt: value.lastRunAt?.toISOString() ?? null,
+  nextRunAt: value.nextRunAt?.toISOString() ?? null,
+  createdAt: value.createdAt.toISOString(),
+  updatedAt: value.updatedAt.toISOString(),
+});
+export const toBackupSnapshotDto = (value: BackupSnapshot) => ({
+  ...value,
+  capturedAt: value.capturedAt.toISOString(),
+  createdAt: value.createdAt.toISOString(),
+  updatedAt: value.updatedAt.toISOString(),
+});
+export const toRecoveryPlanDto = (value: RecoveryPlan) => ({ ...value, createdAt: value.createdAt.toISOString(), updatedAt: value.updatedAt.toISOString() });
+export const toDisasterRecoveryPlanDto = (value: DisasterRecoveryPlan) => ({
+  ...value,
+  lastTestedAt: value.lastTestedAt?.toISOString() ?? null,
+  createdAt: value.createdAt.toISOString(),
+  updatedAt: value.updatedAt.toISOString(),
+});
+export const toReleaseChecklistDto = (value: ReleaseChecklist) => ({
+  ...value,
+  dueAt: value.dueAt?.toISOString() ?? null,
+  createdAt: value.createdAt.toISOString(),
+  updatedAt: value.updatedAt.toISOString(),
+});
+export const toReleaseReadinessDto = (value: ReleaseReadiness) => ({
+  ...value,
+  evaluatedAt: value.evaluatedAt.toISOString(),
+  createdAt: value.createdAt.toISOString(),
+  updatedAt: value.updatedAt.toISOString(),
+});
+export const toDeploymentEventDto = (value: DeploymentEvent) => ({
+  ...value,
+  occurredAt: value.occurredAt.toISOString(),
+  createdAt: value.createdAt.toISOString(),
+  updatedAt: value.updatedAt.toISOString(),
+});
+export const toLaunchStatusDto = (value: LaunchStatus) => ({ ...value, createdAt: value.createdAt.toISOString(), updatedAt: value.updatedAt.toISOString() });
+export const toDeploymentReadinessOverviewDto = (value: DeploymentReadinessOverview) => ({ ...value });

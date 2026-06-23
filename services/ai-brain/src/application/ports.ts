@@ -545,6 +545,88 @@ export interface ReportingAnalyticsOverview {
   exportCount: number;
 }
 
+export interface DeploymentEnvironmentRepository {
+  create(input: Omit<DeploymentEnvironment, "id" | "createdAt" | "updatedAt">): Promise<DeploymentEnvironment>;
+  list(organizationId?: string | null): Promise<DeploymentEnvironment[]>;
+}
+
+export interface DeploymentTargetRepository {
+  create(input: Omit<DeploymentTarget, "id" | "createdAt" | "updatedAt">): Promise<DeploymentTarget>;
+  list(organizationId?: string | null): Promise<DeploymentTarget[]>;
+}
+
+export interface EnvironmentValidationRepository {
+  create(input: Omit<EnvironmentValidation, "id" | "createdAt" | "updatedAt">): Promise<EnvironmentValidation>;
+  list(organizationId?: string | null): Promise<EnvironmentValidation[]>;
+}
+
+export interface StartupCheckRepository {
+  create(input: Omit<StartupCheck, "id" | "createdAt" | "updatedAt">): Promise<StartupCheck>;
+  list(organizationId?: string | null): Promise<StartupCheck[]>;
+}
+
+export interface ConfigurationIssueRepository {
+  create(input: Omit<ConfigurationIssue, "id" | "createdAt" | "updatedAt">): Promise<ConfigurationIssue>;
+  list(organizationId?: string | null): Promise<ConfigurationIssue[]>;
+}
+
+export interface SecurityFindingRepository {
+  create(input: Omit<SecurityFinding, "id" | "createdAt" | "updatedAt">): Promise<SecurityFinding>;
+  list(organizationId?: string | null): Promise<SecurityFinding[]>;
+}
+
+export interface BackupJobRepository {
+  create(input: Omit<BackupJob, "id" | "createdAt" | "updatedAt">): Promise<BackupJob>;
+  list(organizationId?: string | null): Promise<BackupJob[]>;
+}
+
+export interface BackupSnapshotRepository {
+  create(input: Omit<BackupSnapshot, "id" | "createdAt" | "updatedAt">): Promise<BackupSnapshot>;
+  list(organizationId?: string | null): Promise<BackupSnapshot[]>;
+}
+
+export interface RecoveryPlanRepository {
+  create(input: Omit<RecoveryPlan, "id" | "createdAt" | "updatedAt">): Promise<RecoveryPlan>;
+  list(organizationId?: string | null): Promise<RecoveryPlan[]>;
+}
+
+export interface DisasterRecoveryPlanRepository {
+  create(input: Omit<DisasterRecoveryPlan, "id" | "createdAt" | "updatedAt">): Promise<DisasterRecoveryPlan>;
+  list(organizationId?: string | null): Promise<DisasterRecoveryPlan[]>;
+}
+
+export interface ReleaseChecklistRepository {
+  create(input: Omit<ReleaseChecklist, "id" | "createdAt" | "updatedAt">): Promise<ReleaseChecklist>;
+  list(organizationId?: string | null): Promise<ReleaseChecklist[]>;
+}
+
+export interface ReleaseReadinessRepository {
+  create(input: Omit<ReleaseReadiness, "id" | "createdAt" | "updatedAt">): Promise<ReleaseReadiness>;
+  latest(organizationId?: string | null): Promise<ReleaseReadiness | null>;
+}
+
+export interface DeploymentEventRepository {
+  create(input: Omit<DeploymentEvent, "id" | "createdAt" | "updatedAt">): Promise<DeploymentEvent>;
+  list(organizationId?: string | null): Promise<DeploymentEvent[]>;
+}
+
+export interface LaunchStatusRepository {
+  upsert(input: Omit<LaunchStatus, "id" | "createdAt" | "updatedAt">): Promise<LaunchStatus>;
+  latest(organizationId?: string | null): Promise<LaunchStatus | null>;
+}
+
+export interface DeploymentReadinessOverview {
+  readinessScore: number;
+  recommendation: "GO" | "NO_GO" | "GO_WITH_CAUTION";
+  blockerCount: number;
+  validationFailureCount: number;
+  securityFindingCount: number;
+  pendingChecklistCount: number;
+  backupReady: boolean;
+  recoveryReady: boolean;
+  launchState: LaunchStatus["state"];
+}
+
 export interface HealthCheckRepository {
   create(input: Omit<HealthCheck, "id" | "createdAt" | "updatedAt">): Promise<HealthCheck>;
   latest(organizationId?: string | null): Promise<HealthCheck[]>;
@@ -929,3 +1011,19 @@ import type { Metric, MetricSnapshot } from "../domain/entities/metric.js";
 import type { CircuitBreaker, FallbackStrategy, RetryPolicy } from "../domain/entities/resilience.js";
 import type { RateLimitRule, RateLimitState } from "../domain/entities/rate-limit.js";
 import type { EventLog, Span, Trace } from "../domain/entities/trace.js";
+import type {
+  BackupJob,
+  BackupSnapshot,
+  ConfigurationIssue,
+  DeploymentEnvironment,
+  DeploymentEvent,
+  DeploymentTarget,
+  DisasterRecoveryPlan,
+  EnvironmentValidation,
+  LaunchStatus,
+  RecoveryPlan,
+  ReleaseChecklist,
+  ReleaseReadiness,
+  SecurityFinding,
+  StartupCheck,
+} from "../domain/entities/deployment-readiness.js";

@@ -16,6 +16,7 @@ import { CoachingMonitorPanel } from "@/components/ai-monitor/coaching-panels";
 import { CollaborationMonitorPanel } from "@/components/ai-monitor/collaboration-panels";
 import { ConversationFeed } from "@/components/ai-monitor/conversation-feed";
 import { DecisionTimeline } from "@/components/ai-monitor/decision-timeline";
+import { DeploymentReadinessPanels } from "@/components/ai-monitor/deployment-readiness-panels";
 import { GovernancePanels } from "@/components/ai-monitor/governance-panels";
 import {
   KnowledgeGapDashboard,
@@ -90,6 +91,13 @@ import {
   useComplianceAlerts,
   useConversionAnalytics,
   useDistributedLocks,
+  useBackupJobs,
+  useBackupSnapshots,
+  useDeploymentEnvironments,
+  useDeploymentEvents,
+  useDeploymentConfiguration,
+  useDeploymentStartup,
+  useDeploymentValidation,
   useErrorEvents,
   useErrorIncidents,
   useFallbackStrategies,
@@ -140,10 +148,16 @@ import {
   useRevenueUpsell,
   useRevenueWinLoss,
   useReadinessStatus,
+  useRecoveryPlans,
+  useRecoveryStatus,
+  useReleaseChecklist,
+  useReleaseReadiness,
   useRetryPolicies,
+  useSecurityReview,
   useSubscriptionPlans,
   useSubscriptions,
   useSystemMetrics,
+  useLaunchStatus,
   useReportingBenchmarks,
   useReportingDashboard,
   useReportingExports,
@@ -236,6 +250,19 @@ export default function AiMonitorPage() {
   const circuitBreakersQuery = useCircuitBreakers(activeOrganizationId);
   const fallbackStrategiesQuery = useFallbackStrategies(activeOrganizationId);
   const distributedLocksQuery = useDistributedLocks(activeOrganizationId);
+  const deploymentEnvironmentsQuery = useDeploymentEnvironments(activeOrganizationId);
+  const deploymentValidationQuery = useDeploymentValidation(activeOrganizationId);
+  const deploymentStartupQuery = useDeploymentStartup(activeOrganizationId);
+  const deploymentConfigurationQuery = useDeploymentConfiguration(activeOrganizationId);
+  const securityReviewQuery = useSecurityReview(activeOrganizationId);
+  const backupJobsQuery = useBackupJobs(activeOrganizationId);
+  const backupSnapshotsQuery = useBackupSnapshots(activeOrganizationId);
+  const recoveryPlansQuery = useRecoveryPlans(activeOrganizationId);
+  const recoveryStatusQuery = useRecoveryStatus(activeOrganizationId);
+  const releaseChecklistQuery = useReleaseChecklist(activeOrganizationId);
+  const releaseReadinessQuery = useReleaseReadiness(activeOrganizationId);
+  const deploymentEventsQuery = useDeploymentEvents(activeOrganizationId);
+  const launchStatusQuery = useLaunchStatus(activeOrganizationId);
   const optimizationOverviewQuery = useOptimizationOverview(activeOrganizationId);
   const optimizationRulesQuery = useOptimizationRules(activeOrganizationId);
   const optimizationEventsQuery = useOptimizationEvents(activeOrganizationId);
@@ -446,6 +473,21 @@ export default function AiMonitorPage() {
         retryPolicies={retryPoliciesQuery.data ?? []}
         systemMetrics={systemMetricsQuery.data}
         traces={observabilityTracesQuery.data ?? []}
+      />
+      <DeploymentReadinessPanels
+        backups={backupJobsQuery.data ?? []}
+        configuration={deploymentConfigurationQuery.data ?? []}
+        deploymentEvents={deploymentEventsQuery.data ?? []}
+        disasterRecovery={recoveryStatusQuery.data ?? []}
+        environments={deploymentEnvironmentsQuery.data ?? []}
+        launch={launchStatusQuery.data}
+        readiness={releaseReadinessQuery.data}
+        recoveryPlans={recoveryPlansQuery.data ?? []}
+        releaseChecklist={releaseChecklistQuery.data ?? []}
+        securityFindings={securityReviewQuery.data ?? []}
+        snapshots={backupSnapshotsQuery.data ?? []}
+        startupChecks={deploymentStartupQuery.data ?? []}
+        validations={deploymentValidationQuery.data ?? []}
       />
       <OptimizationPanels
         actions={optimizationActionsQuery.data ?? []}

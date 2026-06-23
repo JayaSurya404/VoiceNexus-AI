@@ -33,6 +33,20 @@ import { HealthCheckService } from "./application/services/health-check-service.
 import { HumanHandoffService } from "./application/services/human-handoff-service.js";
 import { HumanConsoleEventService } from "./application/services/human-console-event-service.js";
 import { DealRiskService } from "./application/services/deal-risk-service.js";
+import {
+  BackupManagementService,
+  ConfigurationManagementService,
+  DeploymentCatalogService,
+  DeploymentEventService,
+  DisasterRecoveryService,
+  EnvironmentValidationService,
+  LaunchStatusService,
+  RecoveryPlanningService,
+  ReleaseChecklistService,
+  ReleaseReadinessService,
+  SecurityReviewService,
+  StartupValidationService,
+} from "./application/services/deployment-readiness-services.js";
 import { ChunkingService } from "./application/services/chunking-service.js";
 import { CitationService } from "./application/services/citation-service.js";
 import { DocumentParserService } from "./application/services/document-parser-service.js";
@@ -229,6 +243,22 @@ import {
   MongoTraceRepository,
 } from "./infrastructure/database/mongoose/repositories/observability-repositories.js";
 import {
+  MongoBackupJobRepository,
+  MongoBackupSnapshotRepository,
+  MongoConfigurationIssueRepository,
+  MongoDeploymentEnvironmentRepository,
+  MongoDeploymentEventRepository,
+  MongoDeploymentTargetRepository,
+  MongoDisasterRecoveryPlanRepository,
+  MongoEnvironmentValidationRepository,
+  MongoLaunchStatusRepository,
+  MongoRecoveryPlanRepository,
+  MongoReleaseChecklistRepository,
+  MongoReleaseReadinessRepository,
+  MongoSecurityFindingRepository,
+  MongoStartupCheckRepository,
+} from "./infrastructure/database/mongoose/repositories/deployment-readiness-repositories.js";
+import {
   MongoOptimizationActionRepository,
   MongoOptimizationEventRepository,
   MongoOptimizationExperimentRepository,
@@ -344,6 +374,20 @@ export function createContainer() {
   const distributedLocks = new MongoDistributedLockRepository();
   const alertRules = new MongoAlertRuleRepository();
   const alertEvents = new MongoAlertEventRepository();
+  const deploymentEnvironments = new MongoDeploymentEnvironmentRepository();
+  const deploymentTargets = new MongoDeploymentTargetRepository();
+  const environmentValidations = new MongoEnvironmentValidationRepository();
+  const startupChecks = new MongoStartupCheckRepository();
+  const configurationIssues = new MongoConfigurationIssueRepository();
+  const securityFindings = new MongoSecurityFindingRepository();
+  const backupJobs = new MongoBackupJobRepository();
+  const backupSnapshots = new MongoBackupSnapshotRepository();
+  const recoveryPlans = new MongoRecoveryPlanRepository();
+  const disasterRecoveryPlans = new MongoDisasterRecoveryPlanRepository();
+  const releaseChecklists = new MongoReleaseChecklistRepository();
+  const releaseReadinessRecords = new MongoReleaseReadinessRepository();
+  const deploymentEvents = new MongoDeploymentEventRepository();
+  const launchStatuses = new MongoLaunchStatusRepository();
   const optimizationRules = new MongoOptimizationRuleRepository();
   const optimizationEvents = new MongoOptimizationEventRepository();
   const optimizationActions = new MongoOptimizationActionRepository();
@@ -522,6 +566,28 @@ export function createContainer() {
   const distributedLock = new DistributedLockService(distributedLocks);
   const alerting = new AlertingService(alertRules, alertEvents);
   const monitoring = new MonitoringService(healthCheck, metrics, errorTracking, alerting, resilience, distributedLock);
+  const deploymentCatalog = new DeploymentCatalogService(deploymentEnvironments, deploymentTargets);
+  const environmentValidation = new EnvironmentValidationService(environmentValidations);
+  const startupValidation = new StartupValidationService(startupChecks);
+  const configurationManagement = new ConfigurationManagementService(configurationIssues);
+  const securityReview = new SecurityReviewService(securityFindings);
+  const backupManagement = new BackupManagementService(backupJobs, backupSnapshots);
+  const recoveryPlanning = new RecoveryPlanningService(recoveryPlans);
+  const disasterRecovery = new DisasterRecoveryService(disasterRecoveryPlans);
+  const releaseChecklist = new ReleaseChecklistService(releaseChecklists);
+  const releaseReadiness = new ReleaseReadinessService(
+    releaseReadinessRecords,
+    environmentValidations,
+    startupChecks,
+    configurationIssues,
+    securityFindings,
+    releaseChecklists,
+    backupJobs,
+    recoveryPlans,
+    launchStatuses,
+  );
+  const deploymentEvent = new DeploymentEventService(deploymentEvents);
+  const launchStatus = new LaunchStatusService(launchStatuses);
   const optimizationRule = new OptimizationRuleService(optimizationRules);
   const optimizationMonitor = new OptimizationMonitorService(optimizationMetrics, optimizationEvents, revenueAnalytics);
   const optimizationRecommendation = new OptimizationRecommendationService(optimizationRecommendations, optimizationMetrics);
@@ -697,6 +763,20 @@ export function createContainer() {
       distributedLocks,
       alertRules,
       alertEvents,
+      deploymentEnvironments,
+      deploymentTargets,
+      environmentValidations,
+      startupChecks,
+      configurationIssues,
+      securityFindings,
+      backupJobs,
+      backupSnapshots,
+      recoveryPlans,
+      disasterRecoveryPlans,
+      releaseChecklists,
+      releaseReadinessRecords,
+      deploymentEvents,
+      launchStatuses,
       optimizationRules,
       optimizationEvents,
       optimizationActions,
@@ -729,6 +809,18 @@ export function createContainer() {
       distributedLock,
       alerting,
       monitoring,
+      deploymentCatalog,
+      environmentValidation,
+      startupValidation,
+      configurationManagement,
+      securityReview,
+      backupManagement,
+      recoveryPlanning,
+      disasterRecovery,
+      releaseChecklist,
+      releaseReadiness,
+      deploymentEvent,
+      launchStatus,
       agentAllocation,
       agentAssist,
       agentCollaborationService,
