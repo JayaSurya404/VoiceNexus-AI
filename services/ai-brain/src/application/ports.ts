@@ -67,6 +67,14 @@ import type { ReportExport } from "../domain/entities/report-export.js";
 import type { ReportTemplate } from "../domain/entities/report-template.js";
 import type { ScheduledReport } from "../domain/entities/scheduled-report.js";
 import type { TrendAnalysis } from "../domain/entities/trend-analysis.js";
+import type { OptimizationAction } from "../domain/entities/optimization-action.js";
+import type { OptimizationEvent } from "../domain/entities/optimization-event.js";
+import type { OptimizationExperiment } from "../domain/entities/optimization-experiment.js";
+import type { OptimizationGoal } from "../domain/entities/optimization-goal.js";
+import type { OptimizationMetric } from "../domain/entities/optimization-metric.js";
+import type { OptimizationRecommendation } from "../domain/entities/optimization-recommendation.js";
+import type { OptimizationResult } from "../domain/entities/optimization-result.js";
+import type { OptimizationRule } from "../domain/entities/optimization-rule.js";
 
 export interface AIConversationRepository {
   create(input: Omit<AIConversation, "id" | "createdAt" | "updatedAt">): Promise<AIConversation>;
@@ -535,6 +543,56 @@ export interface ReportingAnalyticsOverview {
   kpiCount: number;
   insightCount: number;
   exportCount: number;
+}
+
+export interface OptimizationRuleRepository {
+  create(input: Omit<OptimizationRule, "id" | "createdAt" | "updatedAt">): Promise<OptimizationRule>;
+  listByOrganization(organizationId: string): Promise<OptimizationRule[]>;
+}
+
+export interface OptimizationEventRepository {
+  create(input: Omit<OptimizationEvent, "id" | "createdAt">): Promise<OptimizationEvent>;
+  listByOrganization(organizationId: string): Promise<OptimizationEvent[]>;
+}
+
+export interface OptimizationActionRepository {
+  create(input: Omit<OptimizationAction, "id" | "createdAt" | "updatedAt">): Promise<OptimizationAction>;
+  listByOrganization(organizationId: string): Promise<OptimizationAction[]>;
+}
+
+export interface OptimizationRecommendationRepository {
+  create(input: Omit<OptimizationRecommendation, "id" | "createdAt" | "updatedAt">): Promise<OptimizationRecommendation>;
+  listByOrganization(organizationId: string): Promise<OptimizationRecommendation[]>;
+  listOpenByOrganization(organizationId: string): Promise<OptimizationRecommendation[]>;
+}
+
+export interface OptimizationMetricRepository {
+  create(input: Omit<OptimizationMetric, "id" | "createdAt" | "updatedAt">): Promise<OptimizationMetric>;
+  listByOrganization(organizationId: string): Promise<OptimizationMetric[]>;
+}
+
+export interface OptimizationGoalRepository {
+  create(input: Omit<OptimizationGoal, "id" | "createdAt" | "updatedAt">): Promise<OptimizationGoal>;
+  listByOrganization(organizationId: string): Promise<OptimizationGoal[]>;
+}
+
+export interface OptimizationExperimentRepository {
+  create(input: Omit<OptimizationExperiment, "id" | "createdAt" | "updatedAt">): Promise<OptimizationExperiment>;
+  listByOrganization(organizationId: string): Promise<OptimizationExperiment[]>;
+}
+
+export interface OptimizationResultRepository {
+  create(input: Omit<OptimizationResult, "id" | "createdAt" | "updatedAt">): Promise<OptimizationResult>;
+  listByOrganization(organizationId: string): Promise<OptimizationResult[]>;
+}
+
+export interface OptimizationOverview {
+  activeRecommendationCount: number;
+  pendingActionCount: number;
+  breachedMetricCount: number;
+  activeGoalCount: number;
+  runningExperimentCount: number;
+  averageImpact: number;
 }
 
 export interface CollaborationMetrics {

@@ -60,6 +60,14 @@ import type { ReportExport } from "../domain/entities/report-export.js";
 import type { ReportTemplate } from "../domain/entities/report-template.js";
 import type { ScheduledReport } from "../domain/entities/scheduled-report.js";
 import type { TrendAnalysis } from "../domain/entities/trend-analysis.js";
+import type { OptimizationAction } from "../domain/entities/optimization-action.js";
+import type { OptimizationEvent } from "../domain/entities/optimization-event.js";
+import type { OptimizationExperiment } from "../domain/entities/optimization-experiment.js";
+import type { OptimizationGoal } from "../domain/entities/optimization-goal.js";
+import type { OptimizationMetric } from "../domain/entities/optimization-metric.js";
+import type { OptimizationRecommendation } from "../domain/entities/optimization-recommendation.js";
+import type { OptimizationResult } from "../domain/entities/optimization-result.js";
+import type { OptimizationRule } from "../domain/entities/optimization-rule.js";
 
 export const toConversationDto = (value: AIConversation) => ({ ...value, startedAt: iso(value.startedAt), endedAt: maybeIso(value.endedAt), createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
 export const toMessageDto = (value: AIMessage) => ({ ...value, timestamp: iso(value.timestamp) });
@@ -274,6 +282,35 @@ export const toExecutiveSummaryDto = (value: ExecutiveSummary) => ({
   updatedAt: iso(value.updatedAt),
 });
 export const toReportExportDto = (value: ReportExport) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toOptimizationRuleDto = (value: OptimizationRule) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toOptimizationEventDto = (value: OptimizationEvent) => ({ ...value, createdAt: iso(value.createdAt) });
+export const toOptimizationActionDto = (value: OptimizationAction) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toOptimizationRecommendationDto = (value: OptimizationRecommendation) => ({ ...value, createdAt: iso(value.createdAt), updatedAt: iso(value.updatedAt) });
+export const toOptimizationMetricDto = (value: OptimizationMetric) => ({
+  ...value,
+  measuredAt: iso(value.measuredAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toOptimizationGoalDto = (value: OptimizationGoal) => ({
+  ...value,
+  dueAt: maybeIso(value.dueAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toOptimizationExperimentDto = (value: OptimizationExperiment) => ({
+  ...value,
+  startedAt: maybeIso(value.startedAt),
+  endedAt: maybeIso(value.endedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
+export const toOptimizationResultDto = (value: OptimizationResult) => ({
+  ...value,
+  capturedAt: iso(value.capturedAt),
+  createdAt: iso(value.createdAt),
+  updatedAt: iso(value.updatedAt),
+});
 
 function iso(date: Date): string {
   return date.toISOString();

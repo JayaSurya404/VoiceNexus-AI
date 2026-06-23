@@ -11,6 +11,7 @@ import { AgentTaskService } from "./application/services/agent-task-service.js";
 import { AgentTeamService } from "./application/services/agent-team-service.js";
 import { ActionExecutionService } from "./application/services/action-execution-service.js";
 import { AnalyticsEngineService } from "./application/services/analytics-engine-service.js";
+import { AgentAllocationService } from "./application/services/agent-allocation-service.js";
 import { AuditService } from "./application/services/audit-service.js";
 import { BenchmarkService } from "./application/services/benchmark-service.js";
 import { BusinessInsightService } from "./application/services/business-insight-service.js";
@@ -39,6 +40,7 @@ import { KnowledgeFeedbackService } from "./application/services/knowledge-feedb
 import { KnowledgeGapAnalysisService } from "./application/services/knowledge-gap-analysis-service.js";
 import { KnowledgeImprovementService } from "./application/services/knowledge-improvement-service.js";
 import { KnowledgeLearningService } from "./application/services/knowledge-learning-service.js";
+import { KnowledgeOptimizationService } from "./application/services/knowledge-optimization-service.js";
 import { KnowledgeSuggestionService } from "./application/services/knowledge-suggestion-service.js";
 import { KpiReportingService } from "./application/services/kpi-reporting-service.js";
 import { LeadQualificationRuntime } from "./application/services/lead-qualification-runtime.js";
@@ -49,8 +51,14 @@ import { NextBestActionService } from "./application/services/next-best-action-s
 import { ObjectionCoachingService } from "./application/services/objection-coaching-service.js";
 import { ObjectionHandlerService } from "./application/services/objection-handler-service.js";
 import { OpportunityIntelligenceService } from "./application/services/opportunity-intelligence-service.js";
+import { OptimizationActionService } from "./application/services/optimization-action-service.js";
+import { OptimizationEngineService } from "./application/services/optimization-engine-service.js";
+import { OptimizationMonitorService } from "./application/services/optimization-monitor-service.js";
+import { OptimizationRecommendationService } from "./application/services/optimization-recommendation-service.js";
+import { OptimizationRuleService } from "./application/services/optimization-rule-service.js";
 import { PromptEngineService } from "./application/services/prompt-engine-service.js";
 import { QualityAssuranceService } from "./application/services/quality-assurance-service.js";
+import { QueueOptimizationService } from "./application/services/queue-optimization-service.js";
 import { QueuePerformanceService } from "./application/services/queue-performance-service.js";
 import { ResponseGenerationService } from "./application/services/response-generation-service.js";
 import { RagRuntimeService } from "./application/services/rag-runtime-service.js";
@@ -59,6 +67,7 @@ import { ReportExportService } from "./application/services/report-export-servic
 import { ReportingAnalyticsService } from "./application/services/reporting-analytics-service.js";
 import { RevenueAnalyticsService } from "./application/services/revenue-analytics-service.js";
 import { RevenueForecastService } from "./application/services/revenue-forecast-service.js";
+import { RevenueOptimizationService } from "./application/services/revenue-optimization-service.js";
 import { RoutingEngineService } from "./application/services/routing-engine-service.js";
 import { SalesInsightService } from "./application/services/sales-insight-service.js";
 import { ScheduledReportService } from "./application/services/scheduled-report-service.js";
@@ -71,6 +80,7 @@ import { UpsellIntelligenceService } from "./application/services/upsell-intelli
 import { WhisperService } from "./application/services/whisper-service.js";
 import { WinLossService } from "./application/services/win-loss-service.js";
 import { WorkflowEngineService } from "./application/services/workflow-engine-service.js";
+import { WorkflowOptimizationService } from "./application/services/workflow-optimization-service.js";
 import { VoiceResponseRequestService } from "./application/services/voice-response-request-service.js";
 import { env } from "./config/env.js";
 import {
@@ -166,6 +176,16 @@ import {
   MongoScheduledReportRepository,
   MongoTrendAnalysisRepository,
 } from "./infrastructure/database/mongoose/repositories/reporting-repositories.js";
+import {
+  MongoOptimizationActionRepository,
+  MongoOptimizationEventRepository,
+  MongoOptimizationExperimentRepository,
+  MongoOptimizationGoalRepository,
+  MongoOptimizationMetricRepository,
+  MongoOptimizationRecommendationRepository,
+  MongoOptimizationResultRepository,
+  MongoOptimizationRuleRepository,
+} from "./infrastructure/database/mongoose/repositories/optimization-repositories.js";
 import { TranscriptFinalSubscriber } from "./infrastructure/redis/transcript-final-subscriber.js";
 import { OpenAIEmbeddingProvider } from "./providers/openai-embedding-provider.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
@@ -243,6 +263,14 @@ export function createContainer() {
   const businessInsights = new MongoBusinessInsightRepository();
   const executiveSummaries = new MongoExecutiveSummaryRepository();
   const reportExports = new MongoReportExportRepository();
+  const optimizationRules = new MongoOptimizationRuleRepository();
+  const optimizationEvents = new MongoOptimizationEventRepository();
+  const optimizationActions = new MongoOptimizationActionRepository();
+  const optimizationRecommendations = new MongoOptimizationRecommendationRepository();
+  const optimizationMetrics = new MongoOptimizationMetricRepository();
+  const optimizationGoals = new MongoOptimizationGoalRepository();
+  const optimizationExperiments = new MongoOptimizationExperimentRepository();
+  const optimizationResults = new MongoOptimizationResultRepository();
   const organizationAccess = new MongoOrganizationAccessRepository();
 
   const provider = new OpenAIProvider({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
@@ -394,6 +422,26 @@ export function createContainer() {
   const businessInsight = new BusinessInsightService(businessInsights, revenueAnalytics);
   const executiveSummary = new ExecutiveSummaryService(executiveSummaries, revenueAnalytics);
   const reportExport = new ReportExportService(reportExports);
+  const optimizationRule = new OptimizationRuleService(optimizationRules);
+  const optimizationMonitor = new OptimizationMonitorService(optimizationMetrics, optimizationEvents, revenueAnalytics);
+  const optimizationRecommendation = new OptimizationRecommendationService(optimizationRecommendations, optimizationMetrics);
+  const optimizationAction = new OptimizationActionService(optimizationActions, optimizationRecommendations, optimizationEvents);
+  const queueOptimization = new QueueOptimizationService(optimizationRecommendations);
+  const agentAllocation = new AgentAllocationService(optimizationRecommendations);
+  const workflowOptimization = new WorkflowOptimizationService(optimizationRecommendations);
+  const knowledgeOptimization = new KnowledgeOptimizationService(optimizationRecommendations);
+  const revenueOptimization = new RevenueOptimizationService(optimizationRecommendations);
+  const optimizationEngine = new OptimizationEngineService(
+    optimizationMonitor,
+    optimizationRecommendation,
+    optimizationAction,
+    optimizationRecommendations,
+    optimizationActions,
+    optimizationMetrics,
+    optimizationGoals,
+    optimizationExperiments,
+    optimizationResults,
+  );
   const supervisorConsole = new SupervisorConsoleService(
     humanAgents,
     agentAvailability,
@@ -520,11 +568,20 @@ export function createContainer() {
       businessInsights,
       executiveSummaries,
       reportExports,
+      optimizationRules,
+      optimizationEvents,
+      optimizationActions,
+      optimizationRecommendations,
+      optimizationMetrics,
+      optimizationGoals,
+      optimizationExperiments,
+      optimizationResults,
       organizationAccess,
     },
     services: {
       accessTokenService,
       actionExecution,
+      agentAllocation,
       agentAssist,
       agentCollaborationService,
       agentCoachingService,
@@ -571,9 +628,15 @@ export function createContainer() {
       objectionCoaching,
       objectionHandler,
       opportunityIntelligence,
+      optimizationAction,
+      optimizationEngine,
+      optimizationMonitor,
+      optimizationRecommendation,
+      optimizationRule,
       personaService,
       promptEngine,
       qualityAssurance,
+      queueOptimization,
       queuePerformance,
       qualificationRuntime,
       reportBuilder,
@@ -582,6 +645,7 @@ export function createContainer() {
       responseGeneration,
       revenueAnalytics,
       revenueForecast,
+      revenueOptimization,
       routingEngine,
       salesInsight,
       scheduledReport,
@@ -594,6 +658,8 @@ export function createContainer() {
       trendAnalysisService,
       timelineActionService,
       toolRouter,
+      workflowOptimization,
+      knowledgeOptimization,
       upsellIntelligence,
       whisperService,
       winLoss,

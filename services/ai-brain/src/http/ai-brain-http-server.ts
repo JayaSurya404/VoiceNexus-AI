@@ -38,6 +38,14 @@ import {
   toLiveTakeoverDto,
   toMessageDto,
   toOpportunityDto,
+  toOptimizationActionDto,
+  toOptimizationEventDto,
+  toOptimizationExperimentDto,
+  toOptimizationGoalDto,
+  toOptimizationMetricDto,
+  toOptimizationRecommendationDto,
+  toOptimizationResultDto,
+  toOptimizationRuleDto,
   toExecutiveDashboardDto,
   toExecutiveSummaryDto,
   toGeneratedReportDto,
@@ -458,6 +466,69 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       const organizationId = requiredQuery(url, "organizationId");
       await authorize(container, token, organizationId);
       sendJson(response, 200, { data: (await container.services.reportExport.list(organizationId)).map(toReportExportDto) });
+      return;
+    }
+
+    if (url.pathname === "/optimization/overview" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: await container.services.optimizationEngine.overview(organizationId) });
+      return;
+    }
+
+    if (url.pathname === "/optimization/rules" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.optimizationRule.list(organizationId)).map(toOptimizationRuleDto) });
+      return;
+    }
+
+    if (url.pathname === "/optimization/events" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.optimizationEvents.listByOrganization(organizationId)).map(toOptimizationEventDto) });
+      return;
+    }
+
+    if (url.pathname === "/optimization/actions" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.optimizationAction.createActions(organizationId)).map(toOptimizationActionDto) });
+      return;
+    }
+
+    if (url.pathname === "/optimization/recommendations" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.optimizationRecommendation.generate(organizationId)).map(toOptimizationRecommendationDto) });
+      return;
+    }
+
+    if (url.pathname === "/optimization/metrics" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.optimizationMonitor.monitor(organizationId)).map(toOptimizationMetricDto) });
+      return;
+    }
+
+    if (url.pathname === "/optimization/goals" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.optimizationGoals.listByOrganization(organizationId)).map(toOptimizationGoalDto) });
+      return;
+    }
+
+    if (url.pathname === "/optimization/experiments" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.optimizationExperiments.listByOrganization(organizationId)).map(toOptimizationExperimentDto) });
+      return;
+    }
+
+    if (url.pathname === "/optimization/results" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.repositories.optimizationResults.listByOrganization(organizationId)).map(toOptimizationResultDto) });
       return;
     }
 

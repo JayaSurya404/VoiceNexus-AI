@@ -37,6 +37,7 @@ import {
 } from "@/components/ai-monitor/queue-routing-panels";
 import { RuntimeMetrics } from "@/components/ai-monitor/runtime-metrics";
 import { RealtimeRuntimeMetricsPanel, RealtimeRuntimePanel } from "@/components/ai-monitor/realtime-runtime-panels";
+import { OptimizationPanels } from "@/components/ai-monitor/optimization-panels";
 import { ReportingIntelligencePanel } from "@/components/ai-monitor/reporting-panels";
 import { RevenueIntelligencePanel } from "@/components/ai-monitor/revenue-panels";
 import { StateAndQualification } from "@/components/ai-monitor/state-and-qualification";
@@ -92,6 +93,15 @@ import {
   useKnowledgeActions,
   useLiveTakeovers,
   useNextBestActions,
+  useOptimizationActions,
+  useOptimizationEvents,
+  useOptimizationExperiments,
+  useOptimizationGoals,
+  useOptimizationMetrics,
+  useOptimizationOverview,
+  useOptimizationRecommendations,
+  useOptimizationResults,
+  useOptimizationRules,
   useQueueHealth,
   useQueueAnalytics,
   useQueueSessions,
@@ -168,6 +178,15 @@ export default function AiMonitorPage() {
   const reportingTemplatesQuery = useReportingTemplates(activeOrganizationId);
   const reportingGeneratedQuery = useReportingGenerated(activeOrganizationId);
   const reportingExportsQuery = useReportingExports(activeOrganizationId);
+  const optimizationOverviewQuery = useOptimizationOverview(activeOrganizationId);
+  const optimizationRulesQuery = useOptimizationRules(activeOrganizationId);
+  const optimizationEventsQuery = useOptimizationEvents(activeOrganizationId);
+  const optimizationActionsQuery = useOptimizationActions(activeOrganizationId);
+  const optimizationRecommendationsQuery = useOptimizationRecommendations(activeOrganizationId);
+  const optimizationMetricsQuery = useOptimizationMetrics(activeOrganizationId);
+  const optimizationGoalsQuery = useOptimizationGoals(activeOrganizationId);
+  const optimizationExperimentsQuery = useOptimizationExperiments(activeOrganizationId);
+  const optimizationResultsQuery = useOptimizationResults(activeOrganizationId);
   const knowledgeDocumentsQuery = useKnowledgeDocuments(activeOrganizationId);
   const knowledgeSearchesQuery = useKnowledgeSearches(activeOrganizationId);
   const knowledgeCitationsQuery = useKnowledgeCitations(activeOrganizationId);
@@ -337,6 +356,17 @@ export default function AiMonitorPage() {
         summaries={reportingSummariesQuery.data ?? []}
         templates={reportingTemplatesQuery.data ?? []}
         trends={reportingTrendsQuery.data ?? []}
+      />
+      <OptimizationPanels
+        actions={optimizationActionsQuery.data ?? []}
+        events={optimizationEventsQuery.data ?? []}
+        experiments={optimizationExperimentsQuery.data ?? []}
+        goals={optimizationGoalsQuery.data ?? []}
+        metrics={optimizationMetricsQuery.data ?? []}
+        overview={optimizationOverviewQuery.data}
+        recommendations={optimizationRecommendationsQuery.data ?? []}
+        results={optimizationResultsQuery.data ?? []}
+        rules={optimizationRulesQuery.data ?? []}
       />
       <KnowledgeMonitorPanel
         citations={knowledgeCitationsQuery.data ?? []}

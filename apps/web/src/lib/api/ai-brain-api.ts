@@ -931,6 +931,125 @@ export interface ReportExportDto {
   updatedAt: string;
 }
 
+export interface OptimizationOverviewDto {
+  activeRecommendationCount: number;
+  pendingActionCount: number;
+  breachedMetricCount: number;
+  activeGoalCount: number;
+  runningExperimentCount: number;
+  averageImpact: number;
+}
+
+export interface OptimizationRuleDto {
+  id: string;
+  organizationId: string;
+  name: string;
+  scope: "QUEUE" | "AGENT" | "WORKFLOW" | "KNOWLEDGE" | "REVENUE" | "COACHING";
+  condition: Record<string, unknown>;
+  action: string;
+  priority: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OptimizationEventDto {
+  id: string;
+  organizationId: string;
+  type: "KPI_THRESHOLD_BREACHED" | "BOTTLENECK_DETECTED" | "RECOMMENDATION_GENERATED" | "ACTION_CREATED" | "RESULT_CAPTURED";
+  source: string;
+  message: string;
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface OptimizationActionDto {
+  id: string;
+  organizationId: string;
+  recommendationId: string | null;
+  scope: OptimizationRuleDto["scope"];
+  title: string;
+  description: string;
+  status: "PENDING" | "APPROVED" | "RUNNING" | "COMPLETED" | "FAILED" | "DISMISSED";
+  impactScore: number;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OptimizationRecommendationDto {
+  id: string;
+  organizationId: string;
+  type: "QUEUE_BALANCING" | "AGENT_REALLOCATION" | "WORKFLOW_TUNING" | "KNOWLEDGE_IMPROVEMENT" | "REVENUE_RECOVERY" | "COACHING_INTERVENTION" | "SELF_HEALING";
+  title: string;
+  rationale: string;
+  confidence: number;
+  expectedImpact: number;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  status: "OPEN" | "ACTIONED" | "DISMISSED";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OptimizationMetricDto {
+  id: string;
+  organizationId: string;
+  name: string;
+  scope: OptimizationRuleDto["scope"];
+  value: number;
+  target: number;
+  unit: string;
+  status: "HEALTHY" | "WATCH" | "BREACHED";
+  measuredAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OptimizationGoalDto {
+  id: string;
+  organizationId: string;
+  name: string;
+  scope: OptimizationRuleDto["scope"];
+  targetMetric: string;
+  targetValue: number;
+  currentValue: number;
+  dueAt: string | null;
+  status: "ACTIVE" | "ACHIEVED" | "MISSED" | "PAUSED";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OptimizationExperimentDto {
+  id: string;
+  organizationId: string;
+  name: string;
+  hypothesis: string;
+  scope: OptimizationRuleDto["scope"];
+  status: "PLANNED" | "RUNNING" | "COMPLETED" | "FAILED";
+  baselineMetric: number;
+  targetMetric: number;
+  startedAt: string | null;
+  endedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OptimizationResultDto {
+  id: string;
+  organizationId: string;
+  actionId: string | null;
+  experimentId: string | null;
+  metric: string;
+  beforeValue: number;
+  afterValue: number;
+  impactPercent: number;
+  summary: string;
+  capturedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AgentCoachingSessionDto {
   id: string;
   organizationId: string;
@@ -1225,6 +1344,24 @@ export const aiBrainApi = {
     request<GeneratedReportDto[]>(`/reports/generated?${query({ organizationId })}`),
   reportingExports: (organizationId: string) =>
     request<ReportExportDto[]>(`/reports/exports?${query({ organizationId })}`),
+  optimizationOverview: (organizationId: string) =>
+    request<OptimizationOverviewDto>(`/optimization/overview?${query({ organizationId })}`),
+  optimizationRules: (organizationId: string) =>
+    request<OptimizationRuleDto[]>(`/optimization/rules?${query({ organizationId })}`),
+  optimizationEvents: (organizationId: string) =>
+    request<OptimizationEventDto[]>(`/optimization/events?${query({ organizationId })}`),
+  optimizationActions: (organizationId: string) =>
+    request<OptimizationActionDto[]>(`/optimization/actions?${query({ organizationId })}`),
+  optimizationRecommendations: (organizationId: string) =>
+    request<OptimizationRecommendationDto[]>(`/optimization/recommendations?${query({ organizationId })}`),
+  optimizationMetrics: (organizationId: string) =>
+    request<OptimizationMetricDto[]>(`/optimization/metrics?${query({ organizationId })}`),
+  optimizationGoals: (organizationId: string) =>
+    request<OptimizationGoalDto[]>(`/optimization/goals?${query({ organizationId })}`),
+  optimizationExperiments: (organizationId: string) =>
+    request<OptimizationExperimentDto[]>(`/optimization/experiments?${query({ organizationId })}`),
+  optimizationResults: (organizationId: string) =>
+    request<OptimizationResultDto[]>(`/optimization/results?${query({ organizationId })}`),
   uploadKnowledge: (input: {
     organizationId: string;
     knowledgeBaseId?: string | null;

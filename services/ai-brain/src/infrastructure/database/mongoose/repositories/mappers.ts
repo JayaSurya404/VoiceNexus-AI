@@ -67,6 +67,14 @@ import type { ReportExport } from "../../../../domain/entities/report-export.js"
 import type { ReportTemplate } from "../../../../domain/entities/report-template.js";
 import type { ScheduledReport } from "../../../../domain/entities/scheduled-report.js";
 import type { TrendAnalysis } from "../../../../domain/entities/trend-analysis.js";
+import type { OptimizationAction } from "../../../../domain/entities/optimization-action.js";
+import type { OptimizationEvent } from "../../../../domain/entities/optimization-event.js";
+import type { OptimizationExperiment } from "../../../../domain/entities/optimization-experiment.js";
+import type { OptimizationGoal } from "../../../../domain/entities/optimization-goal.js";
+import type { OptimizationMetric } from "../../../../domain/entities/optimization-metric.js";
+import type { OptimizationRecommendation } from "../../../../domain/entities/optimization-recommendation.js";
+import type { OptimizationResult } from "../../../../domain/entities/optimization-result.js";
+import type { OptimizationRule } from "../../../../domain/entities/optimization-rule.js";
 
 type Doc = Record<string, unknown> & { _id: { toString(): string } };
 
@@ -1243,6 +1251,132 @@ export function toReportExport(doc: Doc): ReportExport {
     fileName: String(doc.fileName),
     downloadUrl: doc.downloadUrl === null || doc.downloadUrl === undefined ? null : String(doc.downloadUrl),
     requestedBy: id(doc.requestedBy),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toOptimizationRule(doc: Doc): OptimizationRule {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    name: String(doc.name),
+    scope: doc.scope as OptimizationRule["scope"],
+    condition: record(doc.condition),
+    action: String(doc.action),
+    priority: Number(doc.priority),
+    active: Boolean(doc.active),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toOptimizationEvent(doc: Doc): OptimizationEvent {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    type: doc.type as OptimizationEvent["type"],
+    source: String(doc.source),
+    message: String(doc.message),
+    severity: doc.severity as OptimizationEvent["severity"],
+    metadata: record(doc.metadata),
+    createdAt: date(doc.createdAt),
+  };
+}
+
+export function toOptimizationAction(doc: Doc): OptimizationAction {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    recommendationId: id(doc.recommendationId),
+    scope: doc.scope as OptimizationAction["scope"],
+    title: String(doc.title),
+    description: String(doc.description),
+    status: doc.status as OptimizationAction["status"],
+    impactScore: Number(doc.impactScore),
+    metadata: record(doc.metadata),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toOptimizationRecommendation(doc: Doc): OptimizationRecommendation {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    type: doc.type as OptimizationRecommendation["type"],
+    title: String(doc.title),
+    rationale: String(doc.rationale),
+    confidence: Number(doc.confidence),
+    expectedImpact: Number(doc.expectedImpact),
+    priority: doc.priority as OptimizationRecommendation["priority"],
+    status: doc.status as OptimizationRecommendation["status"],
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toOptimizationMetric(doc: Doc): OptimizationMetric {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    name: String(doc.name),
+    scope: doc.scope as OptimizationMetric["scope"],
+    value: Number(doc.value),
+    target: Number(doc.target),
+    unit: String(doc.unit),
+    status: doc.status as OptimizationMetric["status"],
+    measuredAt: date(doc.measuredAt),
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toOptimizationGoal(doc: Doc): OptimizationGoal {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    name: String(doc.name),
+    scope: doc.scope as OptimizationGoal["scope"],
+    targetMetric: String(doc.targetMetric),
+    targetValue: Number(doc.targetValue),
+    currentValue: Number(doc.currentValue),
+    dueAt: doc.dueAt ? date(doc.dueAt) : null,
+    status: doc.status as OptimizationGoal["status"],
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toOptimizationExperiment(doc: Doc): OptimizationExperiment {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    name: String(doc.name),
+    hypothesis: String(doc.hypothesis),
+    scope: doc.scope as OptimizationExperiment["scope"],
+    status: doc.status as OptimizationExperiment["status"],
+    baselineMetric: Number(doc.baselineMetric),
+    targetMetric: Number(doc.targetMetric),
+    startedAt: doc.startedAt ? date(doc.startedAt) : null,
+    endedAt: doc.endedAt ? date(doc.endedAt) : null,
+    createdAt: date(doc.createdAt),
+    updatedAt: date(doc.updatedAt),
+  };
+}
+
+export function toOptimizationResult(doc: Doc): OptimizationResult {
+  return {
+    id: doc._id.toString(),
+    organizationId: id(doc.organizationId) ?? "",
+    actionId: id(doc.actionId),
+    experimentId: id(doc.experimentId),
+    metric: String(doc.metric),
+    beforeValue: Number(doc.beforeValue),
+    afterValue: Number(doc.afterValue),
+    impactPercent: Number(doc.impactPercent),
+    summary: String(doc.summary),
+    capturedAt: date(doc.capturedAt),
     createdAt: date(doc.createdAt),
     updatedAt: date(doc.updatedAt),
   };
