@@ -747,3 +747,77 @@ export const toDeploymentEventDto = (value: DeploymentEvent) => ({
 });
 export const toLaunchStatusDto = (value: LaunchStatus) => ({ ...value, createdAt: value.createdAt.toISOString(), updatedAt: value.updatedAt.toISOString() });
 export const toDeploymentReadinessOverviewDto = (value: DeploymentReadinessOverview) => ({ ...value });
+import type {
+  CallRuntimeSession,
+  RuntimeConversationTurn,
+  RuntimeFallbackEvent,
+  RuntimeHealthSnapshot,
+  RuntimeIncident
+} from "../domain/entities/runtime-orchestration.js";
+
+export const toCallRuntimeSessionDto = (session: CallRuntimeSession) => ({
+  id: session.id,
+  organizationId: session.organizationId,
+  conversationId: session.conversationId,
+  callSid: session.callSid ?? null,
+  direction: session.direction,
+  status: session.status,
+  provider: session.provider,
+  model: session.model,
+  startedAt: session.startedAt.toISOString(),
+  updatedAt: session.updatedAt.toISOString(),
+  completedAt: session.completedAt?.toISOString() ?? null,
+  activeAgentId: session.activeAgentId ?? null,
+  activeQueueId: session.activeQueueId ?? null,
+  escalationId: session.escalationId ?? null,
+  metadata: session.metadata
+});
+
+export const toRuntimeConversationTurnDto = (turn: RuntimeConversationTurn) => ({
+  id: turn.id,
+  organizationId: turn.organizationId,
+  sessionId: turn.sessionId,
+  conversationId: turn.conversationId,
+  userMessage: turn.userMessage,
+  assistantMessage: turn.assistantMessage,
+  provider: turn.provider,
+  model: turn.model,
+  citations: turn.citations,
+  confidence: turn.confidence,
+  fallbackUsed: turn.fallbackUsed,
+  createdAt: turn.createdAt.toISOString()
+});
+
+export const toRuntimeFallbackEventDto = (event: RuntimeFallbackEvent) => ({
+  id: event.id,
+  organizationId: event.organizationId,
+  sessionId: event.sessionId ?? null,
+  fromProvider: event.fromProvider,
+  toProvider: event.toProvider,
+  reason: event.reason,
+  recovered: event.recovered,
+  createdAt: event.createdAt.toISOString()
+});
+
+export const toRuntimeIncidentDto = (incident: RuntimeIncident) => ({
+  id: incident.id,
+  organizationId: incident.organizationId,
+  sessionId: incident.sessionId ?? null,
+  severity: incident.severity,
+  category: incident.category,
+  message: incident.message,
+  resolved: incident.resolved,
+  createdAt: incident.createdAt.toISOString(),
+  resolvedAt: incident.resolvedAt?.toISOString() ?? null
+});
+
+export const toRuntimeHealthSnapshotDto = (snapshot: RuntimeHealthSnapshot) => ({
+  organizationId: snapshot.organizationId,
+  activeSessions: snapshot.activeSessions,
+  activeProvider: snapshot.activeProvider ?? null,
+  providerStatuses: snapshot.providerStatuses,
+  fallbackEvents: snapshot.fallbackEvents.map(toRuntimeFallbackEventDto),
+  incidents: snapshot.incidents.map(toRuntimeIncidentDto),
+  dependencies: snapshot.dependencies,
+  capturedAt: snapshot.capturedAt.toISOString()
+});

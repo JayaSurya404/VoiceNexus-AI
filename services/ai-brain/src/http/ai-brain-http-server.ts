@@ -66,7 +66,12 @@ import {
   toErrorIncidentDto,
   toEventLogDto,
   toFallbackStrategyDto,
+  toCallRuntimeSessionDto,
   toHealthStatusDto,
+  toRuntimeConversationTurnDto,
+  toRuntimeFallbackEventDto,
+  toRuntimeHealthSnapshotDto,
+  toRuntimeIncidentDto,
   toLivenessStatusDto,
   toMetricDto,
   toMetricSnapshotDto,
@@ -367,6 +372,20 @@ async function handleRequest(container: Container, request: IncomingMessage, res
 
     if (url.pathname === "/twilio/voice/webhook" && request.method === "POST") {
       const body = await readJson(request);
+      const organizationId = url.searchParams.get("organizationId");
+      if (organizationId) {
+        const result = await container.services.twilioCallLifecycle.processEvent({
+          organizationId,
+          payload: body
+        });
+        sendJson(response, 200, {
+          data: {
+            callStatus: result.callStatus,
+            session: result.session ? toCallRuntimeSessionDto(result.session) : null
+          }
+        });
+        return;
+      }
       const webhook = container.services.twilioIntegration.parseVoiceWebhook(body);
       sendJson(response, 200, webhook);
       return;
@@ -419,6 +438,166 @@ async function handleRequest(container: Container, request: IncomingMessage, res
           webhookUrl
         })
       );
+      return;
+    }
+
+    if (url.pathname === "/runtime/orchestration" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: toRuntimeHealthSnapshotDto(await container.services.runtimeMonitoring.overview(organizationId)) });
+      return;
+    }
+
+    if (url.pathname === "/runtime/provider-config" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: await container.services.providerRuntimeSelection.getConfig(organizationId) });
+      return;
+    }
+
+    if (url.pathname === "/runtime/provider-config" && request.method === "PUT") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const body = await readJson(request);
+      const preferredProvider: RuntimeProviderName = isRuntimeProviderName(body.preferredProvider) ? body.preferredProvider : "openai";
+      const fallbackProviderInput: unknown[] = Array.isArray(body.fallbackProviders) ? body.fallbackProviders : ["groq", "gemini"];
+      const fallbackProviders: RuntimeProviderName[] = fallbackProviderInput.filter(
+        (value): value is RuntimeProviderName => isRuntimeProviderName(value)
+      );
+      const rawModelByProvider: Record<string, unknown> =
+        typeof body.modelByProvider === "object" && body.modelByProvider !== null && !Array.isArray(body.modelByProvider)
+          ? (body.modelByProvider as Record<string, unknown>)
+          : {};
+      const modelByProvider = {
+        ...(typeof rawModelByProvider.openai === "string" ? { openai: rawModelByProvider.openai } : {}),
+        ...(typeof rawModelByProvider.groq === "string" ? { groq: rawModelByProvider.groq } : {}),
+        ...(typeof rawModelByProvider.gemini === "string" ? { gemini: rawModelByProvider.gemini } : {})
+      };
+      sendJson(response, 200, {
+        data: await container.repositories.providerRuntimeConfigs.upsert({
+          organizationId,
+          preferredProvider,
+          fallbackProviders,
+          modelByProvider,
+          automaticFallback: typeof body.automaticFallback === "boolean" ? body.automaticFallback : true,
+          active: typeof body.active === "boolean" ? body.active : true,
+          updatedAt: new Date()
+        })
+      });
+      return;
+    }
+
+    if (url.pathname === "/runtime/sessions" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.runtimeMonitoring.listSessions(organizationId)).map(toCallRuntimeSessionDto) });
+      return;
+    }
+
+    if (url.pathname === "/runtime/sessions" && request.method === "POST") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const body = await readJson(request);
+      const conversationId = typeof body.conversationId === "string" ? body.conversationId : `runtime-${Date.now()}`;
+      const direction = body.direction === "OUTBOUND" ? "OUTBOUND" : "INBOUND";
+      const callSid = typeof body.callSid === "string" ? body.callSid : undefined;
+      const result = await container.services.aiCallOrchestrator.createRuntimeSession({
+        organizationId,
+        conversationId,
+        direction,
+        ...(callSid ? { callSid } : {}),
+        metadata: body
+      });
+      sendJson(response, 201, {
+        data: {
+          session: toCallRuntimeSessionDto(result.session),
+          providerSelection: result.providerSelection
+        }
+      });
+      return;
+    }
+
+    const runtimeSessionMatch = url.pathname.match(/^\/runtime\/sessions\/([^/]+)$/);
+    if (runtimeSessionMatch && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const sessionId = runtimeSessionMatch[1] ?? "";
+      const sessions = await container.services.runtimeMonitoring.listSessions(organizationId);
+      const session = sessions.find((candidate) => candidate.id === sessionId) ?? null;
+      sendJson(response, session ? 200 : 404, { data: session ? toCallRuntimeSessionDto(session) : null });
+      return;
+    }
+
+    const runtimeTurnsMatch = url.pathname.match(/^\/runtime\/sessions\/([^/]+)\/turns$/);
+    if (runtimeTurnsMatch && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const sessionId = runtimeTurnsMatch[1] ?? "";
+      sendJson(response, 200, {
+        data: (await container.services.conversationRuntime.listTurns(organizationId, sessionId)).map(toRuntimeConversationTurnDto)
+      });
+      return;
+    }
+
+    if (url.pathname === "/runtime/conversation" && request.method === "POST") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const body = await readJson(request);
+      const sessionId = typeof body.sessionId === "string" ? body.sessionId : "";
+      const userMessage = typeof body.userMessage === "string" ? body.userMessage : "";
+      const memoryContext = typeof body.memoryContext === "string" ? body.memoryContext : undefined;
+      const crmContext = typeof body.crmContext === "string" ? body.crmContext : undefined;
+      const knowledgeContext = typeof body.knowledgeContext === "string" ? body.knowledgeContext : undefined;
+      const turn = await container.services.conversationRuntime.handleUserMessage({
+        organizationId,
+        sessionId,
+        userMessage,
+        ...(memoryContext ? { memoryContext } : {}),
+        ...(crmContext ? { crmContext } : {}),
+        ...(knowledgeContext ? { knowledgeContext } : {})
+      });
+      sendJson(response, 201, { data: toRuntimeConversationTurnDto(turn) });
+      return;
+    }
+
+    if (url.pathname === "/runtime/twilio/events" && request.method === "POST") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const result = await container.services.twilioCallLifecycle.processEvent({
+        organizationId,
+        payload: await readJson(request)
+      });
+      sendJson(response, 200, { data: { callStatus: result.callStatus, session: result.session ? toCallRuntimeSessionDto(result.session) : null } });
+      return;
+    }
+
+    if (url.pathname === "/runtime/escalations" && request.method === "POST") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      const body = await readJson(request);
+      const session = await container.services.humanEscalationRuntime.escalate({
+        organizationId,
+        sessionId: typeof body.sessionId === "string" ? body.sessionId : "",
+        reason: typeof body.reason === "string" ? body.reason : "Runtime escalation requested",
+        ...(typeof body.queueId === "string" ? { queueId: body.queueId } : {}),
+        ...(typeof body.agentId === "string" ? { agentId: body.agentId } : {}),
+        ...(typeof body.supervisorId === "string" ? { supervisorId: body.supervisorId } : {})
+      });
+      sendJson(response, 201, { data: toCallRuntimeSessionDto(session) });
+      return;
+    }
+
+    if (url.pathname === "/runtime/fallbacks" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.providerRuntimeSelection.listFallbackEvents(organizationId)).map(toRuntimeFallbackEventDto) });
+      return;
+    }
+
+    if (url.pathname === "/runtime/incidents" && request.method === "GET") {
+      const organizationId = requiredQuery(url, "organizationId");
+      await authorize(container, token, organizationId);
+      sendJson(response, 200, { data: (await container.services.runtimeIncidentService.listByOrganization(organizationId)).map(toRuntimeIncidentDto) });
       return;
     }
 
@@ -2092,7 +2271,12 @@ async function readJson(request: IncomingMessage): Promise<Record<string, unknow
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, unknown>;
 }
 
+function isRuntimeProviderName(value: unknown): value is RuntimeProviderName {
+  return value === "openai" || value === "groq" || value === "gemini";
+}
+
 function sendJson(response: ServerResponse, statusCode: number, payload: unknown): void {
   response.writeHead(statusCode, { "content-type": "application/json" });
   response.end(JSON.stringify(payload));
 }
+import type { RuntimeProviderName } from "../domain/entities/runtime-orchestration.js";

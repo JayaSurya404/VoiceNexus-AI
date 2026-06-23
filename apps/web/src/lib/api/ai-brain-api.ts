@@ -1303,7 +1303,139 @@ export interface TwilioOutgoingCallDto {
   webhookUrl: string | null;
 }
 
+export interface CallRuntimeSessionDto {
+  id: string;
+  organizationId: string;
+  conversationId: string;
+  callSid: string | null;
+  direction: "INBOUND" | "OUTBOUND";
+  status: string;
+  provider: "openai" | "groq" | "gemini";
+  model: string;
+  startedAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  activeAgentId: string | null;
+  activeQueueId: string | null;
+  escalationId: string | null;
+  metadata: Record<string, unknown>;
+}
+
+export interface RuntimeConversationTurnDto {
+  id: string;
+  organizationId: string;
+  sessionId: string;
+  conversationId: string;
+  userMessage: string;
+  assistantMessage: string;
+  provider: "openai" | "groq" | "gemini";
+  model: string;
+  citations: Array<{ documentId: string; chunkId?: string; title?: string; url?: string }>;
+  confidence: number;
+  fallbackUsed: boolean;
+  createdAt: string;
+}
+
+export interface RuntimeFallbackEventDto {
+  id: string;
+  organizationId: string;
+  sessionId: string | null;
+  fromProvider: "openai" | "groq" | "gemini";
+  toProvider: "openai" | "groq" | "gemini";
+  reason: string;
+  recovered: boolean;
+  createdAt: string;
+}
+
+export interface RuntimeIncidentDto {
+  id: string;
+  organizationId: string;
+  sessionId: string | null;
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  category: string;
+  message: string;
+  resolved: boolean;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+export interface RuntimeHealthSnapshotDto {
+  organizationId: string;
+  activeSessions: number;
+  activeProvider: "openai" | "groq" | "gemini" | null;
+  providerStatuses: ProviderStatusDto[];
+  fallbackEvents: RuntimeFallbackEventDto[];
+  incidents: RuntimeIncidentDto[];
+  dependencies: {
+    providersReady: boolean;
+    twilioReady: boolean;
+    redisReady: boolean;
+    mongoReady: boolean;
+  };
+  capturedAt: string;
+}
+
+export interface OrganizationProviderRuntimeConfigDto {
+  organizationId: string;
+  preferredProvider: "openai" | "groq" | "gemini";
+  fallbackProviders: Array<"openai" | "groq" | "gemini">;
+  modelByProvider: Partial<Record<"openai" | "groq" | "gemini", string>>;
+  automaticFallback: boolean;
+  active: boolean;
+  updatedAt: string;
+}
+
 export const aiBrainApi = {
+  runtimeOrchestration: (organizationId: string) =>
+    request<RuntimeHealthSnapshotDto>(`/runtime/orchestration?${query({ organizationId })}`),
+  runtimeProviderConfig: (organizationId: string) =>
+    request<OrganizationProviderRuntimeConfigDto>(`/runtime/provider-config?${query({ organizationId })}`),
+  updateRuntimeProviderConfig: (organizationId: string, input: Partial<OrganizationProviderRuntimeConfigDto>) =>
+    request<OrganizationProviderRuntimeConfigDto>(`/runtime/provider-config?${query({ organizationId })}`, {
+      method: "PUT",
+      body: JSON.stringify(input)
+    }),
+  runtimeSessions: (organizationId: string) =>
+    request<CallRuntimeSessionDto[]>(`/runtime/sessions?${query({ organizationId })}`),
+  createRuntimeSession: (
+    organizationId: string,
+    input: { conversationId?: string; direction?: "INBOUND" | "OUTBOUND"; callSid?: string; metadata?: Record<string, unknown> }
+  ) =>
+    request<{ session: CallRuntimeSessionDto; providerSelection: Record<string, unknown> }>(
+      `/runtime/sessions?${query({ organizationId })}`,
+      {
+        method: "POST",
+        body: JSON.stringify(input)
+      }
+    ),
+  runtimeSessionTurns: (organizationId: string, sessionId: string) =>
+    request<RuntimeConversationTurnDto[]>(`/runtime/sessions/${sessionId}/turns?${query({ organizationId })}`),
+  sendRuntimeConversationMessage: (
+    organizationId: string,
+    input: {
+      sessionId: string;
+      userMessage: string;
+      memoryContext?: string;
+      crmContext?: string;
+      knowledgeContext?: string;
+    }
+  ) =>
+    request<RuntimeConversationTurnDto>(`/runtime/conversation?${query({ organizationId })}`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    }),
+  runtimeFallbacks: (organizationId: string) =>
+    request<RuntimeFallbackEventDto[]>(`/runtime/fallbacks?${query({ organizationId })}`),
+  runtimeIncidents: (organizationId: string) =>
+    request<RuntimeIncidentDto[]>(`/runtime/incidents?${query({ organizationId })}`),
+  escalateRuntimeSession: (
+    organizationId: string,
+    input: { sessionId: string; reason: string; queueId?: string; agentId?: string; supervisorId?: string }
+  ) =>
+    request<CallRuntimeSessionDto>(`/runtime/escalations?${query({ organizationId })}`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    }),
   infrastructureStatus: (organizationId: string) =>
     request<InfrastructureStatusDto>(`/infrastructure/status?${query({ organizationId })}`),
   providerStatuses: (organizationId: string) =>

@@ -1,11 +1,19 @@
 "use client";
 
 import { InfrastructureStatusPanels } from "@/components/ai-monitor/infrastructure-status-panels";
+import { RuntimeOrchestrationPanels } from "@/components/ai-monitor/runtime-orchestration-panels";
 import {
   useEnvironmentReadiness,
   useInfrastructureStatus,
   useProviderStatuses
 } from "@/hooks/use-infrastructure-status";
+import {
+  useRuntimeFallbacks,
+  useRuntimeIncidents,
+  useRuntimeOrchestrationOverview,
+  useRuntimeProviderConfig,
+  useRuntimeSessions
+} from "@/hooks/use-runtime-orchestration";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -201,6 +209,11 @@ export default function AiMonitorPage() {
   const infrastructureStatusQuery = useInfrastructureStatus(infrastructureOrganizationId);
   const providerStatusesQuery = useProviderStatuses(infrastructureOrganizationId);
   const environmentReadinessQuery = useEnvironmentReadiness(infrastructureOrganizationId);
+  const runtimeOverviewQuery = useRuntimeOrchestrationOverview(infrastructureOrganizationId);
+  const runtimeProviderConfigQuery = useRuntimeProviderConfig(infrastructureOrganizationId);
+  const runtimeSessionsQuery = useRuntimeSessions(infrastructureOrganizationId);
+  const runtimeFallbacksQuery = useRuntimeFallbacks(infrastructureOrganizationId);
+  const runtimeIncidentsQuery = useRuntimeIncidents(infrastructureOrganizationId);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedRuntimeConversationId, setSelectedRuntimeConversationId] = useState<string | null>(null);
   const sessionsQuery = useAgentSessions(activeOrganizationId);
@@ -489,6 +502,13 @@ export default function AiMonitorPage() {
         status={infrastructureStatusQuery.data}
         providers={providerStatusesQuery.data}
         environment={environmentReadinessQuery.data}
+      />
+      <RuntimeOrchestrationPanels
+        overview={runtimeOverviewQuery.data}
+        providerConfig={runtimeProviderConfigQuery.data}
+        sessions={runtimeSessionsQuery.data}
+        fallbacks={runtimeFallbacksQuery.data}
+        incidents={runtimeIncidentsQuery.data}
       />
       <DeploymentReadinessPanels
         backups={backupJobsQuery.data ?? []}

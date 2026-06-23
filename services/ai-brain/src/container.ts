@@ -86,7 +86,15 @@ import { ObservabilityService } from "./application/services/observability-servi
 import { PromptEngineService } from "./application/services/prompt-engine-service.js";
 import { PaymentService } from "./application/services/payment-service.js";
 import { InfrastructureStatusService } from "./application/services/infrastructure-status-service.js";
+import { AICallOrchestratorService } from "./application/services/ai-call-orchestrator-service.js";
+import { ConversationRuntimeService } from "./application/services/conversation-runtime-service.js";
+import { HumanEscalationRuntimeService } from "./application/services/human-escalation-runtime-service.js";
 import { ProviderRegistryService } from "./application/services/provider-registry-service.js";
+import { ProviderRuntimeSelectionService } from "./application/services/provider-runtime-selection-service.js";
+import { RuntimeIncidentService } from "./application/services/runtime-incident-service.js";
+import { RuntimeMonitoringService } from "./application/services/runtime-monitoring-service.js";
+import { RuntimeRealtimeEventService } from "./application/services/runtime-realtime-event-service.js";
+import { TwilioCallLifecycleService } from "./application/services/twilio-call-lifecycle-service.js";
 import { QualityAssuranceService } from "./application/services/quality-assurance-service.js";
 import { QueueOptimizationService } from "./application/services/queue-optimization-service.js";
 import { QueuePerformanceService } from "./application/services/queue-performance-service.js";
@@ -121,6 +129,13 @@ import { VoiceResponseRequestService } from "./application/services/voice-respon
 import { env } from "./config/env.js";
 import { loadInfrastructureConfig } from "./config/infrastructure-config.js";
 import { RedisConnectionManager } from "./infrastructure/redis/redis-connection-manager.js";
+import {
+  MongoProviderRuntimeConfigRepository,
+  MongoRuntimeConversationTurnRepository,
+  MongoRuntimeFallbackEventRepository,
+  MongoRuntimeIncidentRepository,
+  MongoRuntimeSessionRepository
+} from "./infrastructure/database/mongoose/repositories/runtime-orchestration-repositories.js";
 import {
   MongoAgentDecisionRepository,
   MongoAgentPersonaRepository,
@@ -405,6 +420,11 @@ export function createContainer() {
   const optimizationExperiments = new MongoOptimizationExperimentRepository();
   const optimizationResults = new MongoOptimizationResultRepository();
   const organizationAccess = new MongoOrganizationAccessRepository();
+  const runtimeSessions = new MongoRuntimeSessionRepository();
+  const runtimeConversationTurns = new MongoRuntimeConversationTurnRepository();
+  const runtimeFallbackEvents = new MongoRuntimeFallbackEventRepository();
+  const runtimeIncidents = new MongoRuntimeIncidentRepository();
+  const providerRuntimeConfigs = new MongoProviderRuntimeConfigRepository();
 
   const provider = new OpenAIProvider({ apiKey: env.OPENAI_API_KEY, model: env.OPENAI_MODEL });
   const embeddingProvider = new OpenAIEmbeddingProvider({ apiKey: env.OPENAI_API_KEY });
@@ -432,6 +452,48 @@ export function createContainer() {
     providerRegistry,
     redisConnection,
     twilioIntegration
+  );
+  const runtimeRealtimeEvents = new RuntimeRealtimeEventService(redisConnection);
+  const runtimeIncidentService = new RuntimeIncidentService(runtimeIncidents, runtimeRealtimeEvents);
+  const providerRuntimeSelection = new ProviderRuntimeSelectionService(
+    providerRuntimeConfigs,
+    runtimeFallbackEvents,
+    providerRegistry,
+    runtimeIncidentService,
+    runtimeRealtimeEvents
+  );
+  const aiCallOrchestrator = new AICallOrchestratorService(
+    runtimeSessions,
+    providerRuntimeSelection,
+    twilioIntegration,
+    runtimeIncidentService,
+    runtimeRealtimeEvents
+  );
+  const conversationRuntime = new ConversationRuntimeService(
+    runtimeSessions,
+    runtimeConversationTurns,
+    providerRuntimeSelection,
+    runtimeIncidentService,
+    runtimeRealtimeEvents
+  );
+  const twilioCallLifecycle = new TwilioCallLifecycleService(
+    runtimeSessions,
+    twilioIntegration,
+    runtimeIncidentService,
+    runtimeRealtimeEvents
+  );
+  const humanEscalationRuntime = new HumanEscalationRuntimeService(
+    runtimeSessions,
+    runtimeIncidentService,
+    runtimeRealtimeEvents
+  );
+  const runtimeMonitoring = new RuntimeMonitoringService(
+    runtimeSessions,
+    runtimeFallbackEvents,
+    runtimeIncidents,
+    providerRegistry,
+    providerRuntimeSelection,
+    infrastructureStatus
   );
   const personaService = new AgentPersonaService(personas);
   const contextBuilder = new ContextBuilder();
@@ -819,6 +881,11 @@ export function createContainer() {
       optimizationExperiments,
       optimizationResults,
       organizationAccess,
+      runtimeSessions,
+      runtimeConversationTurns,
+      runtimeFallbackEvents,
+      runtimeIncidents,
+      providerRuntimeConfigs,
     },
     services: {
       accessTokenService,
@@ -845,6 +912,14 @@ export function createContainer() {
       redisConnection,
       twilioIntegration,
       infrastructureStatus,
+      runtimeRealtimeEvents,
+      runtimeIncidentService,
+      providerRuntimeSelection,
+      aiCallOrchestrator,
+      conversationRuntime,
+      twilioCallLifecycle,
+      humanEscalationRuntime,
+      runtimeMonitoring,
       monitoring,
       deploymentCatalog,
       environmentValidation,

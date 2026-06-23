@@ -4,6 +4,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { aiBrainApi } from "@/lib/api/ai-brain-api";
 
+export {
+  useRuntimeFallbacks,
+  useRuntimeIncidents,
+  useRuntimeOrchestrationActions,
+  useRuntimeOrchestrationOverview,
+  useRuntimeProviderConfig,
+  useRuntimeSessions,
+  useRuntimeSessionTurns
+} from "./use-runtime-orchestration";
+
 export const aiBrainKeys = {
   infrastructureStatus: (organizationId: string) => ["ai-brain", "infrastructure-status", organizationId] as const,
   providerStatuses: (organizationId: string) => ["ai-brain", "provider-statuses", organizationId] as const,
