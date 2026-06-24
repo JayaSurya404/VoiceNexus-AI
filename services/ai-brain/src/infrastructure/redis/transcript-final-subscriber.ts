@@ -15,6 +15,13 @@ export class TranscriptFinalSubscriber {
   private async handleMessage(message: string): Promise<void> {
     try {
       const event = normalizeTranscriptEvent(JSON.parse(message) as Record<string, unknown>);
+      console.info("[ai-brain] transcript.final received", {
+        organizationId: event.organizationId,
+        callSessionId: event.callSessionId,
+        sequenceNumber: event.sequenceNumber,
+        textLength: event.text.length,
+        textPreview: event.text.slice(0, 120),
+      });
 
       if (event.text.trim()) {
         await this.runtime.processTranscript(event);

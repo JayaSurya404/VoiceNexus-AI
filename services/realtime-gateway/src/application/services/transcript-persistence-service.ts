@@ -43,6 +43,15 @@ export class TranscriptPersistenceService {
       type: input.type,
     });
     const createdAt = event.createdAt.toISOString();
+    console.info("[transcript] persisted", {
+      organizationId: input.organizationId,
+      callSessionId: input.callSessionId,
+      aiConversationSessionId: input.aiConversationSessionId,
+      sequenceNumber: input.sequenceNumber,
+      type: input.type,
+      textLength: text.length,
+      textPreview: text.slice(0, 120),
+    });
 
     await this.transcriptBuffer.append({
       callSessionId: input.callSessionId,
@@ -68,6 +77,12 @@ export class TranscriptPersistenceService {
         text,
         type: input.type,
       },
+    });
+    console.info("[transcript] published", {
+      topic: input.type === "FINAL" ? "transcript.final" : "transcript.partial",
+      organizationId: input.organizationId,
+      callSessionId: input.callSessionId,
+      sequenceNumber: input.sequenceNumber,
     });
   }
 }

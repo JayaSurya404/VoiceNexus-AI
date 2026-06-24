@@ -23,6 +23,12 @@ export async function createRealtimeHttpServer(container: Container) {
       return;
     }
 
+    console.info("[twilio-ws] upgrade received", {
+      path: url.pathname,
+      hasToken: Boolean(url.searchParams.get("token")),
+      tokenLength: url.searchParams.get("token")?.length ?? 0,
+      userAgent: request.headers["user-agent"] ?? null,
+    });
     twilioWebSocketServer.handleUpgrade(request, socket, head, (ws) => {
       twilioWebSocketServer.emit("connection", ws, request);
     });
@@ -41,6 +47,10 @@ function createTwilioWebSocketServer(container: Container): WebSocketServer {
       try {
         const url = new URL(request.url ?? "", "http://localhost");
         const token = url.searchParams.get("token");
+        console.info("[twilio-ws] connection accepted by ws server", {
+          hasToken: Boolean(token),
+          tokenLength: token?.length ?? 0,
+        });
 
         if (!token) {
           throw RealtimeError.unauthorized("Twilio media stream token is required");
@@ -59,6 +69,12 @@ function createTwilioWebSocketServer(container: Container): WebSocketServer {
         }
 
         context = await container.services.realtimeGatewayService.openConnection(claims);
+        console.info("[twilio-ws] authenticated", {
+          organizationId: context.organizationId,
+          callSessionId: context.callSessionId,
+          providerCallSid: context.providerCallSid,
+          connectionId: context.connectionId,
+        });
         container.services.audioPlaybackService.register(context.callSessionId, {
           streamSid: null,
           send: (payload) => socket.readyState === socket.OPEN && socket.send(JSON.stringify(payload)),
@@ -68,28 +84,67 @@ function createTwilioWebSocketServer(container: Container): WebSocketServer {
           void (async () => {
             try {
               const raw = rawMessageToString(message);
+              logTwilioMessage(raw);
               registerStreamSid(container, context!.callSessionId, raw, (payload) =>
                 socket.readyState === socket.OPEN && socket.send(JSON.stringify(payload)),
               );
               await container.services.realtimeGatewayService.handleMessage(context!, raw);
             } catch (error) {
+              console.error("[twilio-ws] message handling failed", {
+                callSessionId: context?.callSessionId ?? null,
+                message: errorMessage(error),
+              });
               socket.close(1008, errorMessage(error));
             }
           })();
         });
         socket.on("close", () => {
+          console.info("[twilio-ws] socket closed", {
+            callSessionId: context?.callSessionId ?? null,
+            connectionId: context?.connectionId ?? null,
+          });
           if (context) {
             container.services.audioPlaybackService.unregister(context.callSessionId);
             void container.services.realtimeGatewayService.closeConnection(context, "Socket closed");
           }
         });
       } catch (error) {
+        console.error("[twilio-ws] connection rejected", {
+          message: errorMessage(error),
+        });
         socket.close(1008, errorMessage(error));
       }
     })();
   });
 
   return wss;
+}
+
+function logTwilioMessage(raw: string): void {
+  try {
+    const parsed = JSON.parse(raw) as {
+      event?: string;
+      streamSid?: string;
+      sequenceNumber?: string;
+      media?: { payload?: string; chunk?: string; timestamp?: string };
+      start?: { callSid?: string; mediaFormat?: unknown; customParameters?: Record<string, string> };
+    };
+    console.info("[twilio-ws] message", {
+      event: parsed.event ?? null,
+      streamSid: parsed.streamSid ?? null,
+      sequenceNumber: parsed.sequenceNumber ?? null,
+      callSid: parsed.start?.callSid ?? null,
+      mediaPayloadBytes: parsed.media?.payload ? Buffer.byteLength(parsed.media.payload, "base64") : null,
+      mediaChunk: parsed.media?.chunk ?? null,
+      mediaTimestamp: parsed.media?.timestamp ?? null,
+      mediaFormat: parsed.start?.mediaFormat ?? null,
+      customParameters: parsed.start?.customParameters ?? null,
+    });
+  } catch {
+    console.warn("[twilio-ws] received non-json websocket message", {
+      length: raw.length,
+    });
+  }
 }
 
 function registerStreamSid(

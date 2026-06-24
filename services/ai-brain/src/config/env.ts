@@ -1,4 +1,7 @@
+import dotenv from "dotenv";
 import { z } from "zod";
+
+dotenv.config();
 
 const envSchema = z.object({
   AI_BRAIN_PORT: z.coerce.number().int().positive().default(4002),

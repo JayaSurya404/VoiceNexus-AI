@@ -24,6 +24,13 @@ export class VoiceResponseService {
 
   async createAndPlay(input: VoiceResponseRequest) {
     const startedAt = Date.now();
+    console.info("[voice-response] creating", {
+      organizationId: input.organizationId,
+      callId: input.callId,
+      sessionId: input.sessionId,
+      responseLength: input.responseText.length,
+      provider: this.tts.providerName(),
+    });
     let response = await this.responses.create({
       organizationId: input.organizationId,
       sessionId: input.sessionId,
@@ -59,6 +66,15 @@ export class VoiceResponseService {
         text: input.responseText,
         voice: input.voice ?? null,
       });
+      console.info("[voice-response] tts generated", {
+        organizationId: input.organizationId,
+        callId: input.callId,
+        voiceResponseId: response.id,
+        provider: result.provider,
+        mimeType: result.mimeType,
+        audioBytes: result.audioBytes,
+        durationMs: result.durationMs,
+      });
       response = (await this.responses.update(response.id, {
         provider: result.provider,
         voice: result.voice,
@@ -76,6 +92,12 @@ export class VoiceResponseService {
         base64Audio: result.audioBase64,
         durationMs: result.durationMs,
       });
+      console.info("[voice-response] audio queued", {
+        organizationId: input.organizationId,
+        callId: input.callId,
+        voiceResponseId: response.id,
+        audioBytes: result.audioBytes,
+      });
       await this.responses.update(response.id, { status: "PLAYING", playbackStartedAt: new Date() });
       await this.eventBus.publish("voice.response.playback", {
         organizationId: input.organizationId,
@@ -88,6 +110,12 @@ export class VoiceResponseService {
         payload: { type: "VOICE_RESPONSE_STARTED", voiceResponseId: response.id },
       });
       const played = this.playback.play(segment);
+      console.info("[voice-response] playback attempted", {
+        organizationId: input.organizationId,
+        callId: input.callId,
+        voiceResponseId: response.id,
+        played,
+      });
       await this.responses.update(response.id, {
         status: played ? "COMPLETED" : "QUEUED",
         playbackCompletedAt: played ? new Date() : null,

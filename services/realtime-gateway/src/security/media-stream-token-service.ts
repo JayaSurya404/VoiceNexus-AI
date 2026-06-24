@@ -16,15 +16,27 @@ export type MediaStreamClaims = z.infer<typeof mediaStreamClaimsSchema>;
 
 export class MediaStreamTokenService {
   verify(token: string): MediaStreamClaims {
+    console.info("[media-stream-token] verifying token", {
+      parts: token.split(".").length,
+      tokenLength: token.length,
+    });
     const [payloadPart, signaturePart] = token.split(".");
 
     if (!payloadPart || !signaturePart) {
+      console.error("[media-stream-token] malformed token", {
+        hasPayload: Boolean(payloadPart),
+        hasSignature: Boolean(signaturePart),
+      });
       throw RealtimeError.unauthorized("Media stream token is malformed");
     }
 
     const expected = createHmac("sha256", env.MEDIA_STREAM_SECRET).update(payloadPart).digest("base64url");
 
     if (!safeEqual(signaturePart, expected)) {
+      console.error("[media-stream-token] invalid signature", {
+        payloadLength: payloadPart.length,
+        signatureLength: signaturePart.length,
+      });
       throw RealtimeError.unauthorized("Media stream token signature is invalid");
     }
 
@@ -32,9 +44,20 @@ export class MediaStreamTokenService {
     const claims = mediaStreamClaimsSchema.parse(payload);
 
     if (claims.exp < Math.floor(Date.now() / 1000)) {
+      console.error("[media-stream-token] expired token", {
+        organizationId: claims.organizationId,
+        callSessionId: claims.callSessionId,
+        exp: claims.exp,
+      });
       throw RealtimeError.unauthorized("Media stream token has expired");
     }
 
+    console.info("[media-stream-token] verified", {
+      organizationId: claims.organizationId,
+      callSessionId: claims.callSessionId,
+      providerCallSid: claims.providerCallSid ?? null,
+      exp: claims.exp,
+    });
     return claims;
   }
 }

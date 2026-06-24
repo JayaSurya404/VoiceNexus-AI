@@ -371,23 +371,60 @@ async function handleRequest(container: Container, request: IncomingMessage, res
     }
 
     if (url.pathname === "/twilio/voice/webhook" && request.method === "POST") {
-      const body = await readJson(request);
-      const organizationId = url.searchParams.get("organizationId");
+      const body = await readWebhookPayload(request);
+      const organizationId = container.services.twilioIntegration.resolveWebhookOrganizationId({
+        queryOrganizationId: url.searchParams.get("organizationId"),
+        body,
+      });
+      const conversationId =
+        url.searchParams.get("conversationId") ?? (typeof body.conversationId === "string" ? body.conversationId : undefined);
+      const callSid = typeof body.CallSid === "string" ? body.CallSid : typeof body.callSid === "string" ? body.callSid : undefined;
+      let runtimeSessionId: string | undefined;
+      console.info("[twilio] voice webhook received", {
+        organizationId,
+        runtimeSessionId: null,
+        conversationId: conversationId ?? null,
+        callSid: callSid ?? null,
+      });
       if (organizationId) {
-        const result = await container.services.twilioCallLifecycle.processEvent({
+        if (callSid) {
+          const session = await container.services.aiCallOrchestrator.ensureRuntimeSessionForCall({
+            organizationId,
+            conversationId: conversationId ?? `runtime-${Date.now()}`,
+            direction: "INBOUND",
+            callSid,
+            metadata: body
+          });
+          runtimeSessionId = session.id;
+        } else {
+          const result = await container.services.aiCallOrchestrator.createRuntimeSession({
+            organizationId,
+            conversationId: conversationId ?? `runtime-${Date.now()}`,
+            direction: "INBOUND",
+            metadata: body
+          });
+          runtimeSessionId = result.session.id;
+        }
+        await container.services.twilioCallLifecycle.processEvent({
           organizationId,
           payload: body
         });
-        sendJson(response, 200, {
-          data: {
-            callStatus: result.callStatus,
-            session: result.session ? toCallRuntimeSessionDto(result.session) : null
-          }
-        });
-        return;
       }
-      const webhook = container.services.twilioIntegration.parseVoiceWebhook(body);
-      sendJson(response, 200, webhook);
+      console.info("[twilio] voice webhook runtime context", {
+        organizationId,
+        runtimeSessionId: runtimeSessionId ?? null,
+        conversationId: conversationId ?? null,
+        callSid: callSid ?? null,
+      });
+      const gatewayHost = url.searchParams.get("gatewayHost") ?? request.headers.host ?? null;
+      const twiml = container.services.twilioIntegration.generateMediaStreamTwiml({
+        ...(organizationId ? { organizationId } : {}),
+        ...(runtimeSessionId ? { callSessionId: runtimeSessionId } : {}),
+        ...(conversationId ? { conversationId } : {}),
+        ...(callSid ? { callSid } : {}),
+        gatewayHost
+      });
+      sendXml(response, 200, twiml);
       return;
     }
 
@@ -429,14 +466,23 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       const to = typeof body.to === "string" ? body.to : "";
       const from = typeof body.from === "string" ? body.from : undefined;
       const webhookUrl = typeof body.webhookUrl === "string" ? body.webhookUrl : undefined;
+      const conversationId = typeof body.conversationId === "string" ? body.conversationId : `runtime-${Date.now()}`;
+      const outboundCall = await container.services.aiCallOrchestrator.startOutboundCall({
+        organizationId,
+        conversationId,
+        to,
+        ...(from ? { from } : {}),
+        ...(webhookUrl ? { webhookUrl } : {})
+      });
       sendJson(
         response,
         201,
-        container.services.twilioIntegration.initiateOutgoingCall({
-          to,
-          from,
-          webhookUrl
-        })
+        {
+          data: {
+            call: outboundCall.call,
+            session: toCallRuntimeSessionDto(outboundCall.session)
+          }
+        }
       );
       return;
     }
@@ -2271,6 +2317,21 @@ async function readJson(request: IncomingMessage): Promise<Record<string, unknow
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, unknown>;
 }
 
+async function readWebhookPayload(request: IncomingMessage): Promise<Record<string, unknown>> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of request) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  if (!chunks.length) return {};
+
+  const rawBody = Buffer.concat(chunks).toString("utf8");
+  const contentType = request.headers["content-type"] ?? "";
+  if (Array.isArray(contentType) ? contentType.some((value) => value.includes("application/json")) : contentType.includes("application/json")) {
+    return JSON.parse(rawBody) as Record<string, unknown>;
+  }
+
+  const params = new URLSearchParams(rawBody);
+  return Object.fromEntries(params.entries());
+}
+
 function isRuntimeProviderName(value: unknown): value is RuntimeProviderName {
   return value === "openai" || value === "groq" || value === "gemini";
 }
@@ -2278,5 +2339,10 @@ function isRuntimeProviderName(value: unknown): value is RuntimeProviderName {
 function sendJson(response: ServerResponse, statusCode: number, payload: unknown): void {
   response.writeHead(statusCode, { "content-type": "application/json" });
   response.end(JSON.stringify(payload));
+}
+
+function sendXml(response: ServerResponse, statusCode: number, payload: string): void {
+  response.writeHead(statusCode, { "content-type": "text/xml" });
+  response.end(payload);
 }
 import type { RuntimeProviderName } from "../domain/entities/runtime-orchestration.js";

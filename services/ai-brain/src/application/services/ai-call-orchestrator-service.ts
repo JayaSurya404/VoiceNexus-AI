@@ -8,6 +8,7 @@ import type { ProviderRuntimeSelectionService } from "./provider-runtime-selecti
 import type { RuntimeIncidentService } from "./runtime-incident-service.js";
 import type { RuntimeRealtimeEventService } from "./runtime-realtime-event-service.js";
 import type { TwilioIntegrationService } from "./twilio-integration-service.js";
+import type { TwilioCallResult } from "./twilio-integration-service.js";
 
 export interface CreateRuntimeSessionInput {
   organizationId: string;
@@ -54,15 +55,29 @@ export class AICallOrchestratorService {
     return { session: { ...session, status: "ACTIVE" }, providerSelection: selection };
   }
 
+  public async ensureRuntimeSessionForCall(input: CreateRuntimeSessionInput): Promise<CallRuntimeSession> {
+    if (input.callSid) {
+      const existing = await this.sessions.findByCallSid(input.organizationId, input.callSid);
+      if (existing) {
+        return existing;
+      }
+    }
+
+    const result = await this.createRuntimeSession(input);
+    return result.session;
+  }
+
   public async startOutboundCall(input: {
     organizationId: string;
     conversationId: string;
     to: string;
     from?: string;
     webhookUrl?: string;
-  }): Promise<CallRuntimeSession> {
-    const call = this.twilio.initiateOutgoingCall({
+  }): Promise<{ session: CallRuntimeSession; call: TwilioCallResult }> {
+    const call = await this.twilio.initiateOutgoingCall({
       to: input.to,
+      organizationId: input.organizationId,
+      conversationId: input.conversationId,
       ...(input.from ? { from: input.from } : {}),
       ...(input.webhookUrl ? { webhookUrl: input.webhookUrl } : {})
     });
@@ -70,15 +85,18 @@ export class AICallOrchestratorService {
       organizationId: input.organizationId,
       conversationId: input.conversationId,
       direction: "OUTBOUND",
+      ...(call.callSid ? { callSid: call.callSid } : {}),
       metadata: {
         outboundCallQueued: call.queued,
+        callSid: call.callSid,
+        callStatus: call.status,
         to: call.to,
         from: call.from,
         webhookUrl: call.webhookUrl
       }
     });
     await this.realtime.publish(input.organizationId, "runtime.call.outbound.queued", { session, call });
-    return session;
+    return { session, call };
   }
 
   public async failSession(organizationId: string, sessionId: string, message: string): Promise<void> {

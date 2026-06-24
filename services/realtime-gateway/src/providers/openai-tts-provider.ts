@@ -18,7 +18,7 @@ export class OpenAiTtsProvider implements TtsProvider {
         model: env.OPENAI_TTS_MODEL,
         voice,
         input: input.text,
-        response_format: "mp3",
+        response_format: "pcm",
       }),
     });
 
@@ -26,15 +26,16 @@ export class OpenAiTtsProvider implements TtsProvider {
       throw new Error(`OpenAI TTS failed with status ${response.status}`);
     }
 
-    const bytes = Buffer.from(await response.arrayBuffer());
+    const pcm24khz = Buffer.from(await response.arrayBuffer());
+    const mulaw8khz = pcm16le24khzToMulaw8khz(pcm24khz);
     return {
       provider: this.name,
       voice,
-      mimeType: "audio/mpeg",
+      mimeType: "audio/x-mulaw;rate=8000",
       audioUrl: null,
-      audioBase64: bytes.toString("base64"),
+      audioBase64: mulaw8khz.toString("base64"),
       durationMs: estimateDurationMs(input.text),
-      audioBytes: bytes.byteLength,
+      audioBytes: mulaw8khz.byteLength,
       createdAt: new Date(),
     };
   }
@@ -42,4 +43,35 @@ export class OpenAiTtsProvider implements TtsProvider {
 
 function estimateDurationMs(text: string): number {
   return Math.max(900, Math.ceil(text.split(/\s+/).length / 2.6) * 1000);
+}
+
+function pcm16le24khzToMulaw8khz(input: Buffer): Buffer {
+  const outputLength = Math.floor(input.length / 6);
+  const output = Buffer.alloc(outputLength);
+  let outputIndex = 0;
+
+  for (let inputIndex = 0; inputIndex + 5 < input.length; inputIndex += 6) {
+    const first = input.readInt16LE(inputIndex);
+    const second = input.readInt16LE(inputIndex + 2);
+    const third = input.readInt16LE(inputIndex + 4);
+    output[outputIndex] = linear16ToMulaw(Math.round((first + second + third) / 3));
+    outputIndex += 1;
+  }
+
+  return output;
+}
+
+function linear16ToMulaw(sample: number): number {
+  const bias = 0x84;
+  const clipped = Math.max(-32635, Math.min(32635, sample));
+  const sign = clipped < 0 ? 0x80 : 0;
+  const magnitude = Math.abs(clipped) + bias;
+  let exponent = 7;
+
+  for (let mask = 0x4000; exponent > 0 && (magnitude & mask) === 0; mask >>= 1) {
+    exponent -= 1;
+  }
+
+  const mantissa = (magnitude >> (exponent + 3)) & 0x0f;
+  return ~(sign | (exponent << 4) | mantissa) & 0xff;
 }

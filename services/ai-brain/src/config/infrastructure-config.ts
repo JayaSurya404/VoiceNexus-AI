@@ -28,6 +28,9 @@ export interface InfrastructureConfig {
     authToken: string | null;
     fromNumber: string | null;
     voiceWebhookUrl: string | null;
+    realtimeGatewayPublicUrl: string | null;
+    defaultOrganizationId: string | null;
+    mediaStreamSecret: string | null;
   };
   redis: {
     url: string | null;
@@ -75,9 +78,14 @@ export const loadInfrastructureConfig = (): InfrastructureConfig => {
     issue("GEMINI_API_KEY", process.env.GEMINI_API_KEY, false),
     issue("TWILIO_ACCOUNT_SID", process.env.TWILIO_ACCOUNT_SID, production),
     issue("TWILIO_AUTH_TOKEN", process.env.TWILIO_AUTH_TOKEN, production),
-    issue("TWILIO_FROM_NUMBER", process.env.TWILIO_FROM_NUMBER, production),
+    issue("TWILIO_PHONE_NUMBER", process.env.TWILIO_PHONE_NUMBER ?? process.env.TWILIO_FROM_NUMBER, production),
     issue("TWILIO_VOICE_WEBHOOK_URL", process.env.TWILIO_VOICE_WEBHOOK_URL ?? process.env.PUBLIC_WEBHOOK_URL, production, (value) =>
       value.startsWith("https://"),
+    ),
+    issue("TWILIO_DEFAULT_ORGANIZATION_ID", process.env.TWILIO_DEFAULT_ORGANIZATION_ID ?? process.env.DEFAULT_ORGANIZATION_ID, production),
+    issue("MEDIA_STREAM_SECRET", process.env.MEDIA_STREAM_SECRET ?? process.env.MEDIA_STREAM_TOKEN_SECRET, production, (value) => value.length >= 32),
+    issue("REALTIME_GATEWAY_PUBLIC_URL", process.env.REALTIME_GATEWAY_PUBLIC_URL, false, (value) =>
+      value.startsWith("https://") || value.startsWith("http://") || value.startsWith("wss://") || value.startsWith("ws://"),
     ),
   ];
 
@@ -99,8 +107,11 @@ export const loadInfrastructureConfig = (): InfrastructureConfig => {
     twilio: {
       accountSid: process.env.TWILIO_ACCOUNT_SID ?? null,
       authToken: process.env.TWILIO_AUTH_TOKEN ?? null,
-      fromNumber: process.env.TWILIO_FROM_NUMBER ?? null,
+      fromNumber: process.env.TWILIO_PHONE_NUMBER ?? process.env.TWILIO_FROM_NUMBER ?? null,
       voiceWebhookUrl: process.env.TWILIO_VOICE_WEBHOOK_URL ?? process.env.PUBLIC_WEBHOOK_URL ?? null,
+      realtimeGatewayPublicUrl: process.env.REALTIME_GATEWAY_PUBLIC_URL ?? null,
+      defaultOrganizationId: process.env.TWILIO_DEFAULT_ORGANIZATION_ID ?? process.env.DEFAULT_ORGANIZATION_ID ?? null,
+      mediaStreamSecret: process.env.MEDIA_STREAM_SECRET ?? process.env.MEDIA_STREAM_TOKEN_SECRET ?? null,
     },
     redis: {
       url: process.env.REDIS_URL ?? null,

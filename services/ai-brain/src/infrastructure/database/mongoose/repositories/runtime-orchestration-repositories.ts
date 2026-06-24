@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Schema, model, models } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 import type { Model } from "mongoose";
 
 import type {
@@ -133,19 +133,19 @@ const providerConfigSchema = new Schema<ProviderConfigDocument>(
 );
 
 const RuntimeSessionModel: Model<RuntimeSessionDocument> =
-  (models.CallRuntimeSession as Model<RuntimeSessionDocument> | undefined) ??
+  (mongoose.models.CallRuntimeSession as Model<RuntimeSessionDocument> | undefined) ??
   model<RuntimeSessionDocument>("CallRuntimeSession", runtimeSessionSchema);
 const RuntimeTurnModel: Model<RuntimeTurnDocument> =
-  (models.RuntimeConversationTurn as Model<RuntimeTurnDocument> | undefined) ??
+  (mongoose.models.RuntimeConversationTurn as Model<RuntimeTurnDocument> | undefined) ??
   model<RuntimeTurnDocument>("RuntimeConversationTurn", runtimeTurnSchema);
 const RuntimeFallbackEventModel: Model<RuntimeFallbackDocument> =
-  (models.RuntimeFallbackEvent as Model<RuntimeFallbackDocument> | undefined) ??
+  (mongoose.models.RuntimeFallbackEvent as Model<RuntimeFallbackDocument> | undefined) ??
   model<RuntimeFallbackDocument>("RuntimeFallbackEvent", fallbackEventSchema);
 const RuntimeIncidentModel: Model<RuntimeIncidentDocument> =
-  (models.RuntimeIncident as Model<RuntimeIncidentDocument> | undefined) ??
+  (mongoose.models.RuntimeIncident as Model<RuntimeIncidentDocument> | undefined) ??
   model<RuntimeIncidentDocument>("RuntimeIncident", runtimeIncidentSchema);
 const ProviderRuntimeConfigModel: Model<ProviderConfigDocument> =
-  (models.OrganizationProviderRuntimeConfig as Model<ProviderConfigDocument> | undefined) ??
+  (mongoose.models.OrganizationProviderRuntimeConfig as Model<ProviderConfigDocument> | undefined) ??
   model<ProviderConfigDocument>("OrganizationProviderRuntimeConfig", providerConfigSchema);
 
 const toRuntimeSession = (document: RuntimeSessionDocument): CallRuntimeSession => ({

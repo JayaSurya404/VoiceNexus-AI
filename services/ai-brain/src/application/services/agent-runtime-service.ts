@@ -58,17 +58,24 @@ export class AgentRuntimeService {
   async processTranscript(event: FinalTranscriptEvent): Promise<void> {
     if (!event.text.trim()) return;
 
-    const call = await CallSessionModel.findOne({
-      _id: objectIdOrThrow(event.callSessionId),
-      organizationId: objectIdOrThrow(event.organizationId),
-    }).lean();
+    console.info("[ai-runtime] processing transcript", {
+      organizationId: event.organizationId,
+      callSessionId: event.callSessionId,
+      sequenceNumber: event.sequenceNumber,
+      textLength: event.text.length,
+      textPreview: event.text.slice(0, 120),
+    });
 
+    const call = await this.findExternalCall(event);
     if (!call) {
-      console.warn(`[ai-brain] Ignoring transcript for unknown call ${event.callSessionId}`);
-      return;
+      console.warn("[ai-runtime] external call session not found; continuing with realtime call session", {
+        organizationId: event.organizationId,
+        callSessionId: event.callSessionId,
+      });
     }
 
-    const leadId = stringId((call as Record<string, unknown>).leadId);
+    const callRecord = (call ?? {}) as Record<string, unknown>;
+    const leadId = stringId(callRecord.leadId);
     const persona = await this.personas.defaultForOrganization(event.organizationId);
     const conversation =
       (await this.conversations.findByCall(event.organizationId, event.callSessionId)) ??
@@ -92,7 +99,7 @@ export class AgentRuntimeService {
           collectedFacts: {},
           lastResponse: null,
         },
-        startedAt: dateValue((call as Record<string, unknown>).startedAt) ?? new Date(event.createdAt),
+        startedAt: dateValue(callRecord.startedAt) ?? new Date(event.createdAt),
         endedAt: null,
       }));
     const session =
@@ -176,6 +183,15 @@ export class AgentRuntimeService {
     const response = await this.responseGeneration.generate({
       messages: this.promptEngine.build({ context, memory, knowledge, persona, state, transcript }),
       tools: this.toolRouter.definitions(),
+    });
+    console.info("[ai-runtime] response generated", {
+      organizationId: event.organizationId,
+      callSessionId: event.callSessionId,
+      conversationId: conversation.id,
+      sessionId: session.id,
+      responseLength: response.content.length,
+      confidence: response.confidence,
+      tokens: response.tokens,
     });
 
     await Promise.all([
@@ -273,6 +289,12 @@ export class AgentRuntimeService {
         leadId,
         responseText: response.content,
       });
+      console.info("[ai-runtime] voice response requested", {
+        organizationId: event.organizationId,
+        callSessionId: event.callSessionId,
+        sessionId: session.id,
+        responseLength: response.content.length,
+      });
     }
     await this.conversations.update(conversation.id, {
       currentIntent: state.detectedIntent,
@@ -314,6 +336,17 @@ export class AgentRuntimeService {
     });
 
     console.log(`[ai-brain] Runtime processed transcript ${event.sequenceNumber} for session ${session.id}`);
+  }
+
+  private async findExternalCall(event: FinalTranscriptEvent): Promise<Record<string, unknown> | null> {
+    try {
+      return await CallSessionModel.findOne({
+        _id: objectIdOrThrow(event.callSessionId),
+        organizationId: objectIdOrThrow(event.organizationId),
+      }).lean<Record<string, unknown> | null>();
+    } catch {
+      return null;
+    }
   }
 }
 

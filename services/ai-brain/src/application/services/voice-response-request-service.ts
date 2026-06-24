@@ -11,6 +11,14 @@ export class VoiceResponseRequestService {
     responseText: string;
   }): Promise<void> {
     const publisher = await getRedisPublisher();
+    console.info("[voice-response-request] publishing", {
+      organizationId: input.organizationId,
+      callSessionId: input.callId,
+      sessionId: input.sessionId,
+      leadId: input.leadId,
+      responseLength: input.responseText.length,
+      responsePreview: input.responseText.slice(0, 120),
+    });
     await publisher.publish(
       "voice.response.requested",
       JSON.stringify({

@@ -33,6 +33,12 @@ export class DeepgramStreamManager {
   ) {}
 
   async start(context: DeepgramStreamContext): Promise<void> {
+    console.info("[deepgram] start requested", {
+      organizationId: context.organizationId,
+      callSessionId: context.callSessionId,
+      aiConversationSessionId: context.aiConversationSessionId,
+      streamSid: context.streamSid,
+    });
     const existing = this.streams.get(context.callSessionId);
 
     if (existing?.state === "CONNECTED" || existing?.state === "CONNECTING") {
@@ -78,6 +84,10 @@ export class DeepgramStreamManager {
       return;
     }
 
+    console.info("[deepgram] sending audio frame", {
+      callSessionId,
+      bytes: audio.byteLength,
+    });
     managed.socket.sendAudio(audio);
   }
 
@@ -165,6 +175,15 @@ export class DeepgramStreamManager {
       }
 
       managed.sequenceNumber += 1;
+      console.info("[deepgram] transcript received", {
+        organizationId: managed.context.organizationId,
+        callSessionId: managed.context.callSessionId,
+        sequenceNumber: managed.sequenceNumber,
+        isFinal: transcript.isFinal,
+        confidence: transcript.confidence,
+        textLength: transcript.text.length,
+        textPreview: transcript.text.slice(0, 120),
+      });
       void this.transcripts.handleTranscript({
         aiConversationSessionId: managed.context.aiConversationSessionId,
         callSessionId: managed.context.callSessionId,

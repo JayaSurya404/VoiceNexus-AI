@@ -17,12 +17,29 @@ export class VoiceResponseEventSubscriber {
     const payload = event.payload;
     const responseText = typeof payload.responseText === "string" ? payload.responseText : "";
     const callId = typeof payload.callId === "string" ? payload.callId : event.callSessionId;
+    console.info("[voice-response-subscriber] received", {
+      organizationId: event.organizationId,
+      callSessionId: event.callSessionId,
+      callId,
+      responseLength: responseText.length,
+      responsePreview: responseText.slice(0, 120),
+    });
 
     if (!responseText || !callId) {
+      console.warn("[voice-response-subscriber] skipped missing response text or call id", {
+        organizationId: event.organizationId,
+        callSessionId: event.callSessionId,
+        hasResponseText: Boolean(responseText),
+        callId,
+      });
       return;
     }
 
     if (this.takeover && (await this.takeover.isTakeoverActive(event.organizationId, callId))) {
+      console.info("[voice-response-subscriber] skipped because takeover is active", {
+        organizationId: event.organizationId,
+        callId,
+      });
       return;
     }
 

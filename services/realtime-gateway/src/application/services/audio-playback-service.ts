@@ -10,18 +10,38 @@ export class AudioPlaybackService {
 
   register(callId: string, connection: PlaybackConnection): void {
     this.connections.set(callId, connection);
+    console.info("[audio-playback] connection registered", {
+      callId,
+      streamSid: connection.streamSid,
+    });
   }
 
   unregister(callId: string): void {
     this.connections.delete(callId);
+    console.info("[audio-playback] connection unregistered", {
+      callId,
+    });
   }
 
   play(segment: AudioSegment): boolean {
     const connection = this.connections.get(segment.callId);
     if (!connection?.streamSid) {
+      console.warn("[audio-playback] playback unavailable", {
+        callId: segment.callId,
+        voiceResponseId: segment.voiceResponseId,
+        hasConnection: Boolean(connection),
+        streamSid: connection?.streamSid ?? null,
+      });
       return false;
     }
 
+    console.info("[audio-playback] sending media", {
+      callId: segment.callId,
+      voiceResponseId: segment.voiceResponseId,
+      streamSid: connection.streamSid,
+      mimeType: segment.mimeType,
+      payloadBytes: Buffer.byteLength(segment.base64Audio, "base64"),
+    });
     connection.send({
       event: "media",
       streamSid: connection.streamSid,

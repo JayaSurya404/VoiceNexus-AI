@@ -96,6 +96,12 @@ export class RealtimeGatewayService {
       callSessionId: claims.callSessionId,
       providerCallSid: claims.providerCallSid ?? null,
     };
+    console.info("[realtime-call] opening connection", {
+      organizationId: context.organizationId,
+      callSessionId: context.callSessionId,
+      providerCallSid: context.providerCallSid,
+      connectionId: context.connectionId,
+    });
 
     const conversation = await this.ensureConversation(context, "CONNECTING", null);
     context.aiConversationSessionId = conversation?.id ?? null;
@@ -128,6 +134,11 @@ export class RealtimeGatewayService {
         connectionId: context.connectionId,
         status: "CONNECTING",
       },
+    });
+    console.info("[realtime-call] connection opened", {
+      organizationId: context.organizationId,
+      callSessionId: context.callSessionId,
+      aiConversationSessionId: context.aiConversationSessionId,
     });
 
     return context;
@@ -244,6 +255,14 @@ export class RealtimeGatewayService {
         mediaFormat: event.start.mediaFormat ?? null,
       },
     });
+    console.info("[realtime-call] stream started", {
+      organizationId: context.organizationId,
+      callSessionId: context.callSessionId,
+      providerCallSid: context.providerCallSid,
+      streamSid: event.streamSid,
+      mediaFormat: event.start.mediaFormat ?? null,
+      customParameters: event.start.customParameters ?? null,
+    });
     await this.transcription.start({
       aiConversationSessionId: context.aiConversationSessionId,
       callSessionId: context.callSessionId,
@@ -270,6 +289,14 @@ export class RealtimeGatewayService {
         sequenceNumber: sequenceNumber(event.sequenceNumber),
         payloadBytes: Buffer.byteLength(event.media.payload, "base64"),
       },
+    });
+    console.info("[realtime-call] media frame forwarded", {
+      organizationId: context.organizationId,
+      callSessionId: context.callSessionId,
+      streamSid: event.streamSid,
+      payloadBytes: Buffer.byteLength(event.media.payload, "base64"),
+      chunk: event.media.chunk ?? null,
+      timestamp: event.media.timestamp ?? null,
     });
   }
 
@@ -329,6 +356,12 @@ export class RealtimeGatewayService {
     streamSid: string | null,
     reason: string,
   ): Promise<void> {
+    console.info("[realtime-call] ending call", {
+      organizationId: context.organizationId,
+      callSessionId: context.callSessionId,
+      streamSid,
+      reason,
+    });
     await this.transcription.stop(context.callSessionId, reason);
     await this.conversations.updateByCallSession(context.organizationId, context.callSessionId, {
       status: "ENDED",

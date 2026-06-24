@@ -1298,9 +1298,11 @@ export interface EnvironmentReadinessDto {
 
 export interface TwilioOutgoingCallDto {
   queued: boolean;
+  callSid: string | null;
   to: string;
   from: string | null;
   webhookUrl: string | null;
+  status: string;
 }
 
 export interface CallRuntimeSessionDto {
@@ -1444,9 +1446,9 @@ export const aiBrainApi = {
     request<EnvironmentReadinessDto>(`/infrastructure/environment?${query({ organizationId })}`),
   initiateTwilioCall: (
     organizationId: string,
-    input: { to: string; from?: string; webhookUrl?: string; statusCallbackUrl?: string }
+    input: { to: string; from?: string; webhookUrl?: string; conversationId?: string; statusCallbackUrl?: string }
   ) =>
-    request<TwilioOutgoingCallDto>(`/twilio/calls?${query({ organizationId })}`, {
+    request<{ call: TwilioOutgoingCallDto; session: CallRuntimeSessionDto }>(`/twilio/calls?${query({ organizationId })}`, {
       method: "POST",
       body: JSON.stringify(input)
     }),
