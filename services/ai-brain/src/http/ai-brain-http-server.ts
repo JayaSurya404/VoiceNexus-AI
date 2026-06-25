@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { z } from "zod";
 
 import type { createContainer } from "../container.js";
+import type { RuntimeProviderName } from "../domain/entities/runtime-orchestration.js";
 import { env } from "../config/env.js";
 import { AiBrainError } from "../shared/errors.js";
 import {
@@ -351,8 +352,19 @@ async function handleRequest(container: Container, request: IncomingMessage, res
     return;
   }
 
+  const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
+
+  if (url.pathname === "/twilio/voice/status" && request.method === "POST") {
+    await handleTwilioStatusWebhook(container, request, response, url);
+    return;
+  }
+
+  if (url.pathname === "/twilio/voice/webhook" && request.method === "POST") {
+    await handleTwilioVoiceWebhook(container, request, response, url);
+    return;
+  }
+
   try {
-    const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
 
     if (request.method === "GET" && url.pathname === "/health") {
       sendJson(response, 200, { data: toHealthStatusDto(await container.services.healthCheck.health()) });
@@ -370,61 +382,35 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       return;
     }
 
-    if (url.pathname === "/twilio/voice/webhook" && request.method === "POST") {
-      const body = await readWebhookPayload(request);
-      const organizationId = container.services.twilioIntegration.resolveWebhookOrganizationId({
-        queryOrganizationId: url.searchParams.get("organizationId"),
-        body,
-      });
-      const conversationId =
-        url.searchParams.get("conversationId") ?? (typeof body.conversationId === "string" ? body.conversationId : undefined);
-      const callSid = typeof body.CallSid === "string" ? body.CallSid : typeof body.callSid === "string" ? body.callSid : undefined;
-      let runtimeSessionId: string | undefined;
-      console.info("[twilio] voice webhook received", {
-        organizationId,
-        runtimeSessionId: null,
-        conversationId: conversationId ?? null,
-        callSid: callSid ?? null,
-      });
-      if (organizationId) {
-        if (callSid) {
-          const session = await container.services.aiCallOrchestrator.ensureRuntimeSessionForCall({
-            organizationId,
-            conversationId: conversationId ?? `runtime-${Date.now()}`,
-            direction: "INBOUND",
-            callSid,
-            metadata: body
-          });
-          runtimeSessionId = session.id;
-        } else {
-          const result = await container.services.aiCallOrchestrator.createRuntimeSession({
-            organizationId,
-            conversationId: conversationId ?? `runtime-${Date.now()}`,
-            direction: "INBOUND",
-            metadata: body
-          });
-          runtimeSessionId = result.session.id;
-        }
-        await container.services.twilioCallLifecycle.processEvent({
-          organizationId,
-          payload: body
-        });
+    if (url.pathname === "/twilio/calls" && request.method === "POST") {
+      const organizationId = requiredQuery(url, "organizationId");
+      if (process.env.NODE_ENV === "production") {
+        const token = bearerToken(request);
+        if (!token) throw AiBrainError.unauthorized();
+        await authorize(container, token, organizationId);
       }
-      console.info("[twilio] voice webhook runtime context", {
+      const body = await readJson(request);
+      const to = typeof body.to === "string" ? body.to : "";
+      const from = typeof body.from === "string" ? body.from : undefined;
+      const webhookUrl = typeof body.webhookUrl === "string" ? body.webhookUrl : undefined;
+      const conversationId = typeof body.conversationId === "string" ? body.conversationId : `runtime-${Date.now()}`;
+      const outboundCall = await container.services.aiCallOrchestrator.startOutboundCall({
         organizationId,
-        runtimeSessionId: runtimeSessionId ?? null,
-        conversationId: conversationId ?? null,
-        callSid: callSid ?? null,
+        conversationId,
+        to,
+        ...(from ? { from } : {}),
+        ...(webhookUrl ? { webhookUrl } : {})
       });
-      const gatewayHost = url.searchParams.get("gatewayHost") ?? request.headers.host ?? null;
-      const twiml = container.services.twilioIntegration.generateMediaStreamTwiml({
-        ...(organizationId ? { organizationId } : {}),
-        ...(runtimeSessionId ? { callSessionId: runtimeSessionId } : {}),
-        ...(conversationId ? { conversationId } : {}),
-        ...(callSid ? { callSid } : {}),
-        gatewayHost
-      });
-      sendXml(response, 200, twiml);
+      sendJson(
+        response,
+        201,
+        {
+          data: {
+            call: outboundCall.call,
+            session: toCallRuntimeSessionDto(outboundCall.session)
+          }
+        }
+      );
       return;
     }
 
@@ -456,34 +442,6 @@ async function handleRequest(container: Container, request: IncomingMessage, res
       const organizationId = requiredQuery(url, "organizationId");
       await authorize(container, token, organizationId);
       sendJson(response, 200, container.services.infrastructureStatus.environmentReadiness());
-      return;
-    }
-
-    if (url.pathname === "/twilio/calls" && request.method === "POST") {
-      const organizationId = requiredQuery(url, "organizationId");
-      await authorize(container, token, organizationId);
-      const body = await readJson(request);
-      const to = typeof body.to === "string" ? body.to : "";
-      const from = typeof body.from === "string" ? body.from : undefined;
-      const webhookUrl = typeof body.webhookUrl === "string" ? body.webhookUrl : undefined;
-      const conversationId = typeof body.conversationId === "string" ? body.conversationId : `runtime-${Date.now()}`;
-      const outboundCall = await container.services.aiCallOrchestrator.startOutboundCall({
-        organizationId,
-        conversationId,
-        to,
-        ...(from ? { from } : {}),
-        ...(webhookUrl ? { webhookUrl } : {})
-      });
-      sendJson(
-        response,
-        201,
-        {
-          data: {
-            call: outboundCall.call,
-            session: toCallRuntimeSessionDto(outboundCall.session)
-          }
-        }
-      );
       return;
     }
 
@@ -2345,4 +2303,105 @@ function sendXml(response: ServerResponse, statusCode: number, payload: string):
   response.writeHead(statusCode, { "content-type": "text/xml" });
   response.end(payload);
 }
-import type { RuntimeProviderName } from "../domain/entities/runtime-orchestration.js";
+
+async function handleTwilioStatusWebhook(
+  container: Container,
+  request: IncomingMessage,
+  response: ServerResponse,
+  url: URL,
+): Promise<void> {
+  try {
+    const body = await readWebhookPayload(request);
+    const organizationId = container.services.twilioIntegration.resolveWebhookOrganizationId({
+      queryOrganizationId: url.searchParams.get("organizationId"),
+      body,
+    });
+
+    if (organizationId) {
+      await container.services.twilioCallLifecycle.processEvent({
+        organizationId,
+        payload: body,
+      });
+    }
+  } catch (error) {
+    console.error("[twilio] status webhook failed", error);
+  }
+
+  response.writeHead(204);
+  response.end();
+}
+
+async function handleTwilioVoiceWebhook(
+  container: Container,
+  request: IncomingMessage,
+  response: ServerResponse,
+  url: URL,
+): Promise<void> {
+  let organizationId: string | null = null;
+  let runtimeSessionId: string | undefined;
+  let conversationId: string | undefined;
+  let callSid: string | undefined;
+
+  try {
+    const body = await readWebhookPayload(request);
+    organizationId = container.services.twilioIntegration.resolveWebhookOrganizationId({
+      queryOrganizationId: url.searchParams.get("organizationId"),
+      body,
+    });
+    conversationId =
+      url.searchParams.get("conversationId") ??
+      (typeof body.conversationId === "string" ? body.conversationId : undefined);
+    callSid =
+      typeof body.CallSid === "string" ? body.CallSid : typeof body.callSid === "string" ? body.callSid : undefined;
+    runtimeSessionId = url.searchParams.get("callSessionId") ?? undefined;
+
+    console.info("[twilio] voice webhook received", {
+      organizationId,
+      runtimeSessionId: runtimeSessionId ?? null,
+      conversationId: conversationId ?? null,
+      callSid: callSid ?? null,
+    });
+
+    if (organizationId) {
+      if (!runtimeSessionId) {
+        if (callSid) {
+          const session = await container.services.aiCallOrchestrator.ensureRuntimeSessionForCall({
+            organizationId,
+            conversationId: conversationId ?? `runtime-${Date.now()}`,
+            direction: url.searchParams.get("direction") === "OUTBOUND" ? "OUTBOUND" : "INBOUND",
+            callSid,
+            metadata: body,
+          });
+          runtimeSessionId = session.id;
+        } else {
+          const result = await container.services.aiCallOrchestrator.createRuntimeSession({
+            organizationId,
+            conversationId: conversationId ?? `runtime-${Date.now()}`,
+            direction: "INBOUND",
+            metadata: body,
+          });
+          runtimeSessionId = result.session.id;
+        }
+      }
+    }
+
+    console.info("[twilio] voice webhook runtime context", {
+      organizationId,
+      runtimeSessionId: runtimeSessionId ?? null,
+      conversationId: conversationId ?? null,
+      callSid: callSid ?? null,
+    });
+  } catch (error) {
+    console.error("[twilio] voice webhook setup failed", error);
+  }
+
+  const gatewayHost = url.searchParams.get("gatewayHost") ?? request.headers.host ?? null;
+  const twiml = container.services.twilioIntegration.generateMediaStreamTwiml({
+    ...(organizationId ? { organizationId } : {}),
+    ...(runtimeSessionId ? { callSessionId: runtimeSessionId } : {}),
+    ...(conversationId ? { conversationId } : {}),
+    ...(callSid ? { callSid } : {}),
+    gatewayHost,
+  });
+  sendXml(response, 200, twiml);
+}

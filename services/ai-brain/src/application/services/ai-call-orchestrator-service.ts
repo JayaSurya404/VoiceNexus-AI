@@ -74,27 +74,35 @@ export class AICallOrchestratorService {
     from?: string;
     webhookUrl?: string;
   }): Promise<{ session: CallRuntimeSession; call: TwilioCallResult }> {
+    const { session: initialSession } = await this.createRuntimeSession({
+      organizationId: input.organizationId,
+      conversationId: input.conversationId,
+      direction: "OUTBOUND",
+      metadata: {
+        to: input.to,
+        from: input.from ?? null,
+      },
+    });
     const call = await this.twilio.initiateOutgoingCall({
       to: input.to,
       organizationId: input.organizationId,
       conversationId: input.conversationId,
+      callSessionId: initialSession.id,
       ...(input.from ? { from: input.from } : {}),
-      ...(input.webhookUrl ? { webhookUrl: input.webhookUrl } : {})
+      ...(input.webhookUrl ? { webhookUrl: input.webhookUrl } : {}),
     });
-    const { session } = await this.createRuntimeSession({
-      organizationId: input.organizationId,
-      conversationId: input.conversationId,
-      direction: "OUTBOUND",
-      ...(call.callSid ? { callSid: call.callSid } : {}),
-      metadata: {
-        outboundCallQueued: call.queued,
-        callSid: call.callSid,
-        callStatus: call.status,
-        to: call.to,
-        from: call.from,
-        webhookUrl: call.webhookUrl
-      }
-    });
+    const session =
+      (call.callSid
+        ? await this.sessions.attachCallSid(input.organizationId, initialSession.id, call.callSid, {
+            ...(initialSession.metadata ?? {}),
+            outboundCallQueued: call.queued,
+            callSid: call.callSid,
+            callStatus: call.status,
+            to: call.to,
+            from: call.from,
+            webhookUrl: call.webhookUrl,
+          })
+        : null) ?? initialSession;
     await this.realtime.publish(input.organizationId, "runtime.call.outbound.queued", { session, call });
     return { session, call };
   }

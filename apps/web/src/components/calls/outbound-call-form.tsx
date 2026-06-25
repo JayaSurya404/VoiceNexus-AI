@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateOutboundCall } from "@/hooks/use-calls";
+import { useInitiateAiOutboundCall } from "@/hooks/use-calls";
 
 export function OutboundCallForm({
   organizationId,
@@ -23,17 +23,14 @@ export function OutboundCallForm({
   const [initialMessage, setInitialMessage] = useState(
     "Hello from VoiceNexus AI. Please hold while we connect your assistant.",
   );
-  const createOutboundCall = useCreateOutboundCall();
+  const createOutboundCall = useInitiateAiOutboundCall();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await createOutboundCall.mutateAsync({
       organizationId,
-      leadId,
       to,
       from: from || undefined,
-      record: true,
-      initialMessage,
     });
   }
 
@@ -99,8 +96,8 @@ export function OutboundCallForm({
               value={initialMessage}
             />
           </div>
-          <Button disabled={!leadId || createOutboundCall.isPending} type="submit">
-            Create call session
+          <Button disabled={!to || createOutboundCall.isPending} type="submit">
+            Start AI call
           </Button>
         </form>
       </CardContent>

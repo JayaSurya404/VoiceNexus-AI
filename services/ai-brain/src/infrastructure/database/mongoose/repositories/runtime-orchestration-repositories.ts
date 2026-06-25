@@ -240,6 +240,26 @@ export class MongoRuntimeSessionRepository {
     return session ? toRuntimeSession(session) : null;
   }
 
+  async attachCallSid(
+    organizationId: string,
+    sessionId: string,
+    callSid: string,
+    metadata: Record<string, unknown> = {},
+  ): Promise<CallRuntimeSession | null> {
+    const session = await RuntimeSessionModel.findOneAndUpdate(
+      { organizationId, id: sessionId },
+      {
+        $set: {
+          callSid,
+          updatedAt: new Date(),
+          metadata,
+        },
+      },
+      { new: true },
+    ).lean<RuntimeSessionDocument | null>();
+    return session ? toRuntimeSession(session) : null;
+  }
+
   async findById(organizationId: string, sessionId: string): Promise<CallRuntimeSession | null> {
     const session = await RuntimeSessionModel.findOne({ organizationId, id: sessionId }).lean<RuntimeSessionDocument | null>();
     return session ? toRuntimeSession(session) : null;

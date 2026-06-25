@@ -31,6 +31,8 @@ export class AgentAssistService {
       qualification ? `Qualification: ${qualification.interestLevel} ${qualification.score}. ${qualification.qualificationReason}` : "",
     ].join("\n");
     const generated = await this.responseGeneration.generate({
+      organizationId: session.organizationId,
+      sessionId: session.id,
       messages: [
         {
           role: "system",

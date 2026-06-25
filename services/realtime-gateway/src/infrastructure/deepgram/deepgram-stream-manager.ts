@@ -197,7 +197,7 @@ export class DeepgramStreamManager {
         sequenceNumber: managed.sequenceNumber,
         speaker: "CUSTOMER",
         text: transcript.text,
-        type: transcript.isFinal ? "FINAL" : "PARTIAL",
+        type: transcript.speechFinal || transcript.isFinal ? "FINAL" : "PARTIAL",
       });
     });
     socket.onClose((event) => {

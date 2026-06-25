@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { CreateOutboundCallInput, TransferCallInput } from "@voicenexus/contracts";
+import { aiBrainApi } from "@/lib/api/ai-brain-api";
 import { callsApi, type CallListParams } from "@/lib/api/calls-api";
 
 export const callKeys = {
@@ -44,6 +45,30 @@ export function useCreateOutboundCall() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["calls", "list"] }),
         queryClient.invalidateQueries({ queryKey: callKeys.call(call.organizationId, call.id) }),
+      ]);
+    },
+  });
+}
+
+export function useInitiateAiOutboundCall() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: {
+      organizationId: string;
+      to: string;
+      from?: string;
+      conversationId?: string;
+    }) =>
+      aiBrainApi.initiateTwilioCall(input.organizationId, {
+        to: input.to,
+        ...(input.from ? { from: input.from } : {}),
+        ...(input.conversationId ? { conversationId: input.conversationId } : {}),
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["live-calls"] }),
+        queryClient.invalidateQueries({ queryKey: ["runtime-sessions"] }),
       ]);
     },
   });

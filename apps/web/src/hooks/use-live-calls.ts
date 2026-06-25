@@ -157,6 +157,30 @@ function applyRealtimeEvent(
   const existing = calls.find((call) => call.callSessionId === event.callSessionId);
 
   if (!existing) {
+    if (lifecycleType === "SOCKET_CONNECTED" || lifecycleType === "STREAM_STARTED") {
+      const status = event.payload.status;
+      return [
+        ...calls,
+        {
+          organizationId: event.organizationId,
+          callSessionId: event.callSessionId,
+          providerCallSid:
+            typeof event.payload.providerCallSid === "string" ? event.payload.providerCallSid : null,
+          streamSid: typeof event.payload.streamSid === "string" ? event.payload.streamSid : null,
+          status:
+            status === "CONNECTING" || status === "ACTIVE" || status === "ENDED" || status === "FAILED"
+              ? status
+              : lifecycleType === "STREAM_STARTED"
+                ? "ACTIVE"
+                : "CONNECTING",
+          connectedAt: event.occurredAt,
+          updatedAt: event.occurredAt,
+          from: null,
+          to: null,
+        },
+      ];
+    }
+
     return calls;
   }
 

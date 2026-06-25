@@ -181,6 +181,8 @@ export class AgentRuntimeService {
       handoff,
     });
     const response = await this.responseGeneration.generate({
+      organizationId: event.organizationId,
+      sessionId: session.id,
       messages: this.promptEngine.build({ context, memory, knowledge, persona, state, transcript }),
       tools: this.toolRouter.definitions(),
     });

@@ -8,6 +8,7 @@ async function main(): Promise<void> {
   await connectToDatabase();
   const container = createContainer();
   await container.services.transcriptFinalSubscriber.start();
+  await container.services.callStreamStartedSubscriber.start();
   const server = createAiBrainHttpServer(container);
 
   server.listen(env.AI_BRAIN_PORT, () => {

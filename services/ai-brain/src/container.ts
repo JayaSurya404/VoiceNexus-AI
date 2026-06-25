@@ -289,6 +289,7 @@ import {
   MongoOptimizationRuleRepository,
 } from "./infrastructure/database/mongoose/repositories/optimization-repositories.js";
 import { TranscriptFinalSubscriber } from "./infrastructure/redis/transcript-final-subscriber.js";
+import { CallStreamStartedSubscriber } from "./infrastructure/redis/call-stream-started-subscriber.js";
 import { OpenAIEmbeddingProvider } from "./providers/openai-embedding-provider.js";
 import { OpenAIChatProvider } from "./providers/openai-chat-provider.js";
 import { OpenAIProvider } from "./providers/openai-provider.js";
@@ -504,7 +505,7 @@ export function createContainer() {
   const objectionHandler = new ObjectionHandlerService();
   const followupDecision = new FollowupDecisionService();
   const handoffService = new HumanHandoffService();
-  const responseGeneration = new ResponseGenerationService(provider);
+  const responseGeneration = new ResponseGenerationService(providerRuntimeSelection);
   const documentParser = new DocumentParserService();
   const chunking = new ChunkingService();
   const embeddingService = new EmbeddingService(embeddingProvider);
@@ -755,6 +756,7 @@ export function createContainer() {
     ragRuntime,
   );
   const transcriptFinalSubscriber = new TranscriptFinalSubscriber(runtime);
+  const callStreamStartedSubscriber = new CallStreamStartedSubscriber(voiceResponseRequests);
   const accessTokenService = new AccessTokenService(organizationAccess);
 
   return {
@@ -1016,6 +1018,7 @@ export function createContainer() {
       whisperService,
       winLoss,
       transcriptFinalSubscriber,
+      callStreamStartedSubscriber,
       workflowEngine,
       voiceResponseRequests,
     },

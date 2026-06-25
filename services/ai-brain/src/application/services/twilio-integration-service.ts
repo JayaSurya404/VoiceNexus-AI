@@ -15,8 +15,10 @@ export interface TwilioCallRequest {
   to: string;
   from?: string | null;
   webhookUrl?: string | null;
+  statusCallbackUrl?: string | null;
   organizationId?: string;
   conversationId?: string;
+  callSessionId?: string;
 }
 
 export interface TwilioCallResult {
@@ -101,14 +103,19 @@ export class TwilioIntegrationService {
       throw new Error("Twilio call configuration is incomplete");
     }
 
+    const statusCallbackUrl = input.statusCallbackUrl ?? this.statusCallbackUrl(webhookUrl);
     const client = await this.createClient();
     const call = await client.calls.create({
       to: input.to,
       from,
       url: webhookUrl,
-      statusCallback: webhookUrl,
-      statusCallbackEvent: ["initiated", "ringing", "answered", "completed"],
-      statusCallbackMethod: "POST",
+      ...(statusCallbackUrl
+        ? {
+            statusCallback: statusCallbackUrl,
+            statusCallbackEvent: ["initiated", "ringing", "answered", "completed"],
+            statusCallbackMethod: "POST" as const,
+          }
+        : {}),
     });
 
     return {
@@ -255,7 +262,10 @@ export class TwilioIntegrationService {
     return Buffer.from(value, "utf8").toString("base64url");
   }
 
-  private callWebhookUrl(webhookUrl: string | null, input: Pick<TwilioCallRequest, "organizationId" | "conversationId">): string | null {
+  private callWebhookUrl(
+    webhookUrl: string | null,
+    input: Pick<TwilioCallRequest, "organizationId" | "conversationId" | "callSessionId">,
+  ): string | null {
     if (!webhookUrl) {
       return null;
     }
@@ -266,6 +276,22 @@ export class TwilioIntegrationService {
     }
     if (input.conversationId) {
       url.searchParams.set("conversationId", input.conversationId);
+    }
+    if (input.callSessionId) {
+      url.searchParams.set("callSessionId", input.callSessionId);
+    }
+    return url.toString();
+  }
+
+  private statusCallbackUrl(voiceWebhookUrl: string | null): string | null {
+    if (!voiceWebhookUrl) {
+      return null;
+    }
+
+    const url = new URL(voiceWebhookUrl);
+    url.pathname = url.pathname.replace(/\/voice\/webhook\/?$/, "/voice/status");
+    if (!url.pathname.endsWith("/voice/status")) {
+      url.pathname = url.pathname.replace(/\/?$/, "/twilio/voice/status");
     }
     return url.toString();
   }
