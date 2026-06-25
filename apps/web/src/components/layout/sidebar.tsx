@@ -26,9 +26,9 @@ const navigation = [
   { label: "Calls", href: "/calls", icon: PhoneCall, active: true },
   { label: "Live Calls", href: "/live-calls", icon: Radio, active: true },
   { label: "AI Monitor", href: "/ai-monitor", icon: Bot, active: true },
-  { label: "WhatsApp", href: "/dashboard", icon: MessageCircle, active: false },
-  { label: "Agents", href: "/dashboard", icon: Headphones, active: false },
-  { label: "Analytics", href: "/dashboard", icon: BarChart3, active: false },
+  { label: "WhatsApp", href: "/whatsapp", icon: MessageCircle, active: true },
+  { label: "Agents", href: "/agents", icon: Headphones, active: true },
+  { label: "Analytics", href: "/analytics", icon: BarChart3, active: true },
 ];
 
 export function Sidebar({ onNavigate }: Readonly<{ onNavigate?: () => void }>) {

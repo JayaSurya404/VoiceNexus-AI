@@ -67,6 +67,7 @@ export class AgentRuntimeService {
     });
 
     const call = await this.findExternalCall(event);
+    const runtimeMetadata = await this.findRuntimeMetadata(event);
     if (!call) {
       console.warn("[ai-runtime] external call session not found; continuing with realtime call session", {
         organizationId: event.organizationId,
@@ -75,7 +76,8 @@ export class AgentRuntimeService {
     }
 
     const callRecord = (call ?? {}) as Record<string, unknown>;
-    const leadId = stringId(callRecord.leadId);
+    const leadId = stringId(callRecord.leadId) ?? stringValue(runtimeMetadata.leadId);
+    const crmCallId = stringValue(runtimeMetadata.apiCallSessionId) ?? event.callSessionId;
     const persona = await this.personas.defaultForOrganization(event.organizationId);
     const conversation =
       (await this.conversations.findByCall(event.organizationId, event.callSessionId)) ??
@@ -128,7 +130,7 @@ export class AgentRuntimeService {
 
     const [history, context] = await Promise.all([
       this.messages.listByConversation(conversation.id),
-      this.contextBuilder.build({ organizationId: event.organizationId, callId: event.callSessionId, leadId }),
+      this.contextBuilder.build({ organizationId: event.organizationId, callId: crmCallId, leadId }),
     ]);
     const transcript = history.filter((message) => message.role === "user").map((message) => message.content).join("\n");
     const memory = this.memoryInjection.build(context);
@@ -342,13 +344,27 @@ export class AgentRuntimeService {
 
   private async findExternalCall(event: FinalTranscriptEvent): Promise<Record<string, unknown> | null> {
     try {
+      const runtimeMetadata = await this.findRuntimeMetadata(event);
+      const apiCallSessionId = stringValue(runtimeMetadata.apiCallSessionId);
+      const callSessionId = apiCallSessionId ?? event.callSessionId;
       return await CallSessionModel.findOne({
-        _id: objectIdOrThrow(event.callSessionId),
+        _id: objectIdOrThrow(callSessionId),
         organizationId: objectIdOrThrow(event.organizationId),
       }).lean<Record<string, unknown> | null>();
     } catch {
       return null;
     }
+  }
+
+  private async findRuntimeMetadata(event: FinalTranscriptEvent): Promise<Record<string, unknown>> {
+    const session = await CallSessionModel.db
+      .collection("callruntimesessions")
+      .findOne<Record<string, unknown>>({
+        id: event.callSessionId,
+        organizationId: event.organizationId,
+      });
+    const metadata = session?.metadata;
+    return metadata && typeof metadata === "object" && !Array.isArray(metadata) ? metadata as Record<string, unknown> : {};
   }
 }
 
@@ -358,6 +374,10 @@ function stringId(value: unknown): string | null {
 
 function dateValue(value: unknown): Date | null {
   return value instanceof Date ? value : typeof value === "string" ? new Date(value) : null;
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function estimateTokens(text: string): number {

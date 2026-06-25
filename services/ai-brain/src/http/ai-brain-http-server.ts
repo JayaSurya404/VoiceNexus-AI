@@ -2312,6 +2312,7 @@ async function handleTwilioStatusWebhook(
 ): Promise<void> {
   try {
     const body = await readWebhookPayload(request);
+    validateTwilioWebhook(container, request, url, body);
     const organizationId = container.services.twilioIntegration.resolveWebhookOrganizationId({
       queryOrganizationId: url.searchParams.get("organizationId"),
       body,
@@ -2324,6 +2325,15 @@ async function handleTwilioStatusWebhook(
       });
     }
   } catch (error) {
+    if (error instanceof AiBrainError) {
+      sendJson(response, error.statusCode, {
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      });
+      return;
+    }
     console.error("[twilio] status webhook failed", error);
   }
 
@@ -2341,9 +2351,12 @@ async function handleTwilioVoiceWebhook(
   let runtimeSessionId: string | undefined;
   let conversationId: string | undefined;
   let callSid: string | undefined;
+  let apiCallSessionId: string | undefined;
+  let leadId: string | undefined;
 
   try {
     const body = await readWebhookPayload(request);
+    validateTwilioWebhook(container, request, url, body);
     organizationId = container.services.twilioIntegration.resolveWebhookOrganizationId({
       queryOrganizationId: url.searchParams.get("organizationId"),
       body,
@@ -2351,6 +2364,12 @@ async function handleTwilioVoiceWebhook(
     conversationId =
       url.searchParams.get("conversationId") ??
       (typeof body.conversationId === "string" ? body.conversationId : undefined);
+    apiCallSessionId =
+      url.searchParams.get("apiCallSessionId") ??
+      (typeof body.apiCallSessionId === "string" ? body.apiCallSessionId : undefined);
+    leadId =
+      url.searchParams.get("leadId") ??
+      (typeof body.leadId === "string" ? body.leadId : undefined);
     callSid =
       typeof body.CallSid === "string" ? body.CallSid : typeof body.callSid === "string" ? body.callSid : undefined;
     runtimeSessionId = url.searchParams.get("callSessionId") ?? undefined;
@@ -2370,7 +2389,7 @@ async function handleTwilioVoiceWebhook(
             conversationId: conversationId ?? `runtime-${Date.now()}`,
             direction: url.searchParams.get("direction") === "OUTBOUND" ? "OUTBOUND" : "INBOUND",
             callSid,
-            metadata: body,
+            metadata: { ...body, apiCallSessionId: apiCallSessionId ?? null, leadId: leadId ?? null },
           });
           runtimeSessionId = session.id;
         } else {
@@ -2378,7 +2397,7 @@ async function handleTwilioVoiceWebhook(
             organizationId,
             conversationId: conversationId ?? `runtime-${Date.now()}`,
             direction: "INBOUND",
-            metadata: body,
+            metadata: { ...body, apiCallSessionId: apiCallSessionId ?? null, leadId: leadId ?? null },
           });
           runtimeSessionId = result.session.id;
         }
@@ -2392,16 +2411,77 @@ async function handleTwilioVoiceWebhook(
       callSid: callSid ?? null,
     });
   } catch (error) {
+    if (error instanceof AiBrainError) {
+      sendJson(response, error.statusCode, {
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      });
+      return;
+    }
     console.error("[twilio] voice webhook setup failed", error);
   }
 
-  const gatewayHost = url.searchParams.get("gatewayHost") ?? request.headers.host ?? null;
+  const gatewayHost = url.searchParams.get("gatewayHost");
   const twiml = container.services.twilioIntegration.generateMediaStreamTwiml({
     ...(organizationId ? { organizationId } : {}),
     ...(runtimeSessionId ? { callSessionId: runtimeSessionId } : {}),
+    ...(apiCallSessionId ? { apiCallSessionId } : {}),
+    ...(leadId ? { leadId } : {}),
     ...(conversationId ? { conversationId } : {}),
     ...(callSid ? { callSid } : {}),
-    gatewayHost,
+    ...(gatewayHost ? { gatewayHost } : {}),
   });
   sendXml(response, 200, twiml);
+}
+
+function validateTwilioWebhook(
+  container: Container,
+  request: IncomingMessage,
+  url: URL,
+  body: Record<string, unknown>,
+): void {
+  if (process.env.NODE_ENV === "test") {
+    return;
+  }
+
+  const signature = request.headers["x-twilio-signature"];
+  const publicUrl = publicWebhookUrl(request, url);
+  const valid = container.services.twilioIntegration.validateWebhookSignature(
+    Array.isArray(signature) ? signature[0] : signature,
+    publicUrl,
+    body,
+  );
+
+  if (!valid) {
+    throw new AiBrainError("FORBIDDEN", "Twilio webhook signature is invalid", 403);
+  }
+}
+
+function publicWebhookUrl(request: IncomingMessage, url: URL): string {
+  const configuredVoiceWebhook = process.env.TWILIO_VOICE_WEBHOOK_URL ?? process.env.PUBLIC_WEBHOOK_URL;
+  const forwardedProto = Array.isArray(request.headers["x-forwarded-proto"])
+    ? request.headers["x-forwarded-proto"][0]
+    : request.headers["x-forwarded-proto"];
+  const forwardedHost = Array.isArray(request.headers["x-forwarded-host"])
+    ? request.headers["x-forwarded-host"][0]
+    : request.headers["x-forwarded-host"];
+  const proto = forwardedProto ?? "https";
+  const host = forwardedHost ?? request.headers.host ?? "localhost";
+
+  if (!configuredVoiceWebhook) {
+    return `${proto}://${host}${url.pathname}${url.search}`;
+  }
+
+  const configured = new URL(configuredVoiceWebhook);
+
+  if (url.pathname.endsWith("/status")) {
+    configured.pathname = configured.pathname.replace(/\/voice\/webhook\/?$/, "/voice/status");
+  } else {
+    configured.pathname = url.pathname;
+  }
+
+  configured.search = url.search;
+  return configured.toString();
 }

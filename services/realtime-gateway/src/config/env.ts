@@ -10,6 +10,9 @@ if (existsSync(localEnvPath)) {
   loadEnvFile(localEnvPath);
 }
 
+const mediaStreamSecret =
+  process.env.MEDIA_STREAM_SECRET ?? process.env.MEDIA_STREAM_TOKEN_SECRET ?? "";
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   REALTIME_GATEWAY_PORT: z.coerce.number().int().positive().max(65_535).default(4001),
@@ -31,7 +34,10 @@ const envSchema = z.object({
   JWT_AUDIENCE: z.string().min(1).default("voicenexus-web"),
 });
 
-const parsed = envSchema.safeParse(process.env);
+const parsed = envSchema.safeParse({
+  ...process.env,
+  MEDIA_STREAM_SECRET: mediaStreamSecret,
+});
 
 if (!parsed.success) {
   const fields = parsed.error.flatten().fieldErrors;

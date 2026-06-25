@@ -21,6 +21,7 @@
     "lint": "turbo lint",
     "test": "turbo test",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "seed:demo": "node ./tools/seed-demo-data.mjs",
     "clean": "turbo clean && node ./tools/clean.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

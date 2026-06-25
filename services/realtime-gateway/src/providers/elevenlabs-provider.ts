@@ -8,7 +8,9 @@ export class ElevenLabsProvider implements TtsProvider {
 
   async synthesize(input: TtsRequest): Promise<TtsProviderResult> {
     const voice = input.voice ?? env.ELEVENLABS_VOICE_ID;
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice)}`, {
+    const url = new URL(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice)}`);
+    url.searchParams.set("output_format", "ulaw_8000");
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "xi-api-key": env.ELEVENLABS_API_KEY,
@@ -17,7 +19,6 @@ export class ElevenLabsProvider implements TtsProvider {
       body: JSON.stringify({
         text: input.text,
         model_id: "eleven_multilingual_v2",
-        output_format: "mp3_22050_32",
       }),
     });
 
@@ -26,7 +27,7 @@ export class ElevenLabsProvider implements TtsProvider {
     return {
       provider: this.name,
       voice,
-      mimeType: "audio/mpeg",
+      mimeType: "audio/x-mulaw;rate=8000",
       audioUrl: null,
       audioBase64: bytes.toString("base64"),
       durationMs: Math.max(900, Math.ceil(input.text.split(/\s+/).length / 2.6) * 1000),

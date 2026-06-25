@@ -19,7 +19,7 @@ export class CartesiaProvider implements TtsProvider {
         model_id: "sonic-2",
         transcript: input.text,
         voice: { mode: "id", id: voice },
-        output_format: { container: "mp3", sample_rate: 22050, bit_rate: 32000 },
+        output_format: { container: "raw", encoding: "pcm_mulaw", sample_rate: 8000 },
       }),
     });
 
@@ -28,7 +28,7 @@ export class CartesiaProvider implements TtsProvider {
     return {
       provider: this.name,
       voice,
-      mimeType: "audio/mpeg",
+      mimeType: "audio/x-mulaw;rate=8000",
       audioUrl: null,
       audioBase64: bytes.toString("base64"),
       durationMs: Math.max(900, Math.ceil(input.text.split(/\s+/).length / 2.8) * 1000),

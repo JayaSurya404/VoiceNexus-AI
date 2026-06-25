@@ -40,6 +40,36 @@ import type { NewPhoneNumber, PhoneNumber } from "../../domain/entities/phone-nu
 import type { NewTag, Tag } from "../../domain/entities/tag.js";
 import type { NewTimelineEvent, TimelineEvent } from "../../domain/entities/timeline-event.js";
 import type { NewUser, User } from "../../domain/entities/user.js";
+import type {
+  AgentAvailabilityWorkspace,
+  AgentPerformanceWorkspace,
+  AgentPersonaWorkspace,
+  AgentPersonaWorkspaceUpdate,
+  AgentSkillWorkspace,
+  AgentSkillWorkspaceUpdate,
+  AgentWorkspace,
+  AgentWorkspaceUpdate,
+  NewAgentAvailabilityWorkspace,
+  NewAgentPersonaWorkspace,
+  NewAgentSkillWorkspace,
+  NewAgentWorkspace,
+} from "../../domain/entities/agent-workspace.js";
+import type {
+  NewWhatsappAutomation,
+  NewWhatsappBroadcast,
+  NewWhatsappContact,
+  NewWhatsappConversation,
+  NewWhatsappMessage,
+  NewWhatsappTemplate,
+  WhatsappAutomation,
+  WhatsappBroadcast,
+  WhatsappContact,
+  WhatsappContactUpdate,
+  WhatsappConversation,
+  WhatsappConversationUpdate,
+  WhatsappMessage,
+  WhatsappTemplate,
+} from "../../domain/entities/whatsapp.js";
 
 export type TransactionContext = object;
 
@@ -185,4 +215,92 @@ export interface CallRecordingRepository {
 export interface CallTransferRepository {
   create(input: NewCallTransfer): Promise<CallTransfer>;
   listByCallSession(organizationId: string, callSessionId: string): Promise<CallTransfer[]>;
+}
+
+export interface WhatsappContactRepository {
+  create(input: NewWhatsappContact): Promise<WhatsappContact>;
+  listByOrganization(organizationId: string, search?: string): Promise<WhatsappContact[]>;
+  findByIdForOrganization(id: string, organizationId: string): Promise<WhatsappContact | null>;
+  updateForOrganization(
+    id: string,
+    organizationId: string,
+    input: WhatsappContactUpdate,
+  ): Promise<WhatsappContact | null>;
+  touchLastConversation(id: string, organizationId: string, at: Date): Promise<void>;
+  countByOrganization(organizationId: string): Promise<number>;
+}
+
+export interface WhatsappConversationRepository {
+  create(input: NewWhatsappConversation): Promise<WhatsappConversation>;
+  listByOrganization(query: {
+    organizationId: string;
+    search?: string;
+    status?: string;
+  }): Promise<WhatsappConversation[]>;
+  findByIdForOrganization(id: string, organizationId: string): Promise<WhatsappConversation | null>;
+  updateForOrganization(
+    id: string,
+    organizationId: string,
+    input: WhatsappConversationUpdate,
+  ): Promise<WhatsappConversation | null>;
+  countOpenByOrganization(organizationId: string): Promise<number>;
+  countUnreadByOrganization(organizationId: string): Promise<number>;
+  countAiEnabledByOrganization(organizationId: string): Promise<number>;
+}
+
+export interface WhatsappMessageRepository {
+  create(input: NewWhatsappMessage): Promise<WhatsappMessage>;
+  listByConversation(organizationId: string, conversationId: string): Promise<WhatsappMessage[]>;
+}
+
+export interface WhatsappTemplateRepository {
+  create(input: NewWhatsappTemplate): Promise<WhatsappTemplate>;
+  listByOrganization(organizationId: string): Promise<WhatsappTemplate[]>;
+  findByIdForOrganization(id: string, organizationId: string): Promise<WhatsappTemplate | null>;
+  countApprovedByOrganization(organizationId: string): Promise<number>;
+}
+
+export interface WhatsappBroadcastRepository {
+  create(input: NewWhatsappBroadcast): Promise<WhatsappBroadcast>;
+  listByOrganization(organizationId: string): Promise<WhatsappBroadcast[]>;
+  countSentByOrganization(organizationId: string): Promise<number>;
+}
+
+export interface WhatsappAutomationRepository {
+  create(input: NewWhatsappAutomation): Promise<WhatsappAutomation>;
+  listByOrganization(organizationId: string): Promise<WhatsappAutomation[]>;
+  findEnabledByOrganization(organizationId: string): Promise<WhatsappAutomation[]>;
+}
+
+export interface AgentWorkspaceRepository {
+  create(input: NewAgentWorkspace): Promise<AgentWorkspace>;
+  listByOrganization(query: { organizationId: string; search?: string; status?: string }): Promise<AgentWorkspace[]>;
+  findByIdForOrganization(id: string, organizationId: string): Promise<AgentWorkspace | null>;
+  updateForOrganization(id: string, organizationId: string, input: AgentWorkspaceUpdate): Promise<AgentWorkspace | null>;
+  deleteForOrganization(id: string, organizationId: string): Promise<boolean>;
+}
+
+export interface AgentPersonaWorkspaceRepository {
+  create(input: NewAgentPersonaWorkspace): Promise<AgentPersonaWorkspace>;
+  listByOrganization(organizationId: string): Promise<AgentPersonaWorkspace[]>;
+  findByIdForOrganization(id: string, organizationId: string): Promise<AgentPersonaWorkspace | null>;
+  updateForOrganization(id: string, organizationId: string, input: AgentPersonaWorkspaceUpdate): Promise<AgentPersonaWorkspace | null>;
+  deleteForOrganization(id: string, organizationId: string): Promise<boolean>;
+}
+
+export interface AgentSkillWorkspaceRepository {
+  create(input: NewAgentSkillWorkspace): Promise<AgentSkillWorkspace>;
+  listByOrganization(organizationId: string, agentId?: string): Promise<AgentSkillWorkspace[]>;
+  updateForOrganization(id: string, organizationId: string, input: AgentSkillWorkspaceUpdate): Promise<AgentSkillWorkspace | null>;
+}
+
+export interface AgentAvailabilityWorkspaceRepository {
+  listByOrganization(organizationId: string): Promise<AgentAvailabilityWorkspace[]>;
+  findByAgent(organizationId: string, agentId: string): Promise<AgentAvailabilityWorkspace | null>;
+  upsert(input: NewAgentAvailabilityWorkspace): Promise<AgentAvailabilityWorkspace>;
+}
+
+export interface AgentPerformanceWorkspaceRepository {
+  listByOrganization(organizationId: string): Promise<AgentPerformanceWorkspace[]>;
+  findByAgent(organizationId: string, agentId: string): Promise<AgentPerformanceWorkspace | null>;
 }

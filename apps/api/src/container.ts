@@ -1,12 +1,21 @@
 import { AuthService } from "./application/services/auth-service.js";
+import { AgentWorkspaceService } from "./application/services/agent-workspace-service.js";
 import { CallSessionService } from "./application/services/call-session-service.js";
 import { CrmService } from "./application/services/crm-service.js";
 import { MemoryService } from "./application/services/memory-service.js";
 import { OrganizationService } from "./application/services/organization-service.js";
 import { RecordingService } from "./application/services/recording-service.js";
 import { TelephonyService } from "./application/services/telephony-service.js";
+import { WhatsappService } from "./application/services/whatsapp-service.js";
 import { env } from "./config/env.js";
 import { MongoActivityRepository } from "./infrastructure/database/mongoose/repositories/mongo-activity-repository.js";
+import {
+  MongoAgentAvailabilityWorkspaceRepository,
+  MongoAgentPerformanceWorkspaceRepository,
+  MongoAgentPersonaWorkspaceRepository,
+  MongoAgentSkillWorkspaceRepository,
+  MongoAgentWorkspaceRepository,
+} from "./infrastructure/database/mongoose/repositories/mongo-agent-workspace-repositories.js";
 import { MongoCallEventRepository } from "./infrastructure/database/mongoose/repositories/mongo-call-event-repository.js";
 import { MongoCallRecordingRepository } from "./infrastructure/database/mongoose/repositories/mongo-call-recording-repository.js";
 import { MongoCallSessionRepository } from "./infrastructure/database/mongoose/repositories/mongo-call-session-repository.js";
@@ -25,6 +34,14 @@ import { MongoRefreshSessionRepository } from "./infrastructure/database/mongoos
 import { MongoTagRepository } from "./infrastructure/database/mongoose/repositories/mongo-tag-repository.js";
 import { MongoTimelineEventRepository } from "./infrastructure/database/mongoose/repositories/mongo-timeline-event-repository.js";
 import { MongoUserRepository } from "./infrastructure/database/mongoose/repositories/mongo-user-repository.js";
+import {
+  MongoWhatsappAutomationRepository,
+  MongoWhatsappBroadcastRepository,
+  MongoWhatsappContactRepository,
+  MongoWhatsappConversationRepository,
+  MongoWhatsappMessageRepository,
+  MongoWhatsappTemplateRepository,
+} from "./infrastructure/database/mongoose/repositories/mongo-whatsapp-repositories.js";
 import { MongoTransactionManager } from "./infrastructure/database/mongoose/transaction-manager.js";
 import { BcryptPasswordHasher } from "./infrastructure/security/bcrypt-password-hasher.js";
 import { JwtTokenService } from "./infrastructure/security/jwt-token-service.js";
@@ -50,6 +67,17 @@ export function createContainer() {
   const callEvents = new MongoCallEventRepository();
   const callRecordings = new MongoCallRecordingRepository();
   const callTransfers = new MongoCallTransferRepository();
+  const agentWorkspaces = new MongoAgentWorkspaceRepository();
+  const agentPersonas = new MongoAgentPersonaWorkspaceRepository();
+  const agentSkills = new MongoAgentSkillWorkspaceRepository();
+  const agentAvailability = new MongoAgentAvailabilityWorkspaceRepository();
+  const agentPerformance = new MongoAgentPerformanceWorkspaceRepository();
+  const whatsappContacts = new MongoWhatsappContactRepository();
+  const whatsappConversations = new MongoWhatsappConversationRepository();
+  const whatsappMessages = new MongoWhatsappMessageRepository();
+  const whatsappTemplates = new MongoWhatsappTemplateRepository();
+  const whatsappBroadcasts = new MongoWhatsappBroadcastRepository();
+  const whatsappAutomations = new MongoWhatsappAutomationRepository();
   const transactionManager = new MongoTransactionManager();
   const passwordHasher = new BcryptPasswordHasher(env.BCRYPT_ROUNDS);
   const tokenService = new JwtTokenService({
@@ -118,8 +146,32 @@ export function createContainer() {
     providerFactory,
     {
       apiPublicUrl: env.API_PUBLIC_URL,
+      aiVoiceWebhookUrl:
+        env.AI_VOICE_WEBHOOK_URL ?? (env.AI_BRAIN_PUBLIC_URL ? `${env.AI_BRAIN_PUBLIC_URL}/twilio/voice/webhook` : null),
       twilioPhoneNumber: env.TWILIO_PHONE_NUMBER,
     },
+  );
+  const whatsappService = new WhatsappService(
+    whatsappContacts,
+    whatsappConversations,
+    whatsappMessages,
+    whatsappTemplates,
+    whatsappBroadcasts,
+    whatsappAutomations,
+    leads,
+    activities,
+    conversationMemories,
+    customerMemories,
+    timelineEvents,
+    members,
+  );
+  const agentWorkspaceService = new AgentWorkspaceService(
+    agentWorkspaces,
+    agentPersonas,
+    agentSkills,
+    agentAvailability,
+    agentPerformance,
+    members,
   );
 
   return {
@@ -143,6 +195,17 @@ export function createContainer() {
       callEvents,
       callRecordings,
       callTransfers,
+      whatsappContacts,
+      whatsappConversations,
+      whatsappMessages,
+      whatsappTemplates,
+      whatsappBroadcasts,
+      whatsappAutomations,
+      agentWorkspaces,
+      agentPersonas,
+      agentSkills,
+      agentAvailability,
+      agentPerformance,
     },
     services: {
       authService,
@@ -152,6 +215,8 @@ export function createContainer() {
       callSessionService,
       recordingService,
       telephonyService,
+      whatsappService,
+      agentWorkspaceService,
     },
     security: {
       tokenService,

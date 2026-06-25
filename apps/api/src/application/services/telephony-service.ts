@@ -24,6 +24,7 @@ import { AppError } from "../../shared/app-error.js";
 
 interface TelephonyServiceConfig {
   apiPublicUrl: string;
+  aiVoiceWebhookUrl: string | null;
   twilioPhoneNumber: string;
 }
 
@@ -82,7 +83,12 @@ export class TelephonyService {
       const providerCall = await provider.createOutboundCall({
         to: input.to,
         from,
-        voiceUrl: `${this.config.apiPublicUrl}/webhooks/twilio/voice`,
+        voiceUrl: this.voiceWebhookUrl({
+          organizationId: input.organizationId,
+          apiCallSessionId: call.id,
+          leadId: input.leadId,
+          direction: "OUTBOUND",
+        }),
         statusCallbackUrl: `${this.config.apiPublicUrl}/webhooks/twilio/status`,
         recordingStatusCallbackUrl: `${this.config.apiPublicUrl}/webhooks/twilio/recording`,
         record: input.record,
@@ -362,6 +368,25 @@ export class TelephonyService {
       providerStatus,
       metadata,
     });
+  }
+
+  private voiceWebhookUrl(input: {
+    organizationId: string;
+    apiCallSessionId: string;
+    leadId: string;
+    direction: "INBOUND" | "OUTBOUND";
+  }): string {
+    const url = new URL(this.config.aiVoiceWebhookUrl ?? `${this.config.apiPublicUrl}/webhooks/twilio/voice`);
+
+    if (this.config.aiVoiceWebhookUrl) {
+      url.searchParams.set("organizationId", input.organizationId);
+      url.searchParams.set("apiCallSessionId", input.apiCallSessionId);
+      url.searchParams.set("leadId", input.leadId);
+      url.searchParams.set("conversationId", input.apiCallSessionId);
+      url.searchParams.set("direction", input.direction);
+    }
+
+    return url.toString();
   }
 }
 

@@ -17,6 +17,21 @@ import type { RefreshSession } from "../../../../domain/entities/refresh-session
 import type { Tag } from "../../../../domain/entities/tag.js";
 import type { TimelineEvent } from "../../../../domain/entities/timeline-event.js";
 import type { User } from "../../../../domain/entities/user.js";
+import type {
+  AgentAvailabilityWorkspace,
+  AgentPerformanceWorkspace,
+  AgentPersonaWorkspace,
+  AgentSkillWorkspace,
+  AgentWorkspace,
+} from "../../../../domain/entities/agent-workspace.js";
+import type {
+  WhatsappAutomation,
+  WhatsappBroadcast,
+  WhatsappContact,
+  WhatsappConversation,
+  WhatsappMessage,
+  WhatsappTemplate,
+} from "../../../../domain/entities/whatsapp.js";
 import type { ActivityMongoDocument } from "../models/activity-model.js";
 import type { CallEventMongoDocument } from "../models/call-event-model.js";
 import type { CallRecordingMongoDocument } from "../models/call-recording-model.js";
@@ -36,6 +51,21 @@ import type { RefreshSessionMongoDocument } from "../models/refresh-session-mode
 import type { TagMongoDocument } from "../models/tag-model.js";
 import type { TimelineEventMongoDocument } from "../models/timeline-event-model.js";
 import type { UserMongoDocument } from "../models/user-model.js";
+import type {
+  AgentAvailabilityWorkspaceMongoDocument,
+  AgentPerformanceWorkspaceMongoDocument,
+  AgentPersonaWorkspaceMongoDocument,
+  AgentSkillWorkspaceMongoDocument,
+  AgentWorkspaceMongoDocument,
+} from "../models/agent-workspace-models.js";
+import type {
+  WhatsappAutomationMongoDocument,
+  WhatsappBroadcastMongoDocument,
+  WhatsappContactMongoDocument,
+  WhatsappConversationMongoDocument,
+  WhatsappMessageMongoDocument,
+  WhatsappTemplateMongoDocument,
+} from "../models/whatsapp-models.js";
 
 export function mapUser(document: UserMongoDocument): User {
   return {
@@ -313,5 +343,187 @@ export function mapCallTransfer(document: CallTransferMongoDocument): CallTransf
     status: document.status,
     reason: document.reason,
     createdAt: document.createdAt,
+  };
+}
+
+export function mapWhatsappContact(document: WhatsappContactMongoDocument): WhatsappContact {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    leadId: document.leadId?.toHexString() ?? null,
+    displayName: document.displayName,
+    phone: document.phone,
+    email: document.email,
+    tags: document.tags,
+    notes: document.notes,
+    lastConversationAt: document.lastConversationAt,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  };
+}
+
+export function mapWhatsappConversation(document: WhatsappConversationMongoDocument): WhatsappConversation {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    contactId: document.contactId.toHexString(),
+    leadId: document.leadId?.toHexString() ?? null,
+    subject: document.subject,
+    status: document.status,
+    assignedTo: document.assignedTo?.toHexString() ?? null,
+    aiEnabled: document.aiEnabled,
+    lastMessagePreview: document.lastMessagePreview,
+    lastMessageAt: document.lastMessageAt,
+    unreadCount: document.unreadCount,
+    runtimeState: document.runtimeState,
+    runtimeUpdatedAt: document.runtimeUpdatedAt,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  };
+}
+
+export function mapWhatsappMessage(document: WhatsappMessageMongoDocument): WhatsappMessage {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    conversationId: document.conversationId.toHexString(),
+    contactId: document.contactId.toHexString(),
+    direction: document.direction,
+    body: document.body,
+    status: document.status,
+    sentBy: document.sentBy?.toHexString() ?? null,
+    isAiGenerated: document.isAiGenerated,
+    metadata: document.metadata,
+    createdAt: document.createdAt,
+  };
+}
+
+export function mapWhatsappTemplate(document: WhatsappTemplateMongoDocument): WhatsappTemplate {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    name: document.name,
+    category: document.category,
+    language: document.language,
+    body: document.body,
+    variables: document.variables,
+    status: document.status,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  };
+}
+
+export function mapWhatsappBroadcast(document: WhatsappBroadcastMongoDocument): WhatsappBroadcast {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    name: document.name,
+    templateId: document.templateId?.toHexString() ?? null,
+    messageBody: document.messageBody,
+    contactIds: document.contactIds.map((contactId) => contactId.toHexString()),
+    status: document.status,
+    scheduledAt: document.scheduledAt,
+    sentAt: document.sentAt,
+    metrics: document.metrics,
+    createdBy: document.createdBy.toHexString(),
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  };
+}
+
+export function mapWhatsappAutomation(document: WhatsappAutomationMongoDocument): WhatsappAutomation {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    name: document.name,
+    trigger: document.trigger,
+    keyword: document.keyword,
+    responseBody: document.responseBody,
+    isEnabled: document.isEnabled,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  };
+}
+
+export function mapAgentWorkspace(document: AgentWorkspaceMongoDocument): AgentWorkspace {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    name: document.name,
+    email: document.email,
+    role: document.role,
+    status: document.status,
+    runtimeStatus: document.runtimeStatus ?? "READY",
+    activeSessionId: document.activeSessionId?.toHexString() ?? null,
+    skills: document.skills,
+    personaId: document.personaId?.toHexString() ?? null,
+    voiceProvider: document.voiceProvider ?? "NONE",
+    voiceId: document.voiceId ?? "",
+    knowledgeBaseIds: document.knowledgeBaseIds.map((id) => id.toHexString()),
+    prompt: document.prompt ?? "",
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  };
+}
+
+export function mapAgentPersonaWorkspace(document: AgentPersonaWorkspaceMongoDocument): AgentPersonaWorkspace {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    name: document.name,
+    role: document.role,
+    systemPrompt: document.systemPrompt,
+    tone: document.tone,
+    goals: document.goals,
+    constraints: document.constraints,
+    isDefault: document.isDefault,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  };
+}
+
+export function mapAgentSkillWorkspace(document: AgentSkillWorkspaceMongoDocument): AgentSkillWorkspace {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    agentId: document.agentId.toHexString(),
+    skill: document.skill,
+    level: document.level,
+    certified: document.certified,
+    active: document.active,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  };
+}
+
+export function mapAgentAvailabilityWorkspace(document: AgentAvailabilityWorkspaceMongoDocument): AgentAvailabilityWorkspace {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    agentId: document.agentId.toHexString(),
+    status: document.status,
+    statusReason: document.statusReason,
+    capacity: document.capacity,
+    activeSessionCount: document.activeSessionCount,
+    schedule: document.schedule,
+    updatedAt: document.updatedAt,
+  };
+}
+
+export function mapAgentPerformanceWorkspace(document: AgentPerformanceWorkspaceMongoDocument): AgentPerformanceWorkspace {
+  return {
+    id: document._id.toString(),
+    organizationId: document.organizationId.toHexString(),
+    agentId: document.agentId.toHexString(),
+    callsHandled: document.callsHandled,
+    averageDuration: document.averageDuration,
+    averageQaScore: document.averageQaScore,
+    averageSentiment: document.averageSentiment,
+    transfers: document.transfers,
+    conversions: document.conversions,
+    leadQuality: document.leadQuality,
+    computedAt: document.computedAt,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
   };
 }

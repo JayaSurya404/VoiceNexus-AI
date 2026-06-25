@@ -34,6 +34,8 @@ const envSchema = z.object({
   BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
   FRONTEND_URL: z.string().url().default("http://localhost:3000"),
   API_PUBLIC_URL: z.string().url().default("http://localhost:4000"),
+  AI_BRAIN_PUBLIC_URL: z.string().url().optional(),
+  AI_VOICE_WEBHOOK_URL: z.string().url().optional(),
   TWILIO_ACCOUNT_SID: z.string().default(""),
   TWILIO_AUTH_TOKEN: z.string().default(""),
   TWILIO_PHONE_NUMBER: z.string().default(""),

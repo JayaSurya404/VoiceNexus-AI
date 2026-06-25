@@ -9,19 +9,23 @@ import hpp from "hpp";
 import { env } from "./config/env.js";
 import { createContainer } from "./container.js";
 import { AuthController } from "./http/controllers/auth-controller.js";
+import { AgentWorkspaceController } from "./http/controllers/agent-workspace-controller.js";
 import { CallController } from "./http/controllers/call-controller.js";
 import { CrmController } from "./http/controllers/crm-controller.js";
 import { MemoryController } from "./http/controllers/memory-controller.js";
 import { OrganizationController } from "./http/controllers/organization-controller.js";
 import { TwilioWebhookController } from "./http/controllers/twilio-webhook-controller.js";
+import { WhatsappController } from "./http/controllers/whatsapp-controller.js";
 import { errorHandler } from "./http/middleware/error-handler.js";
 import { requestIdMiddleware } from "./http/middleware/request-id.js";
 import { createAuthRoutes } from "./http/routes/auth-routes.js";
+import { createAgentWorkspaceRoutes } from "./http/routes/agent-workspace-routes.js";
 import { createCallRoutes } from "./http/routes/call-routes.js";
 import { createCrmRoutes } from "./http/routes/crm-routes.js";
 import { createMemoryRoutes } from "./http/routes/memory-routes.js";
 import { createOrganizationRoutes } from "./http/routes/organization-routes.js";
 import { createTwilioWebhookRoutes } from "./http/routes/twilio-webhook-routes.js";
+import { createWhatsappRoutes } from "./http/routes/whatsapp-routes.js";
 import { AppError } from "./shared/app-error.js";
 
 export function createApp() {
@@ -75,6 +79,7 @@ export function createApp() {
   });
 
   const authController = new AuthController(container.services.authService);
+  const agentWorkspaceController = new AgentWorkspaceController(container.services.agentWorkspaceService);
   const organizationController = new OrganizationController(container.services.organizationService);
   const crmController = new CrmController(container.services.crmService);
   const memoryController = new MemoryController(container.services.memoryService);
@@ -86,6 +91,7 @@ export function createApp() {
     container.services.telephonyService,
     container.services.recordingService,
   );
+  const whatsappController = new WhatsappController(container.services.whatsappService);
 
   app.use("/auth", createAuthRoutes(authController));
   app.use(
@@ -107,6 +113,18 @@ export function createApp() {
   app.use(
     "/",
     createCallRoutes(callController, container.security.tokenService, container.repositories.users),
+  );
+  app.use(
+    "/",
+    createAgentWorkspaceRoutes(
+      agentWorkspaceController,
+      container.security.tokenService,
+      container.repositories.users,
+    ),
+  );
+  app.use(
+    "/",
+    createWhatsappRoutes(whatsappController, container.security.tokenService, container.repositories.users),
   );
   app.use("/", createTwilioWebhookRoutes(twilioWebhookController));
 

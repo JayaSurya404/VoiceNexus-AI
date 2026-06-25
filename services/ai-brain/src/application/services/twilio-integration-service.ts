@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 import type { InfrastructureConfig } from "../../config/infrastructure-config.js";
 
@@ -19,6 +19,8 @@ export interface TwilioCallRequest {
   organizationId?: string;
   conversationId?: string;
   callSessionId?: string;
+  apiCallSessionId?: string;
+  leadId?: string;
 }
 
 export interface TwilioCallResult {
@@ -33,6 +35,8 @@ export interface TwilioCallResult {
 export interface TwilioMediaStreamTwimlInput {
   organizationId?: string;
   callSessionId?: string;
+  apiCallSessionId?: string;
+  leadId?: string;
   conversationId?: string;
   callSid?: string;
   gatewayHost?: string | null;
@@ -76,6 +80,25 @@ export class TwilioIntegrationService {
       direction: String(input.Direction ?? input.direction ?? "inbound"),
       raw: input,
     };
+  }
+
+  validateWebhookSignature(signature: string | undefined, url: string, params: Record<string, unknown>): boolean {
+    if (!this.config.authToken) {
+      return false;
+    }
+
+    if (!signature) {
+      return false;
+    }
+
+    const signedPayload = Object.keys(params)
+      .sort()
+      .reduce((accumulator, key) => `${accumulator}${key}${this.stringValue(params[key])}`, url);
+    const expectedSignature = createHmac("sha1", this.config.authToken)
+      .update(signedPayload)
+      .digest("base64");
+
+    return this.safeEqual(signature, expectedSignature);
   }
 
   resolveWebhookOrganizationId(input: {
@@ -141,6 +164,8 @@ export class TwilioIntegrationService {
     const parameters = [
       input.organizationId ? `<Parameter name="organizationId" value="${this.escapeXml(input.organizationId)}" />` : "",
       input.callSessionId ? `<Parameter name="callSessionId" value="${this.escapeXml(input.callSessionId)}" />` : "",
+      input.apiCallSessionId ? `<Parameter name="apiCallSessionId" value="${this.escapeXml(input.apiCallSessionId)}" />` : "",
+      input.leadId ? `<Parameter name="leadId" value="${this.escapeXml(input.leadId)}" />` : "",
       input.conversationId ? `<Parameter name="conversationId" value="${this.escapeXml(input.conversationId)}" />` : "",
       input.callSid ? `<Parameter name="callSid" value="${this.escapeXml(input.callSid)}" />` : "",
     ].filter((parameter) => parameter.length > 0);
@@ -169,9 +194,9 @@ export class TwilioIntegrationService {
 
   private mediaStreamUrl(input: TwilioMediaStreamTwimlInput): string {
     const configuredGatewayHost = this.gatewayHostFromPublicUrl(this.config.realtimeGatewayPublicUrl);
-    const configuredUrl = this.config.voiceWebhookUrl;
-    const fallbackHost = configuredUrl ? new URL(configuredUrl).host : "localhost:3002";
-    const host = configuredGatewayHost ?? input.gatewayHost ?? fallbackHost;
+    const explicitGatewayHost = input.gatewayHost?.trim() ? input.gatewayHost.trim() : null;
+    const fallbackPort = process.env.REALTIME_GATEWAY_PORT ?? "4001";
+    const host = configuredGatewayHost ?? explicitGatewayHost ?? `localhost:${fallbackPort}`;
     const baseUrl = new URL(`wss://${host}/realtime/twilio`);
     const token = this.createMediaStreamToken(input);
     if (token) {
@@ -303,5 +328,32 @@ export class TwilioIntegrationService {
       .replaceAll("'", "&apos;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;");
+  }
+
+  private stringValue(value: unknown): string {
+    if (Array.isArray(value)) {
+      return value.map((item) => this.stringValue(item)).join("");
+    }
+
+    if (value === undefined || value === null) {
+      return "";
+    }
+
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      return String(value);
+    }
+
+    return JSON.stringify(value);
+  }
+
+  private safeEqual(left: string, right: string): boolean {
+    const leftBuffer = Buffer.from(left);
+    const rightBuffer = Buffer.from(right);
+
+    if (leftBuffer.length !== rightBuffer.length) {
+      return false;
+    }
+
+    return timingSafeEqual(leftBuffer, rightBuffer);
   }
 }
